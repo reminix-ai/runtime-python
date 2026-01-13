@@ -1,11 +1,13 @@
 """LangChain adapter for Reminix Runtime."""
 
-from typing import Any
+import json
+from typing import Any, AsyncIterator
 
 from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
     AIMessage,
+    AIMessageChunk,
     SystemMessage,
     ToolMessage,
 )
@@ -131,6 +133,50 @@ class LangChainAdapter(BaseAdapter):
         response_messages.append(response_message)
 
         return ChatResponse(output=content, messages=response_messages)
+
+    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+        """Handle a streaming invoke request.
+
+        Streams chunks from the LangChain runnable.
+
+        Args:
+            request: The invoke request with input data.
+
+        Yields:
+            JSON-encoded chunks from the stream.
+        """
+        async for chunk in self._agent.astream(request.input):
+            if isinstance(chunk, BaseMessage):
+                content = chunk.content if isinstance(chunk.content, str) else str(chunk.content)
+            elif isinstance(chunk, dict):
+                content = json.dumps(chunk)
+            else:
+                content = str(chunk)
+            yield json.dumps({"chunk": content})
+
+    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
+        """Handle a streaming chat request.
+
+        Streams chunks from the LangChain runnable.
+
+        Args:
+            request: The chat request with messages.
+
+        Yields:
+            JSON-encoded chunks from the stream.
+        """
+        # Convert messages to LangChain format
+        lc_messages = [self._to_langchain_message(m) for m in request.messages]
+
+        # Stream from the runnable
+        async for chunk in self._agent.astream(lc_messages):
+            if isinstance(chunk, (BaseMessage, AIMessageChunk)):
+                content = chunk.content if isinstance(chunk.content, str) else str(chunk.content)
+            elif isinstance(chunk, dict):
+                content = json.dumps(chunk)
+            else:
+                content = str(chunk)
+            yield json.dumps({"chunk": content})
 
 
 def wrap(agent: Runnable, name: str = "langchain-agent") -> LangChainAdapter:

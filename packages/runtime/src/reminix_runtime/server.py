@@ -1,12 +1,23 @@
 """Reminix Runtime Server."""
 
-from typing import Any
+from typing import Any, AsyncIterator
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 
 from . import __version__
 from .adapters.base import Agent
 from .types import InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
+
+
+async def _sse_generator(stream: AsyncIterator[str]) -> AsyncIterator[bytes]:
+    """Convert an async string iterator to SSE format."""
+    try:
+        async for chunk in stream:
+            yield f"data: {chunk}\n\n".encode("utf-8")
+        yield b"data: [DONE]\n\n"
+    except NotImplementedError as e:
+        yield f"data: {{\"error\": \"{str(e)}\"}}\n\n".encode("utf-8")
 
 
 def create_app(agents: list[Agent]) -> FastAPI:
@@ -57,21 +68,33 @@ def create_app(agents: list[Agent]) -> FastAPI:
             ],
         }
 
-    @app.post("/agents/{agent_name}/invoke")
-    async def invoke(agent_name: str, request: InvokeRequest) -> InvokeResponse:
+    @app.post("/agents/{agent_name}/invoke", response_model=None)
+    async def invoke(agent_name: str, request: InvokeRequest) -> InvokeResponse | StreamingResponse:
         """Invoke an agent."""
         agent = agent_map.get(agent_name)
         if agent is None:
             raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
 
+        if request.stream:
+            return StreamingResponse(
+                _sse_generator(agent.invoke_stream(request)),
+                media_type="text/event-stream",
+            )
+
         return await agent.invoke(request)
 
-    @app.post("/agents/{agent_name}/chat")
-    async def chat(agent_name: str, request: ChatRequest) -> ChatResponse:
+    @app.post("/agents/{agent_name}/chat", response_model=None)
+    async def chat(agent_name: str, request: ChatRequest) -> ChatResponse | StreamingResponse:
         """Chat with an agent."""
         agent = agent_map.get(agent_name)
         if agent is None:
             raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
+
+        if request.stream:
+            return StreamingResponse(
+                _sse_generator(agent.chat_stream(request)),
+                media_type="text/event-stream",
+            )
 
         return await agent.chat(request)
 

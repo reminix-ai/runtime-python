@@ -1,6 +1,7 @@
 """LlamaIndex adapter for Reminix Runtime."""
 
-from typing import Any, Protocol, runtime_checkable
+import json
+from typing import Any, AsyncIterator, Protocol, runtime_checkable
 
 from reminix_runtime import (
     BaseAdapter,
@@ -18,6 +19,10 @@ class ChatEngine(Protocol):
 
     async def achat(self, message: str) -> Any:
         """Async chat method."""
+        ...
+
+    async def astream_chat(self, message: str) -> Any:
+        """Async streaming chat method."""
         ...
 
 
@@ -104,6 +109,47 @@ class LlamaIndexAdapter(BaseAdapter):
         response_messages.append({"role": "assistant", "content": output})
 
         return ChatResponse(output=output, messages=response_messages)
+
+    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+        """Handle a streaming invoke request.
+
+        Args:
+            request: The invoke request with input data.
+
+        Yields:
+            JSON-encoded chunks from the stream.
+        """
+        # Extract query from input
+        if "query" in request.input:
+            query = request.input["query"]
+        elif "prompt" in request.input:
+            query = request.input["prompt"]
+        elif "message" in request.input:
+            query = request.input["message"]
+        else:
+            query = str(request.input)
+
+        # Stream from the chat engine
+        response = await self._engine.astream_chat(query)
+        async for token in response.async_response_gen():
+            yield json.dumps({"chunk": token})
+
+    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
+        """Handle a streaming chat request.
+
+        Args:
+            request: The chat request with messages.
+
+        Yields:
+            JSON-encoded chunks from the stream.
+        """
+        # Get the last user message to send to the engine
+        message = self._get_last_user_message(request.messages)
+
+        # Stream from the chat engine
+        response = await self._engine.astream_chat(message)
+        async for token in response.async_response_gen():
+            yield json.dumps({"chunk": token})
 
 
 def wrap(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndexAdapter:

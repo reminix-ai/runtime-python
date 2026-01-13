@@ -1,6 +1,7 @@
 """OpenAI adapter for Reminix Runtime."""
 
-from typing import Any
+import json
+from typing import Any, AsyncIterator
 
 from openai import AsyncOpenAI
 
@@ -117,6 +118,59 @@ class OpenAIAdapter(BaseAdapter):
         response_messages.append({"role": "assistant", "content": output})
 
         return ChatResponse(output=output, messages=response_messages)
+
+    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+        """Handle a streaming invoke request.
+
+        Args:
+            request: The invoke request with input data.
+
+        Yields:
+            JSON-encoded chunks from the stream.
+        """
+        # Build messages from input
+        if "messages" in request.input:
+            messages = request.input["messages"]
+        elif "prompt" in request.input:
+            messages = [{"role": "user", "content": request.input["prompt"]}]
+        else:
+            messages = [{"role": "user", "content": str(request.input)}]
+
+        # Stream from OpenAI API
+        stream = await self._client.chat.completions.create(
+            model=self._model,
+            messages=messages,  # type: ignore
+            stream=True,
+        )
+
+        async for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                content = chunk.choices[0].delta.content
+                yield json.dumps({"chunk": content})
+
+    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
+        """Handle a streaming chat request.
+
+        Args:
+            request: The chat request with messages.
+
+        Yields:
+            JSON-encoded chunks from the stream.
+        """
+        # Convert messages to OpenAI format
+        openai_messages = [self._to_openai_message(m) for m in request.messages]
+
+        # Stream from OpenAI API
+        stream = await self._client.chat.completions.create(
+            model=self._model,
+            messages=openai_messages,  # type: ignore
+            stream=True,
+        )
+
+        async for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                content = chunk.choices[0].delta.content
+                yield json.dumps({"chunk": content})
 
 
 def wrap(

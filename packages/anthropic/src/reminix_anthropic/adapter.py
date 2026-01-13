@@ -1,6 +1,7 @@
 """Anthropic adapter for Reminix Runtime."""
 
-from typing import Any
+import json
+from typing import Any, AsyncIterator
 
 from anthropic import AsyncAnthropic
 
@@ -162,6 +163,72 @@ class AnthropicAdapter(BaseAdapter):
         response_messages.append({"role": "assistant", "content": output})
 
         return ChatResponse(output=output, messages=response_messages)
+
+    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+        """Handle a streaming invoke request.
+
+        Args:
+            request: The invoke request with input data.
+
+        Yields:
+            JSON-encoded chunks from the stream.
+        """
+        # Build messages from input
+        if "messages" in request.input:
+            messages_data = request.input["messages"]
+            from reminix_runtime.types import Message
+            messages = [Message(**m) if isinstance(m, dict) else m for m in messages_data]
+        elif "prompt" in request.input:
+            from reminix_runtime.types import Message
+            messages = [Message(role="user", content=request.input["prompt"])]
+        else:
+            from reminix_runtime.types import Message
+            messages = [Message(role="user", content=str(request.input))]
+
+        # Extract system message and convert messages
+        system_message, anthropic_messages = self._extract_system_and_messages(messages)
+
+        # Build API call kwargs
+        kwargs: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": self._max_tokens,
+            "messages": anthropic_messages,
+        }
+        if system_message:
+            kwargs["system"] = system_message
+
+        # Stream from Anthropic API
+        async with self._client.messages.stream(**kwargs) as stream:
+            async for text in stream.text_stream:
+                yield json.dumps({"chunk": text})
+
+    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
+        """Handle a streaming chat request.
+
+        Args:
+            request: The chat request with messages.
+
+        Yields:
+            JSON-encoded chunks from the stream.
+        """
+        # Extract system message and convert messages
+        system_message, anthropic_messages = self._extract_system_and_messages(
+            request.messages
+        )
+
+        # Build API call kwargs
+        kwargs: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": self._max_tokens,
+            "messages": anthropic_messages,
+        }
+        if system_message:
+            kwargs["system"] = system_message
+
+        # Stream from Anthropic API
+        async with self._client.messages.stream(**kwargs) as stream:
+            async for text in stream.text_stream:
+                yield json.dumps({"chunk": text})
 
 
 def wrap(

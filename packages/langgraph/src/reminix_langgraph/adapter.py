@@ -1,11 +1,13 @@
 """LangGraph adapter for Reminix Runtime."""
 
-from typing import Any
+import json
+from typing import Any, AsyncIterator
 
 from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
     AIMessage,
+    AIMessageChunk,
     SystemMessage,
     ToolMessage,
 )
@@ -132,6 +134,58 @@ class LangGraphAdapter(BaseAdapter):
         response_messages = [self._to_reminix_message(m) for m in result_messages]
 
         return ChatResponse(output=output, messages=response_messages)
+
+    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+        """Handle a streaming invoke request.
+
+        Args:
+            request: The invoke request with input data.
+
+        Yields:
+            JSON-encoded chunks from the stream.
+        """
+        async for chunk in self._graph.astream(request.input):
+            # LangGraph streams dicts with node outputs
+            if isinstance(chunk, dict):
+                for node_name, node_output in chunk.items():
+                    if isinstance(node_output, dict) and "messages" in node_output:
+                        for msg in node_output["messages"]:
+                            if isinstance(msg, (AIMessage, AIMessageChunk)):
+                                content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                                if content:
+                                    yield json.dumps({"chunk": content})
+                    else:
+                        yield json.dumps({"chunk": json.dumps(node_output)})
+            else:
+                yield json.dumps({"chunk": str(chunk)})
+
+    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
+        """Handle a streaming chat request.
+
+        Args:
+            request: The chat request with messages.
+
+        Yields:
+            JSON-encoded chunks from the stream.
+        """
+        # Convert messages to LangChain format
+        lc_messages = [self._to_langchain_message(m) for m in request.messages]
+
+        # Stream from the graph
+        async for chunk in self._graph.astream({"messages": lc_messages}):
+            # LangGraph streams dicts with node outputs
+            if isinstance(chunk, dict):
+                for node_name, node_output in chunk.items():
+                    if isinstance(node_output, dict) and "messages" in node_output:
+                        for msg in node_output["messages"]:
+                            if isinstance(msg, (AIMessage, AIMessageChunk)):
+                                content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                                if content:
+                                    yield json.dumps({"chunk": content})
+                    else:
+                        yield json.dumps({"chunk": json.dumps(node_output)})
+            else:
+                yield json.dumps({"chunk": str(chunk)})
 
 
 def wrap(graph: Any, name: str = "langgraph-agent") -> LangGraphAdapter:
