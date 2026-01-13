@@ -1,6 +1,6 @@
 # reminix-llamaindex
 
-Reminix adapter for LlamaIndex agents.
+Reminix Runtime adapter for [LlamaIndex](https://www.llamaindex.ai/). Deploy LlamaIndex chat engines as a REST API.
 
 ## Installation
 
@@ -8,22 +8,72 @@ Reminix adapter for LlamaIndex agents.
 pip install reminix-llamaindex
 ```
 
-## Usage
+This will also install `reminix-runtime` as a dependency.
+
+## Quick Start
 
 ```python
-from reminix_runtime import serve
+from llama_index.core.chat_engine import SimpleChatEngine
+from llama_index.llms.openai import OpenAI
 from reminix_llamaindex import wrap
+from reminix_runtime import serve
 
-# Wrap your LlamaIndex agent
-wrapped_agent = wrap(agent, name="my-agent")
+# Create a LlamaIndex chat engine
+llm = OpenAI(model="gpt-4o")
+engine = SimpleChatEngine.from_defaults(llm=llm)
 
-# Serve it
-serve([wrapped_agent], port=8080)
+# Wrap it with the Reminix adapter
+agent = wrap(engine, name="my-chatbot")
+
+# Serve it as a REST API
+serve([agent], port=8080)
 ```
 
-## Documentation
+Your agent is now available at:
+- `POST /my-chatbot/invoke` - Single-turn invocation
+- `POST /my-chatbot/chat` - Multi-turn chat
 
-See the [main repository](https://github.com/reminix-ai/runtime-python) for full documentation.
+## API Reference
+
+### `wrap(engine, name)`
+
+Wrap a LlamaIndex chat engine for use with Reminix Runtime.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `engine` | `BaseChatEngine` | required | A LlamaIndex chat engine |
+| `name` | `str` | `"llamaindex-agent"` | Name for the agent (used in URL path) |
+
+**Returns:** `LlamaIndexAdapter` - A Reminix adapter instance
+
+### Example with RAG
+
+```python
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.llms.openai import OpenAI
+from reminix_llamaindex import wrap
+from reminix_runtime import serve
+
+# Load documents and create index
+documents = SimpleDirectoryReader("./data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+
+# Create a chat engine with the index
+engine = index.as_chat_engine(llm=OpenAI(model="gpt-4o"))
+
+# Wrap and serve
+agent = wrap(engine, name="rag-chatbot")
+serve([agent], port=8080)
+```
+
+## Runtime Documentation
+
+For information about the server, endpoints, request/response formats, and more, see the [`reminix-runtime`](https://pypi.org/project/reminix-runtime/) package.
+
+## Links
+
+- [GitHub Repository](https://github.com/reminix-ai/runtime-python)
+- [LlamaIndex Documentation](https://docs.llamaindex.ai/)
 
 ## License
 

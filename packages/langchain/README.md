@@ -1,6 +1,6 @@
 # reminix-langchain
 
-Reminix adapter for LangChain agents.
+Reminix Runtime adapter for [LangChain](https://langchain.com). Deploy any LangChain runnable as a REST API.
 
 ## Installation
 
@@ -8,22 +8,71 @@ Reminix adapter for LangChain agents.
 pip install reminix-langchain
 ```
 
-## Usage
+This will also install `reminix-runtime` as a dependency.
+
+## Quick Start
 
 ```python
-from reminix_runtime import serve
+from langchain_openai import ChatOpenAI
 from reminix_langchain import wrap
+from reminix_runtime import serve
 
-# Wrap your LangChain agent
-wrapped_agent = wrap(agent, name="my-agent")
+# Create a LangChain model or chain
+llm = ChatOpenAI(model="gpt-4o")
 
-# Serve it
-serve([wrapped_agent], port=8080)
+# Wrap it with the Reminix adapter
+agent = wrap(llm, name="my-chatbot")
+
+# Serve it as a REST API
+serve([agent], port=8080)
 ```
 
-## Documentation
+Your agent is now available at:
+- `POST /my-chatbot/invoke` - Single-turn invocation
+- `POST /my-chatbot/chat` - Multi-turn chat
 
-See the [main repository](https://github.com/reminix-ai/runtime-python) for full documentation.
+## API Reference
+
+### `wrap(runnable, name)`
+
+Wrap a LangChain runnable for use with Reminix Runtime.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `runnable` | `Runnable` | required | Any LangChain runnable (LLM, chain, agent, etc.) |
+| `name` | `str` | `"langchain-agent"` | Name for the agent (used in URL path) |
+
+**Returns:** `LangChainAdapter` - A Reminix adapter instance
+
+### Example with a Chain
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from reminix_langchain import wrap
+from reminix_runtime import serve
+
+# Create a chain
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant."),
+    ("human", "{input}")
+])
+llm = ChatOpenAI(model="gpt-4o")
+chain = prompt | llm
+
+# Wrap and serve
+agent = wrap(chain, name="my-chain")
+serve([agent], port=8080)
+```
+
+## Runtime Documentation
+
+For information about the server, endpoints, request/response formats, and more, see the [`reminix-runtime`](https://pypi.org/project/reminix-runtime/) package.
+
+## Links
+
+- [GitHub Repository](https://github.com/reminix-ai/runtime-python)
+- [LangChain Documentation](https://python.langchain.com)
 
 ## License
 
