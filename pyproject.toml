@@ -7,7 +7,7 @@ license = "Apache-2.0"
 requires-python = ">=3.10"
 
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["packages/*", "examples/*"]
 
 [tool.uv.sources]
 reminix-runtime = { workspace = true }
