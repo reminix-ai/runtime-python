@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 
 from . import __version__
-from .adapters.base import Agent
+from .adapters.base import AgentBase
 from .types import InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
 
@@ -20,7 +20,7 @@ async def _sse_generator(stream: AsyncIterator[str]) -> AsyncIterator[bytes]:
         yield f"data: {{\"error\": \"{str(e)}\"}}\n\n".encode("utf-8")
 
 
-def create_app(agents: list[Agent]) -> FastAPI:
+def create_app(agents: list[AgentBase]) -> FastAPI:
     """Create a FastAPI application with agent endpoints.
 
     Args:
@@ -36,7 +36,7 @@ def create_app(agents: list[Agent]) -> FastAPI:
         raise ValueError("At least one agent is required")
 
     # Build a lookup dict for agents by name
-    agent_map: dict[str, Agent] = {agent.name: agent for agent in agents}
+    agent_map: dict[str, AgentBase] = {agent.name: agent for agent in agents}
 
     app = FastAPI(title="Reminix Runtime")
 
@@ -99,7 +99,7 @@ def create_app(agents: list[Agent]) -> FastAPI:
     return app
 
 
-def serve(agents: list[Agent], port: int = 8080, host: str = "0.0.0.0") -> None:
+def serve(agents: list[AgentBase], port: int = 8080, host: str = "0.0.0.0") -> None:
     """Serve agents via REST API.
 
     Args:

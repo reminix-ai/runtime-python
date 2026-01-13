@@ -13,31 +13,28 @@ pip install reminix-runtime
 ```python
 from reminix_runtime import serve, Agent, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
-# Create a custom agent
-class MyAgent(Agent):
-    @property
-    def name(self) -> str:
-        return "my-agent"
-    
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        # Task-oriented operation
-        task = request.input.get("task", "unknown")
-        return InvokeResponse(output=f"Completed: {task}")
-    
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        # Conversational interaction
-        user_msg = request.messages[-1].content
-        response = f"You said: {user_msg}"
-        return ChatResponse(
-            output=response,
-            messages=[
-                *[{"role": m.role, "content": m.content} for m in request.messages],
-                {"role": "assistant", "content": response}
-            ]
-        )
+# Create an agent with decorators
+agent = Agent("my-agent")
+
+@agent.on_invoke
+async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
+    task = request.input.get("task", "unknown")
+    return InvokeResponse(output=f"Completed: {task}")
+
+@agent.on_chat
+async def handle_chat(request: ChatRequest) -> ChatResponse:
+    user_msg = request.messages[-1].content
+    response = f"You said: {user_msg}"
+    return ChatResponse(
+        output=response,
+        messages=[
+            *[{"role": m.role, "content": m.content} for m in request.messages],
+            {"role": "assistant", "content": response}
+        ]
+    )
 
 # Serve the agent
-serve([MyAgent()], port=8080)
+serve([agent], port=8080)
 ```
 
 ## How It Works
@@ -166,32 +163,42 @@ app = create_app([MyAgent()])
 
 ### `Agent`
 
-Abstract base class for building agents from scratch.
+Concrete class for building agents with decorators.
 
 ```python
-class Agent(ABC):
-    # Set to True if streaming is implemented
-    invoke_streaming: bool = False
-    chat_streaming: bool = False
+from reminix_runtime import Agent, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
-    @property
-    @abstractmethod
-    def name(self) -> str: ...
-    
-    @abstractmethod
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse: ...
-    
-    @abstractmethod
-    async def chat(self, request: ChatRequest) -> ChatResponse: ...
-    
-    # Override these if streaming is supported
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]: ...
-    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]: ...
+agent = Agent("my-agent", metadata={"version": "1.0"})
+
+@agent.on_invoke
+async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
+    return InvokeResponse(output="Hello!")
+
+@agent.on_chat
+async def handle_chat(request: ChatRequest) -> ChatResponse:
+    return ChatResponse(output="Hi!", messages=[...])
+
+# Optional: streaming handlers
+@agent.on_invoke_stream
+async def handle_invoke_stream(request: InvokeRequest):
+    yield '{"chunk": "Hello"}'
+    yield '{"chunk": " world!"}'
+
+@agent.on_chat_stream
+async def handle_chat_stream(request: ChatRequest):
+    yield '{"chunk": "Hi"}'
 ```
+
+| Method | Description |
+|--------|-------------|
+| `on_invoke(fn)` | Register invoke handler |
+| `on_chat(fn)` | Register chat handler |
+| `on_invoke_stream(fn)` | Register streaming invoke handler |
+| `on_chat_stream(fn)` | Register streaming chat handler |
 
 ### `BaseAdapter`
 
-Extends `Agent`. Use this when wrapping an existing AI framework.
+Abstract base class for framework adapters. Use this when wrapping an existing AI framework.
 
 ```python
 from reminix_runtime import BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
