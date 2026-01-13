@@ -1,6 +1,6 @@
 """LangChain adapter for Reminix Runtime."""
 
-from typing import Any, AsyncIterator
+from typing import Any
 
 from langchain_core.messages import (
     BaseMessage,
@@ -41,7 +41,7 @@ class LangChainAdapter(BaseAdapter):
     def _to_langchain_message(self, message: Message) -> BaseMessage:
         """Convert a Reminix message to a LangChain message."""
         role = message.role
-        content = message.content
+        content = message.content or ""
 
         if role == "user":
             return HumanMessage(content=content)
@@ -50,13 +50,14 @@ class LangChainAdapter(BaseAdapter):
         elif role == "system":
             return SystemMessage(content=content)
         elif role == "tool":
-            # Tool messages require a tool_call_id, use a placeholder if not provided
-            return ToolMessage(content=content, tool_call_id="unknown")
+            # Tool messages require a tool_call_id
+            tool_call_id = getattr(message, 'tool_call_id', None) or "unknown"
+            return ToolMessage(content=content, tool_call_id=tool_call_id)
         else:
             # Fallback to HumanMessage for unknown roles
             return HumanMessage(content=content)
 
-    def _to_reminix_message(self, message: BaseMessage) -> dict[str, str]:
+    def _to_reminix_message(self, message: BaseMessage) -> dict[str, Any]:
         """Convert a LangChain message to a Reminix message dict."""
         if isinstance(message, HumanMessage):
             role = "user"
@@ -75,40 +76,37 @@ class LangChainAdapter(BaseAdapter):
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
         """Handle an invoke request.
 
+        For task-oriented operations. Passes the input directly to the runnable.
+
         Args:
-            request: The invoke request with messages.
+            request: The invoke request with input data.
 
         Returns:
-            The invoke response with the agent's reply.
+            The invoke response with the output.
         """
-        # Convert messages to LangChain format
-        lc_messages = [self._to_langchain_message(m) for m in request.messages]
+        # Pass input directly to the runnable
+        response = await self._agent.ainvoke(request.input)
 
-        # Call the runnable
-        response = await self._agent.ainvoke(lc_messages)
-
-        # Extract content from response
+        # Extract output from response
         if isinstance(response, BaseMessage):
-            content = response.content if isinstance(response.content, str) else str(response.content)
+            output = response.content if isinstance(response.content, str) else str(response.content)
+        elif isinstance(response, dict):
+            output = response
         else:
-            content = str(response)
+            output = str(response)
 
-        # Build response messages (original + assistant response)
-        response_messages = [
-            {"role": m.role, "content": m.content} for m in request.messages
-        ]
-        response_messages.append({"role": "assistant", "content": content})
-
-        return InvokeResponse(content=content, messages=response_messages)
+        return InvokeResponse(output=output)
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
         """Handle a chat request.
+
+        For conversational interactions. Converts messages to LangChain format.
 
         Args:
             request: The chat request with messages.
 
         Returns:
-            The chat response with the agent's reply.
+            The chat response with output and messages.
         """
         # Convert messages to LangChain format
         lc_messages = [self._to_langchain_message(m) for m in request.messages]
@@ -119,16 +117,18 @@ class LangChainAdapter(BaseAdapter):
         # Extract content from response
         if isinstance(response, BaseMessage):
             content = response.content if isinstance(response.content, str) else str(response.content)
+            response_message = self._to_reminix_message(response)
         else:
             content = str(response)
+            response_message = {"role": "assistant", "content": content}
 
         # Build response messages (original + assistant response)
-        response_messages = [
+        response_messages: list[dict[str, Any]] = [
             {"role": m.role, "content": m.content} for m in request.messages
         ]
-        response_messages.append({"role": "assistant", "content": content})
+        response_messages.append(response_message)
 
-        return ChatResponse(content=content, messages=response_messages)
+        return ChatResponse(output=content, messages=response_messages)
 
 
 def wrap(agent: Runnable, name: str = "langchain-agent") -> LangChainAdapter:

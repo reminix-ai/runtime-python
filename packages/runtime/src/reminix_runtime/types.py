@@ -1,6 +1,6 @@
 """Reminix Runtime Types."""
 
-from typing import Literal, Any
+from typing import Literal, Any, Union
 
 from pydantic import BaseModel, Field
 
@@ -13,32 +13,36 @@ class Message(BaseModel):
     """A message in the conversation."""
 
     role: Role
-    content: str
+    content: Union[str, None] = None
+    tool_calls: list[dict[str, Any]] | None = None
+    tool_call_id: str | None = None
+    name: str | None = None
 
 
 class InvokeRequest(BaseModel):
     """Request for invoke endpoint."""
 
-    messages: list[Message] = Field(..., min_length=1)
+    input: dict[str, Any] = Field(..., min_length=1)
+    stream: bool = False
     context: dict[str, Any] | None = None
 
 
 class InvokeResponse(BaseModel):
     """Response from invoke endpoint."""
 
-    content: str
-    messages: list[dict[str, Any]]
+    output: Any
 
 
 class ChatRequest(BaseModel):
     """Request for chat endpoint."""
 
     messages: list[Message] = Field(..., min_length=1)
+    stream: bool = False
     context: dict[str, Any] | None = None
 
 
 class ChatResponse(BaseModel):
     """Response from chat endpoint."""
 
-    content: str
+    output: str
     messages: list[dict[str, Any]]

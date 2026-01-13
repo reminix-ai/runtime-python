@@ -18,10 +18,10 @@ class TestBaseAdapterContract:
 
         class IncompleteAdapter(BaseAdapter):
             async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-                return InvokeResponse(content="", messages=[])
+                return InvokeResponse(output="")
 
             async def chat(self, request: ChatRequest) -> ChatResponse:
-                return ChatResponse(content="", messages=[])
+                return ChatResponse(output="", messages=[])
 
         with pytest.raises(TypeError):
             IncompleteAdapter()  # type: ignore
@@ -35,7 +35,7 @@ class TestBaseAdapterContract:
                 return "test"
 
             async def chat(self, request: ChatRequest) -> ChatResponse:
-                return ChatResponse(content="", messages=[])
+                return ChatResponse(output="", messages=[])
 
         with pytest.raises(TypeError):
             IncompleteAdapter()  # type: ignore
@@ -49,7 +49,7 @@ class TestBaseAdapterContract:
                 return "test"
 
             async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-                return InvokeResponse(content="", messages=[])
+                return InvokeResponse(output="")
 
         with pytest.raises(TypeError):
             IncompleteAdapter()  # type: ignore
@@ -67,15 +67,14 @@ class TestConcreteAdapter:
                 return "test-agent"
 
             async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-                return InvokeResponse(
-                    content="Hello from invoke!",
-                    messages=[{"role": "assistant", "content": "Hello from invoke!"}]
-                )
+                task = request.input.get("task", "unknown")
+                return InvokeResponse(output=f"Completed: {task}")
 
             async def chat(self, request: ChatRequest) -> ChatResponse:
+                user_msg = request.messages[-1].content
                 return ChatResponse(
-                    content="Hello from chat!",
-                    messages=[{"role": "assistant", "content": "Hello from chat!"}]
+                    output=f"Hello from chat: {user_msg}",
+                    messages=[{"role": "assistant", "content": f"Hello from chat: {user_msg}"}]
                 )
 
         return TestAdapter()
@@ -89,12 +88,11 @@ class TestConcreteAdapter:
     async def test_invoke_returns_response(self):
         """Invoke should return an InvokeResponse."""
         adapter = self._create_adapter()
-        request = InvokeRequest(messages=[{"role": "user", "content": "hello"}])
+        request = InvokeRequest(input={"task": "summarize"})
         response = await adapter.invoke(request)
 
         assert isinstance(response, InvokeResponse)
-        assert response.content == "Hello from invoke!"
-        assert len(response.messages) == 1
+        assert response.output == "Completed: summarize"
 
     @pytest.mark.asyncio
     async def test_chat_returns_response(self):
@@ -104,14 +102,14 @@ class TestConcreteAdapter:
         response = await adapter.chat(request)
 
         assert isinstance(response, ChatResponse)
-        assert response.content == "Hello from chat!"
+        assert response.output == "Hello from chat: hello"
         assert len(response.messages) == 1
 
     @pytest.mark.asyncio
     async def test_invoke_stream_not_implemented_by_default(self):
         """invoke_stream should raise NotImplementedError by default."""
         adapter = self._create_adapter()
-        request = InvokeRequest(messages=[{"role": "user", "content": "hello"}])
+        request = InvokeRequest(input={"task": "test"})
 
         with pytest.raises(NotImplementedError):
             async for _ in adapter.invoke_stream(request):

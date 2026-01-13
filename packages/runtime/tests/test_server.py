@@ -24,17 +24,18 @@ class MockAdapter(BaseAdapter):
         return self._name
 
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        user_message = request.messages[-1].content
-        return InvokeResponse(
-            content=f"Invoked with: {user_message}",
-            messages=[{"role": "assistant", "content": f"Invoked with: {user_message}"}],
-        )
+        task = request.input.get("task", "unknown")
+        return InvokeResponse(output=f"Completed task: {task}")
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
         user_message = request.messages[-1].content
+        response_content = f"Chat response to: {user_message}"
         return ChatResponse(
-            content=f"Chat response to: {user_message}",
-            messages=[{"role": "assistant", "content": f"Chat response to: {user_message}"}],
+            output=response_content,
+            messages=[
+                *[{"role": m.role, "content": m.content} for m in request.messages],
+                {"role": "assistant", "content": response_content},
+            ],
         )
 
 
@@ -98,13 +99,12 @@ class TestInvokeEndpoint:
         ) as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
-                json={"messages": [{"role": "user", "content": "hello"}]},
+                json={"input": {"task": "summarize"}},
             )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["content"] == "Invoked with: hello"
-        assert len(data["messages"]) == 1
+        assert data["output"] == "Completed task: summarize"
 
     @pytest.mark.asyncio
     async def test_invoke_with_context(self):
@@ -116,7 +116,7 @@ class TestInvokeEndpoint:
             response = await client.post(
                 "/agents/my-agent/invoke",
                 json={
-                    "messages": [{"role": "user", "content": "hello"}],
+                    "input": {"task": "test"},
                     "context": {"user_id": "123"},
                 },
             )
@@ -132,7 +132,7 @@ class TestInvokeEndpoint:
         ) as client:
             response = await client.post(
                 "/agents/unknown-agent/invoke",
-                json={"messages": [{"role": "user", "content": "hello"}]},
+                json={"input": {"task": "test"}},
             )
 
         assert response.status_code == 404
@@ -147,7 +147,7 @@ class TestInvokeEndpoint:
         ) as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
-                json={"messages": []},  # Empty messages not allowed
+                json={"input": {}},  # Empty input not allowed
             )
 
         assert response.status_code == 422
@@ -170,8 +170,8 @@ class TestChatEndpoint:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["content"] == "Chat response to: hi there"
-        assert len(data["messages"]) == 1
+        assert data["output"] == "Chat response to: hi there"
+        assert len(data["messages"]) == 2  # user message + assistant response
 
     @pytest.mark.asyncio
     async def test_chat_unknown_agent_returns_404(self):

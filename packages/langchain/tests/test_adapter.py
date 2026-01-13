@@ -41,25 +41,81 @@ class TestLangChainAdapterInvoke:
 
     @pytest.mark.asyncio
     async def test_invoke_calls_runnable(self):
-        """invoke() should call the underlying runnable."""
+        """invoke() should call the underlying runnable with the input."""
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello!"))
 
         adapter = wrap(mock_runnable)
-        request = InvokeRequest(messages=[{"role": "user", "content": "Hi"}])
+        request = InvokeRequest(input={"query": "What is AI?"})
 
         response = await adapter.invoke(request)
+
+        mock_runnable.ainvoke.assert_called_once_with({"query": "What is AI?"})
+
+    @pytest.mark.asyncio
+    async def test_invoke_returns_output(self):
+        """invoke() should return the output from the runnable."""
+        mock_runnable = MagicMock(spec=Runnable)
+        mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello from LangChain!"))
+
+        adapter = wrap(mock_runnable)
+        request = InvokeRequest(input={"query": "Hi"})
+
+        response = await adapter.invoke(request)
+
+        assert response.output == "Hello from LangChain!"
+
+    @pytest.mark.asyncio
+    async def test_invoke_handles_dict_response(self):
+        """invoke() should handle dict responses from the runnable."""
+        mock_runnable = MagicMock(spec=Runnable)
+        mock_runnable.ainvoke = AsyncMock(return_value={"result": "success", "value": 42})
+
+        adapter = wrap(mock_runnable)
+        request = InvokeRequest(input={"task": "compute"})
+
+        response = await adapter.invoke(request)
+
+        assert response.output == {"result": "success", "value": 42}
+
+    @pytest.mark.asyncio
+    async def test_invoke_handles_string_response(self):
+        """invoke() should handle string responses from the runnable."""
+        mock_runnable = MagicMock(spec=Runnable)
+        mock_runnable.ainvoke = AsyncMock(return_value="Simple string result")
+
+        adapter = wrap(mock_runnable)
+        request = InvokeRequest(input={"query": "test"})
+
+        response = await adapter.invoke(request)
+
+        assert response.output == "Simple string result"
+
+
+class TestLangChainAdapterChat:
+    """Tests for the chat() method."""
+
+    @pytest.mark.asyncio
+    async def test_chat_calls_runnable(self):
+        """chat() should call the underlying runnable with converted messages."""
+        mock_runnable = MagicMock(spec=Runnable)
+        mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello!"))
+
+        adapter = wrap(mock_runnable)
+        request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
+
+        response = await adapter.chat(request)
 
         mock_runnable.ainvoke.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_invoke_converts_messages_to_langchain_format(self):
-        """invoke() should convert Reminix messages to LangChain format."""
+    async def test_chat_converts_messages_to_langchain_format(self):
+        """chat() should convert Reminix messages to LangChain format."""
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Response"))
 
         adapter = wrap(mock_runnable)
-        request = InvokeRequest(
+        request = ChatRequest(
             messages=[
                 {"role": "system", "content": "You are helpful"},
                 {"role": "user", "content": "Hello"},
@@ -68,7 +124,7 @@ class TestLangChainAdapterInvoke:
             ]
         )
 
-        await adapter.invoke(request)
+        await adapter.chat(request)
 
         # Check that messages were converted correctly
         call_args = mock_runnable.ainvoke.call_args[0][0]
@@ -79,63 +135,8 @@ class TestLangChainAdapterInvoke:
         assert isinstance(call_args[3], HumanMessage)
 
     @pytest.mark.asyncio
-    async def test_invoke_returns_response(self):
-        """invoke() should return an InvokeResponse."""
-        mock_runnable = MagicMock(spec=Runnable)
-        mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello from LangChain!"))
-
-        adapter = wrap(mock_runnable)
-        request = InvokeRequest(messages=[{"role": "user", "content": "Hi"}])
-
-        response = await adapter.invoke(request)
-
-        assert response.content == "Hello from LangChain!"
-        assert len(response.messages) >= 1
-        assert response.messages[-1]["role"] == "assistant"
-        assert response.messages[-1]["content"] == "Hello from LangChain!"
-
-    @pytest.mark.asyncio
-    async def test_invoke_includes_original_messages(self):
-        """invoke() response should include the original messages plus the response."""
-        mock_runnable = MagicMock(spec=Runnable)
-        mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Response"))
-
-        adapter = wrap(mock_runnable)
-        request = InvokeRequest(
-            messages=[
-                {"role": "user", "content": "Hello"},
-            ]
-        )
-
-        response = await adapter.invoke(request)
-
-        # Should include original message + response
-        assert len(response.messages) == 2
-        assert response.messages[0]["role"] == "user"
-        assert response.messages[0]["content"] == "Hello"
-        assert response.messages[1]["role"] == "assistant"
-        assert response.messages[1]["content"] == "Response"
-
-
-class TestLangChainAdapterChat:
-    """Tests for the chat() method."""
-
-    @pytest.mark.asyncio
-    async def test_chat_calls_runnable(self):
-        """chat() should call the underlying runnable."""
-        mock_runnable = MagicMock(spec=Runnable)
-        mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello!"))
-
-        adapter = wrap(mock_runnable)
-        request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
-
-        response = await adapter.chat(request)
-
-        mock_runnable.ainvoke.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_chat_returns_response(self):
-        """chat() should return a ChatResponse."""
+    async def test_chat_returns_output_and_messages(self):
+        """chat() should return output and messages."""
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Chat response"))
 
@@ -144,8 +145,10 @@ class TestLangChainAdapterChat:
 
         response = await adapter.chat(request)
 
-        assert response.content == "Chat response"
-        assert len(response.messages) >= 1
+        assert response.output == "Chat response"
+        assert len(response.messages) == 2
+        assert response.messages[-1]["role"] == "assistant"
+        assert response.messages[-1]["content"] == "Chat response"
 
 
 class TestMessageConversion:
@@ -158,7 +161,7 @@ class TestMessageConversion:
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Response"))
 
         adapter = wrap(mock_runnable)
-        request = InvokeRequest(
+        request = ChatRequest(
             messages=[
                 {"role": "user", "content": "Use a tool"},
                 {"role": "tool", "content": "Tool result"},
@@ -166,5 +169,5 @@ class TestMessageConversion:
         )
 
         # Should not raise an error
-        response = await adapter.invoke(request)
-        assert response.content == "Response"
+        response = await adapter.chat(request)
+        assert response.output == "Response"

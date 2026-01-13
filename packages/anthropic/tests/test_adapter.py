@@ -7,19 +7,6 @@ from reminix_runtime import InvokeRequest, ChatRequest, BaseAdapter
 from reminix_anthropic import wrap, AnthropicAdapter
 
 
-def create_mock_response(content: str = "Hello!"):
-    """Create a mock Anthropic message response."""
-    mock_content_block = MagicMock()
-    mock_content_block.type = "text"
-    mock_content_block.text = content
-
-    mock_response = MagicMock()
-    mock_response.content = [mock_content_block]
-    mock_response.role = "assistant"
-
-    return mock_response
-
-
 class TestWrap:
     """Tests for the wrap() function."""
 
@@ -38,18 +25,19 @@ class TestWrap:
 
         assert adapter.name == "my-custom-agent"
 
-    def test_wrap_default_name(self):
-        """wrap() should use default name if not provided."""
+    def test_wrap_with_custom_model(self):
+        """wrap() should accept a custom model."""
+        mock_client = MagicMock()
+        adapter = wrap(mock_client, model="claude-opus-4-20250514")
+
+        assert adapter.model == "claude-opus-4-20250514"
+
+    def test_wrap_default_values(self):
+        """wrap() should use default values if not provided."""
         mock_client = MagicMock()
         adapter = wrap(mock_client)
 
         assert adapter.name == "anthropic-agent"
-
-    def test_wrap_with_model(self):
-        """wrap() should accept a model parameter."""
-        mock_client = MagicMock()
-        adapter = wrap(mock_client, model="claude-sonnet-4-20250514")
-
         assert adapter.model == "claude-sonnet-4-20250514"
 
 
@@ -60,98 +48,48 @@ class TestAnthropicAdapterInvoke:
     async def test_invoke_calls_client(self):
         """invoke() should call the Anthropic client."""
         mock_client = MagicMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=create_mock_response("Hello!")
-        )
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(type="text", text="Hello!")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap(mock_client)
-        request = InvokeRequest(messages=[{"role": "user", "content": "Hi"}])
+        request = InvokeRequest(input={"prompt": "Hi"})
 
         response = await adapter.invoke(request)
 
         mock_client.messages.create.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_invoke_passes_messages(self):
-        """invoke() should pass messages to the client."""
+    async def test_invoke_returns_output(self):
+        """invoke() should return the output from the API."""
         mock_client = MagicMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=create_mock_response("Response")
-        )
-
-        adapter = wrap(mock_client, model="claude-sonnet-4-20250514")
-        request = InvokeRequest(
-            messages=[
-                {"role": "user", "content": "Hello"},
-            ]
-        )
-
-        await adapter.invoke(request)
-
-        call_kwargs = mock_client.messages.create.call_args.kwargs
-        assert call_kwargs["model"] == "claude-sonnet-4-20250514"
-        assert len(call_kwargs["messages"]) == 1
-        assert call_kwargs["messages"][0]["role"] == "user"
-
-    @pytest.mark.asyncio
-    async def test_invoke_extracts_system_message(self):
-        """invoke() should extract system messages and pass separately."""
-        mock_client = MagicMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=create_mock_response("Response")
-        )
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(type="text", text="Hello from Anthropic!")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap(mock_client)
-        request = InvokeRequest(
-            messages=[
-                {"role": "system", "content": "You are helpful"},
-                {"role": "user", "content": "Hello"},
-            ]
-        )
-
-        await adapter.invoke(request)
-
-        call_kwargs = mock_client.messages.create.call_args.kwargs
-        # System message should be passed as 'system' parameter
-        assert call_kwargs["system"] == "You are helpful"
-        # Only user message should be in messages
-        assert len(call_kwargs["messages"]) == 1
-        assert call_kwargs["messages"][0]["role"] == "user"
-
-    @pytest.mark.asyncio
-    async def test_invoke_returns_response(self):
-        """invoke() should return an InvokeResponse."""
-        mock_client = MagicMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=create_mock_response("Hello from Anthropic!")
-        )
-
-        adapter = wrap(mock_client)
-        request = InvokeRequest(messages=[{"role": "user", "content": "Hi"}])
+        request = InvokeRequest(input={"prompt": "Hi"})
 
         response = await adapter.invoke(request)
 
-        assert response.content == "Hello from Anthropic!"
-        assert len(response.messages) >= 1
+        assert response.output == "Hello from Anthropic!"
 
     @pytest.mark.asyncio
-    async def test_invoke_includes_original_messages(self):
-        """invoke() response should include original messages plus response."""
+    async def test_invoke_with_messages_input(self):
+        """invoke() should handle input with messages key."""
         mock_client = MagicMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=create_mock_response("Response")
-        )
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(type="text", text="Response")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap(mock_client)
-        request = InvokeRequest(messages=[{"role": "user", "content": "Hello"}])
+        request = InvokeRequest(input={
+            "messages": [{"role": "user", "content": "Hello"}]
+        })
 
         response = await adapter.invoke(request)
 
-        assert len(response.messages) == 2
-        assert response.messages[0]["role"] == "user"
-        assert response.messages[0]["content"] == "Hello"
-        assert response.messages[1]["role"] == "assistant"
-        assert response.messages[1]["content"] == "Response"
+        assert response.output == "Response"
 
 
 class TestAnthropicAdapterChat:
@@ -161,9 +99,9 @@ class TestAnthropicAdapterChat:
     async def test_chat_calls_client(self):
         """chat() should call the Anthropic client."""
         mock_client = MagicMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=create_mock_response("Hello!")
-        )
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(type="text", text="Hello!")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap(mock_client)
         request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
@@ -173,17 +111,42 @@ class TestAnthropicAdapterChat:
         mock_client.messages.create.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_chat_returns_response(self):
-        """chat() should return a ChatResponse."""
+    async def test_chat_returns_output_and_messages(self):
+        """chat() should return output and messages."""
         mock_client = MagicMock()
-        mock_client.messages.create = AsyncMock(
-            return_value=create_mock_response("Chat response")
-        )
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(type="text", text="Chat response")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap(mock_client)
         request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
 
         response = await adapter.chat(request)
 
-        assert response.content == "Chat response"
-        assert len(response.messages) >= 1
+        assert response.output == "Chat response"
+        assert len(response.messages) == 2
+        assert response.messages[-1]["role"] == "assistant"
+        assert response.messages[-1]["content"] == "Chat response"
+
+    @pytest.mark.asyncio
+    async def test_chat_extracts_system_message(self):
+        """chat() should extract system message for Anthropic API."""
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(type="text", text="Response")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
+
+        adapter = wrap(mock_client)
+        request = ChatRequest(
+            messages=[
+                {"role": "system", "content": "You are helpful"},
+                {"role": "user", "content": "Hi"},
+            ]
+        )
+
+        await adapter.chat(request)
+
+        call_kwargs = mock_client.messages.create.call_args[1]
+        assert call_kwargs["system"] == "You are helpful"
+        # Messages should not include system message
+        assert all(m["role"] != "system" for m in call_kwargs["messages"])

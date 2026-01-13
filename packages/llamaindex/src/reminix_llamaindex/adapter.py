@@ -42,44 +42,49 @@ class LlamaIndexAdapter(BaseAdapter):
         """Get the last user message from the conversation."""
         for message in reversed(messages):
             if message.role == "user":
-                return message.content
+                return message.content or ""
         # Fallback to last message if no user message found
-        return messages[-1].content if messages else ""
+        return messages[-1].content or "" if messages else ""
 
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
         """Handle an invoke request.
 
+        For task-oriented operations. Expects input with 'query' or 'prompt' key.
+
         Args:
-            request: The invoke request with messages.
+            request: The invoke request with input data.
 
         Returns:
-            The invoke response with the engine's reply.
+            The invoke response with the output.
         """
-        # Get the last user message to send to the engine
-        message = self._get_last_user_message(request.messages)
+        # Extract query from input
+        if "query" in request.input:
+            query = request.input["query"]
+        elif "prompt" in request.input:
+            query = request.input["prompt"]
+        elif "message" in request.input:
+            query = request.input["message"]
+        else:
+            query = str(request.input)
 
         # Call the chat engine
-        response = await self._engine.achat(message)
+        response = await self._engine.achat(query)
 
         # Extract content from response
-        content = str(response.response) if hasattr(response, "response") else str(response)
+        output = str(response.response) if hasattr(response, "response") else str(response)
 
-        # Build response messages (original + assistant response)
-        response_messages = [
-            {"role": m.role, "content": m.content} for m in request.messages
-        ]
-        response_messages.append({"role": "assistant", "content": content})
-
-        return InvokeResponse(content=content, messages=response_messages)
+        return InvokeResponse(output=output)
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
         """Handle a chat request.
+
+        For conversational interactions. Sends the last user message to the engine.
 
         Args:
             request: The chat request with messages.
 
         Returns:
-            The chat response with the engine's reply.
+            The chat response with output and messages.
         """
         # Get the last user message to send to the engine
         message = self._get_last_user_message(request.messages)
@@ -88,15 +93,15 @@ class LlamaIndexAdapter(BaseAdapter):
         response = await self._engine.achat(message)
 
         # Extract content from response
-        content = str(response.response) if hasattr(response, "response") else str(response)
+        output = str(response.response) if hasattr(response, "response") else str(response)
 
         # Build response messages (original + assistant response)
-        response_messages = [
+        response_messages: list[dict[str, Any]] = [
             {"role": m.role, "content": m.content} for m in request.messages
         ]
-        response_messages.append({"role": "assistant", "content": content})
+        response_messages.append({"role": "assistant", "content": output})
 
-        return ChatResponse(content=content, messages=response_messages)
+        return ChatResponse(output=output, messages=response_messages)
 
 
 def wrap(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndexAdapter:

@@ -40,7 +40,7 @@ class LangGraphAdapter(BaseAdapter):
     def _to_langchain_message(self, message: Message) -> BaseMessage:
         """Convert a Reminix message to a LangChain message."""
         role = message.role
-        content = message.content
+        content = message.content or ""
 
         if role == "user":
             return HumanMessage(content=content)
@@ -49,11 +49,12 @@ class LangGraphAdapter(BaseAdapter):
         elif role == "system":
             return SystemMessage(content=content)
         elif role == "tool":
-            return ToolMessage(content=content, tool_call_id="unknown")
+            tool_call_id = getattr(message, 'tool_call_id', None) or "unknown"
+            return ToolMessage(content=content, tool_call_id=tool_call_id)
         else:
             return HumanMessage(content=content)
 
-    def _to_reminix_message(self, message: BaseMessage) -> dict[str, str]:
+    def _to_reminix_message(self, message: BaseMessage) -> dict[str, Any]:
         """Convert a LangChain message to a Reminix message dict."""
         if isinstance(message, HumanMessage):
             role = "user"
@@ -79,37 +80,39 @@ class LangGraphAdapter(BaseAdapter):
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
         """Handle an invoke request.
 
+        For task-oriented operations. Passes the input directly to the graph.
+
         Args:
-            request: The invoke request with messages.
+            request: The invoke request with input data.
 
         Returns:
-            The invoke response with the agent's reply.
+            The invoke response with the output.
         """
-        # Convert messages to LangChain format
-        lc_messages = [self._to_langchain_message(m) for m in request.messages]
+        # Pass input directly to the graph
+        result = await self._graph.ainvoke(request.input)
 
-        # Call the graph with state dict format
-        result = await self._graph.ainvoke({"messages": lc_messages})
+        # Extract output from result
+        if isinstance(result, dict) and "messages" in result:
+            messages = result.get("messages", [])
+            output = self._get_last_ai_content(messages)
+        elif isinstance(result, dict):
+            output = result
+        else:
+            output = str(result)
 
-        # Extract messages from result
-        result_messages: list[BaseMessage] = result.get("messages", [])
-
-        # Get content from the last AI message
-        content = self._get_last_ai_content(result_messages)
-
-        # Convert all messages back to Reminix format
-        response_messages = [self._to_reminix_message(m) for m in result_messages]
-
-        return InvokeResponse(content=content, messages=response_messages)
+        return InvokeResponse(output=output)
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
         """Handle a chat request.
+
+        For conversational interactions. Converts messages to LangChain format
+        and invokes the graph with the state dict format.
 
         Args:
             request: The chat request with messages.
 
         Returns:
-            The chat response with the agent's reply.
+            The chat response with output and messages.
         """
         # Convert messages to LangChain format
         lc_messages = [self._to_langchain_message(m) for m in request.messages]
@@ -121,12 +124,12 @@ class LangGraphAdapter(BaseAdapter):
         result_messages: list[BaseMessage] = result.get("messages", [])
 
         # Get content from the last AI message
-        content = self._get_last_ai_content(result_messages)
+        output = self._get_last_ai_content(result_messages)
 
         # Convert all messages back to Reminix format
         response_messages = [self._to_reminix_message(m) for m in result_messages]
 
-        return ChatResponse(content=content, messages=response_messages)
+        return ChatResponse(output=output, messages=response_messages)
 
 
 def wrap(graph: Any, name: str = "langgraph-agent") -> LangGraphAdapter:

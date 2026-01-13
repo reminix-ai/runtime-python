@@ -20,20 +20,20 @@ class TestMessage:
         with pytest.raises(ValidationError):
             Message(content="hello")  # type: ignore
 
-    def test_message_requires_content(self):
-        """Message must have content."""
-        with pytest.raises(ValidationError):
-            Message(role="user")  # type: ignore
-
     def test_message_accepts_valid_input(self):
         """Message accepts role and content."""
         msg = Message(role="user", content="hello")
         assert msg.role == "user"
         assert msg.content == "hello"
 
+    def test_message_content_can_be_none(self):
+        """Message content can be None (for tool_calls)."""
+        msg = Message(role="assistant", content=None, tool_calls=[{"id": "1", "type": "function", "function": {"name": "test", "arguments": "{}"}}])
+        assert msg.content is None
+        assert msg.tool_calls is not None
+
     def test_message_role_must_be_valid(self):
         """Message role should be one of: user, assistant, system, tool."""
-        # This test will FAIL - we need to add role validation
         valid_roles = ["user", "assistant", "system", "tool"]
         for role in valid_roles:
             msg = Message(role=role, content="test")
@@ -43,34 +43,40 @@ class TestMessage:
         with pytest.raises(ValidationError):
             Message(role="invalid_role", content="test")
 
+    def test_message_tool_fields(self):
+        """Message can have tool_call_id and name for tool messages."""
+        msg = Message(role="tool", content="result", tool_call_id="call_123", name="my_tool")
+        assert msg.tool_call_id == "call_123"
+        assert msg.name == "my_tool"
+
 
 class TestInvokeRequest:
     """Tests for InvokeRequest type."""
 
-    def test_invoke_request_requires_messages(self):
-        """InvokeRequest must have messages."""
+    def test_invoke_request_requires_input(self):
+        """InvokeRequest must have input."""
         with pytest.raises(ValidationError):
             InvokeRequest()  # type: ignore
 
     def test_invoke_request_accepts_valid_input(self):
-        """InvokeRequest accepts list of messages."""
-        req = InvokeRequest(
-            messages=[{"role": "user", "content": "hello"}]
-        )
-        assert len(req.messages) == 1
-        assert req.messages[0].role == "user"
+        """InvokeRequest accepts input dict."""
+        req = InvokeRequest(input={"task": "summarize", "text": "hello"})
+        assert req.input["task"] == "summarize"
 
-    def test_invoke_request_messages_cannot_be_empty(self):
-        """InvokeRequest must have at least one message."""
-        # This test will FAIL - we need to add min_length validation
+    def test_invoke_request_input_cannot_be_empty(self):
+        """InvokeRequest must have non-empty input."""
         with pytest.raises(ValidationError):
-            InvokeRequest(messages=[])
+            InvokeRequest(input={})
+
+    def test_invoke_request_accepts_stream(self):
+        """InvokeRequest can have stream flag."""
+        req = InvokeRequest(input={"task": "test"}, stream=True)
+        assert req.stream is True
 
     def test_invoke_request_accepts_context(self):
         """InvokeRequest can have optional context."""
-        # This test will FAIL - we need to add context field
         req = InvokeRequest(
-            messages=[{"role": "user", "content": "hello"}],
+            input={"task": "test"},
             context={"user_id": "123"}
         )
         assert req.context == {"user_id": "123"}
@@ -79,24 +85,25 @@ class TestInvokeRequest:
 class TestInvokeResponse:
     """Tests for InvokeResponse type."""
 
-    def test_invoke_response_requires_content(self):
-        """InvokeResponse must have content."""
+    def test_invoke_response_requires_output(self):
+        """InvokeResponse must have output."""
         with pytest.raises(ValidationError):
-            InvokeResponse(messages=[])  # type: ignore
+            InvokeResponse()  # type: ignore
 
-    def test_invoke_response_requires_messages(self):
-        """InvokeResponse must have messages."""
-        with pytest.raises(ValidationError):
-            InvokeResponse(content="hello")  # type: ignore
+    def test_invoke_response_accepts_string_output(self):
+        """InvokeResponse accepts string output."""
+        resp = InvokeResponse(output="Result")
+        assert resp.output == "Result"
 
-    def test_invoke_response_accepts_valid_input(self):
-        """InvokeResponse accepts content and messages."""
-        resp = InvokeResponse(
-            content="Hello!",
-            messages=[{"role": "assistant", "content": "Hello!"}]
-        )
-        assert resp.content == "Hello!"
-        assert len(resp.messages) == 1
+    def test_invoke_response_accepts_dict_output(self):
+        """InvokeResponse accepts dict output."""
+        resp = InvokeResponse(output={"result": 42, "status": "ok"})
+        assert resp.output == {"result": 42, "status": "ok"}
+
+    def test_invoke_response_accepts_any_output(self):
+        """InvokeResponse accepts any type of output."""
+        resp = InvokeResponse(output=[1, 2, 3])
+        assert resp.output == [1, 2, 3]
 
 
 class TestChatRequest:
@@ -120,32 +127,61 @@ class TestChatRequest:
 
     def test_chat_request_messages_cannot_be_empty(self):
         """ChatRequest must have at least one message."""
-        # This test will FAIL - we need to add min_length validation
         with pytest.raises(ValidationError):
             ChatRequest(messages=[])
+
+    def test_chat_request_accepts_stream(self):
+        """ChatRequest can have stream flag."""
+        req = ChatRequest(
+            messages=[{"role": "user", "content": "hello"}],
+            stream=True
+        )
+        assert req.stream is True
+
+    def test_chat_request_accepts_context(self):
+        """ChatRequest can have optional context."""
+        req = ChatRequest(
+            messages=[{"role": "user", "content": "hello"}],
+            context={"user_id": "123"}
+        )
+        assert req.context == {"user_id": "123"}
 
 
 class TestChatResponse:
     """Tests for ChatResponse type."""
 
-    def test_chat_response_requires_content(self):
-        """ChatResponse must have content."""
+    def test_chat_response_requires_output(self):
+        """ChatResponse must have output."""
         with pytest.raises(ValidationError):
             ChatResponse(messages=[])  # type: ignore
 
     def test_chat_response_requires_messages(self):
         """ChatResponse must have messages."""
         with pytest.raises(ValidationError):
-            ChatResponse(content="hello")  # type: ignore
+            ChatResponse(output="hello")  # type: ignore
 
     def test_chat_response_accepts_valid_input(self):
-        """ChatResponse accepts content and messages."""
+        """ChatResponse accepts output and messages."""
         resp = ChatResponse(
-            content="I'm doing well!",
+            output="I'm doing well!",
             messages=[
                 {"role": "user", "content": "how are you?"},
                 {"role": "assistant", "content": "I'm doing well!"},
             ]
         )
-        assert resp.content == "I'm doing well!"
+        assert resp.output == "I'm doing well!"
         assert len(resp.messages) == 2
+
+    def test_chat_response_messages_with_tool_calls(self):
+        """ChatResponse messages can include tool calls."""
+        resp = ChatResponse(
+            output="The weather is 72°F",
+            messages=[
+                {"role": "user", "content": "What's the weather?"},
+                {"role": "assistant", "content": None, "tool_calls": [{"id": "1", "type": "function", "function": {"name": "get_weather", "arguments": "{}"}}]},
+                {"role": "tool", "content": "72°F", "tool_call_id": "1"},
+                {"role": "assistant", "content": "The weather is 72°F"},
+            ]
+        )
+        assert resp.output == "The weather is 72°F"
+        assert len(resp.messages) == 4

@@ -42,47 +42,59 @@ class OpenAIAdapter(BaseAdapter):
     def model(self) -> str:
         return self._model
 
-    def _to_openai_message(self, message: Message) -> dict[str, str]:
+    def _to_openai_message(self, message: Message) -> dict[str, Any]:
         """Convert a Reminix message to OpenAI format."""
-        return {"role": message.role, "content": message.content}
+        result: dict[str, Any] = {"role": message.role, "content": message.content}
+        if message.tool_calls:
+            result["tool_calls"] = message.tool_calls
+        if message.tool_call_id:
+            result["tool_call_id"] = message.tool_call_id
+        if message.name:
+            result["name"] = message.name
+        return result
 
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
         """Handle an invoke request.
 
+        For task-oriented operations. Expects input with 'messages' key
+        or a 'prompt' key for simple text generation.
+
         Args:
-            request: The invoke request with messages.
+            request: The invoke request with input data.
 
         Returns:
-            The invoke response with the assistant's reply.
+            The invoke response with the output.
         """
-        # Convert messages to OpenAI format
-        openai_messages = [self._to_openai_message(m) for m in request.messages]
+        # Check if input contains messages
+        if "messages" in request.input:
+            messages = request.input["messages"]
+        elif "prompt" in request.input:
+            messages = [{"role": "user", "content": request.input["prompt"]}]
+        else:
+            # Use input as a single user message
+            messages = [{"role": "user", "content": str(request.input)}]
 
         # Call OpenAI API
         response = await self._client.chat.completions.create(
             model=self._model,
-            messages=openai_messages,  # type: ignore
+            messages=messages,  # type: ignore
         )
 
         # Extract content from response
-        content = response.choices[0].message.content or ""
+        output = response.choices[0].message.content or ""
 
-        # Build response messages (original + assistant response)
-        response_messages = [
-            {"role": m.role, "content": m.content} for m in request.messages
-        ]
-        response_messages.append({"role": "assistant", "content": content})
-
-        return InvokeResponse(content=content, messages=response_messages)
+        return InvokeResponse(output=output)
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
         """Handle a chat request.
+
+        For conversational interactions.
 
         Args:
             request: The chat request with messages.
 
         Returns:
-            The chat response with the assistant's reply.
+            The chat response with output and messages.
         """
         # Convert messages to OpenAI format
         openai_messages = [self._to_openai_message(m) for m in request.messages]
@@ -94,15 +106,15 @@ class OpenAIAdapter(BaseAdapter):
         )
 
         # Extract content from response
-        content = response.choices[0].message.content or ""
+        output = response.choices[0].message.content or ""
 
         # Build response messages (original + assistant response)
-        response_messages = [
+        response_messages: list[dict[str, Any]] = [
             {"role": m.role, "content": m.content} for m in request.messages
         ]
-        response_messages.append({"role": "assistant", "content": content})
+        response_messages.append({"role": "assistant", "content": output})
 
-        return ChatResponse(content=content, messages=response_messages)
+        return ChatResponse(output=output, messages=response_messages)
 
 
 def wrap(

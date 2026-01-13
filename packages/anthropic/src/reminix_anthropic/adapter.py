@@ -47,7 +47,7 @@ class AnthropicAdapter(BaseAdapter):
 
     def _extract_system_and_messages(
         self, messages: list[Message]
-    ) -> tuple[str | None, list[dict[str, str]]]:
+    ) -> tuple[str | None, list[dict[str, Any]]]:
         """Extract system message and convert remaining messages to Anthropic format.
 
         Anthropic expects system message as a separate parameter, not in the messages list.
@@ -56,7 +56,7 @@ class AnthropicAdapter(BaseAdapter):
             Tuple of (system_message, messages_list)
         """
         system_message: str | None = None
-        anthropic_messages: list[dict[str, str]] = []
+        anthropic_messages: list[dict[str, Any]] = []
 
         for message in messages:
             if message.role == "system":
@@ -65,7 +65,7 @@ class AnthropicAdapter(BaseAdapter):
             else:
                 anthropic_messages.append({
                     "role": message.role,
-                    "content": message.content,
+                    "content": message.content or "",
                 })
 
         return system_message, anthropic_messages
@@ -80,16 +80,30 @@ class AnthropicAdapter(BaseAdapter):
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
         """Handle an invoke request.
 
+        For task-oriented operations. Expects input with 'messages' key
+        or a 'prompt' key for simple text generation.
+
         Args:
-            request: The invoke request with messages.
+            request: The invoke request with input data.
 
         Returns:
-            The invoke response with the assistant's reply.
+            The invoke response with the output.
         """
+        # Check if input contains messages
+        if "messages" in request.input:
+            messages_data = request.input["messages"]
+            # Convert to Message objects for processing
+            from reminix_runtime.types import Message
+            messages = [Message(**m) if isinstance(m, dict) else m for m in messages_data]
+        elif "prompt" in request.input:
+            from reminix_runtime.types import Message
+            messages = [Message(role="user", content=request.input["prompt"])]
+        else:
+            from reminix_runtime.types import Message
+            messages = [Message(role="user", content=str(request.input))]
+
         # Extract system message and convert messages
-        system_message, anthropic_messages = self._extract_system_and_messages(
-            request.messages
-        )
+        system_message, anthropic_messages = self._extract_system_and_messages(messages)
 
         # Build API call kwargs
         kwargs: dict[str, Any] = {
@@ -104,24 +118,20 @@ class AnthropicAdapter(BaseAdapter):
         response = await self._client.messages.create(**kwargs)
 
         # Extract content from response
-        content = self._extract_content(response)
+        output = self._extract_content(response)
 
-        # Build response messages (original + assistant response)
-        response_messages = [
-            {"role": m.role, "content": m.content} for m in request.messages
-        ]
-        response_messages.append({"role": "assistant", "content": content})
-
-        return InvokeResponse(content=content, messages=response_messages)
+        return InvokeResponse(output=output)
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
         """Handle a chat request.
+
+        For conversational interactions.
 
         Args:
             request: The chat request with messages.
 
         Returns:
-            The chat response with the assistant's reply.
+            The chat response with output and messages.
         """
         # Extract system message and convert messages
         system_message, anthropic_messages = self._extract_system_and_messages(
@@ -141,15 +151,15 @@ class AnthropicAdapter(BaseAdapter):
         response = await self._client.messages.create(**kwargs)
 
         # Extract content from response
-        content = self._extract_content(response)
+        output = self._extract_content(response)
 
         # Build response messages (original + assistant response)
-        response_messages = [
+        response_messages: list[dict[str, Any]] = [
             {"role": m.role, "content": m.content} for m in request.messages
         ]
-        response_messages.append({"role": "assistant", "content": content})
+        response_messages.append({"role": "assistant", "content": output})
 
-        return ChatResponse(content=content, messages=response_messages)
+        return ChatResponse(output=output, messages=response_messages)
 
 
 def wrap(

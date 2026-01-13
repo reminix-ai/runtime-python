@@ -20,16 +20,20 @@ class MyAgent(Agent):
         return "my-agent"
     
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        # Your agent logic here
-        return InvokeResponse(
-            content="Hello!",
-            messages=[*request.messages, {"role": "assistant", "content": "Hello!"}]
-        )
+        # Task-oriented operation
+        task = request.input.get("task", "unknown")
+        return InvokeResponse(output=f"Completed: {task}")
     
     async def chat(self, request: ChatRequest) -> ChatResponse:
+        # Conversational interaction
+        user_msg = request.messages[-1].content
+        response = f"You said: {user_msg}"
         return ChatResponse(
-            content="Hello!",
-            messages=[*request.messages, {"role": "assistant", "content": "Hello!"}]
+            output=response,
+            messages=[
+                *[{"role": m.role, "content": m.content} for m in request.messages],
+                {"role": "assistant", "content": response}
+            ]
         )
 
 # Serve the agent
@@ -44,37 +48,66 @@ The runtime creates a REST server with the following endpoints:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/agents` | GET | List available agents |
-| `/agents/{name}/invoke` | POST | Single-turn invocation |
-| `/agents/{name}/chat` | POST | Multi-turn chat |
+| `/agents/{name}/invoke` | POST | Task-oriented invocation |
+| `/agents/{name}/chat` | POST | Multi-turn conversation |
 
-### Request Format
+### Invoke Endpoint
 
+For task-oriented operations that take arbitrary input and return output.
+
+**Request:**
 ```json
 {
-  "messages": [
-    {"role": "system", "content": "You are helpful"},
-    {"role": "user", "content": "Hello!"}
-  ],
+  "input": {
+    "task": "summarize",
+    "text": "Lorem ipsum..."
+  },
+  "stream": false,
   "context": {}
 }
 ```
 
-### Response Format
-
+**Response:**
 ```json
 {
-  "content": "Hi there! How can I help?",
+  "output": "Summary: ..."
+}
+```
+
+### Chat Endpoint
+
+For conversational interactions with message history.
+
+**Request:**
+```json
+{
   "messages": [
     {"role": "system", "content": "You are helpful"},
-    {"role": "user", "content": "Hello!"},
-    {"role": "assistant", "content": "Hi there! How can I help?"}
+    {"role": "user", "content": "What's the weather?"}
+  ],
+  "stream": false,
+  "context": {}
+}
+```
+
+**Response:**
+```json
+{
+  "output": "The weather is 72°F and sunny!",
+  "messages": [
+    {"role": "user", "content": "What's the weather?"},
+    {"role": "assistant", "content": null, "tool_calls": [...]},
+    {"role": "tool", "content": "72°F, sunny", "tool_call_id": "..."},
+    {"role": "assistant", "content": "The weather is 72°F and sunny!"}
   ]
 }
 ```
 
+The `output` field contains the final answer, while `messages` includes the full execution history (useful for agentic workflows with tool calls).
+
 ## Framework Adapters
 
-Instead of creating custom adapters, use our pre-built adapters for popular frameworks:
+Instead of creating custom agents, use our pre-built adapters for popular frameworks:
 
 | Package | Framework |
 |---------|-----------|
@@ -145,23 +178,45 @@ class MyFrameworkAdapter(BaseAdapter):
         return self._name
     
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        # Convert messages and call your framework
-        result = await self._client.generate(request.messages)
-        return InvokeResponse(
-            content=result,
-            messages=[*request.messages, {"role": "assistant", "content": result}]
-        )
+        # Pass input to your framework
+        result = await self._client.run(request.input)
+        return InvokeResponse(output=result)
     
     async def chat(self, request: ChatRequest) -> ChatResponse:
-        result = await self._client.generate(request.messages)
+        # Convert messages and call your framework
+        result = await self._client.chat(request.messages)
         return ChatResponse(
-            content=result,
-            messages=[*request.messages, {"role": "assistant", "content": result}]
+            output=result,
+            messages=[
+                *[{"role": m.role, "content": m.content} for m in request.messages],
+                {"role": "assistant", "content": result}
+            ]
         )
 
 # Optional: provide a wrap() factory function
 def wrap(client, name: str = "my-framework") -> MyFrameworkAdapter:
     return MyFrameworkAdapter(client, name)
+```
+
+### Request/Response Types
+
+```python
+class InvokeRequest:
+    input: dict[str, Any]      # Arbitrary input for task execution
+    stream: bool = False       # Whether to stream the response
+    context: dict[str, Any] | None  # Optional metadata
+
+class InvokeResponse:
+    output: Any                # The result (can be any type)
+
+class ChatRequest:
+    messages: list[Message]    # Conversation history
+    stream: bool = False       # Whether to stream the response
+    context: dict[str, Any] | None  # Optional metadata
+
+class ChatResponse:
+    output: str                # The final answer
+    messages: list[dict]       # Full execution history
 ```
 
 ## Links
