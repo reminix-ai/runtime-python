@@ -7,7 +7,7 @@ from ..types import InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
 
 class Agent(ABC):
-    """Base class for all agents and adapters."""
+    """Base class for all agents."""
 
     @property
     @abstractmethod
@@ -29,6 +29,30 @@ class Agent(ABC):
         self, request: InvokeRequest
     ) -> AsyncIterator[str]:
         """Handle a streaming invoke request."""
+        raise NotImplementedError("Streaming not implemented for this agent")
+        # Unreachable, but required to make this an async generator
+        yield  # type: ignore[misc]
+
+    async def chat_stream(
+        self, request: ChatRequest
+    ) -> AsyncIterator[str]:
+        """Handle a streaming chat request."""
+        raise NotImplementedError("Streaming not implemented for this agent")
+        # Unreachable, but required to make this an async generator
+        yield  # type: ignore[misc]
+
+
+class BaseAdapter(Agent):
+    """Base class for framework adapters.
+    
+    Extend this class when wrapping an existing AI framework
+    (e.g., LangChain, OpenAI, Anthropic).
+    """
+
+    async def invoke_stream(
+        self, request: InvokeRequest
+    ) -> AsyncIterator[str]:
+        """Handle a streaming invoke request."""
         raise NotImplementedError("Streaming not implemented for this adapter")
         # Unreachable, but required to make this an async generator
         yield  # type: ignore[misc]
@@ -40,7 +64,3 @@ class Agent(ABC):
         raise NotImplementedError("Streaming not implemented for this adapter")
         # Unreachable, but required to make this an async generator
         yield  # type: ignore[misc]
-
-
-# Alias for backwards compatibility
-BaseAdapter = Agent

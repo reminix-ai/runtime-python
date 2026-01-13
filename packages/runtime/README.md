@@ -92,7 +92,7 @@ Start the runtime server.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `agents` | `list[BaseAdapter]` | required | List of wrapped agents |
+| `agents` | `list[Agent]` | required | List of agents |
 | `port` | `int` | `8080` | Port to listen on |
 | `host` | `str` | `"0.0.0.0"` | Host to bind to |
 
@@ -109,7 +109,7 @@ app = create_app([MyAgent()])
 
 ### `Agent`
 
-Abstract base class for all agents.
+Abstract base class for building agents from scratch.
 
 ```python
 class Agent(ABC):
@@ -128,7 +128,41 @@ class Agent(ABC):
     async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]: ...
 ```
 
-> **Note:** `BaseAdapter` is available as an alias for `Agent` for backwards compatibility.
+### `BaseAdapter`
+
+Extends `Agent`. Use this when wrapping an existing AI framework.
+
+```python
+from reminix_runtime import BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
+
+class MyFrameworkAdapter(BaseAdapter):
+    def __init__(self, client, name: str = "my-framework"):
+        self._client = client
+        self._name = name
+    
+    @property
+    def name(self) -> str:
+        return self._name
+    
+    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
+        # Convert messages and call your framework
+        result = await self._client.generate(request.messages)
+        return InvokeResponse(
+            content=result,
+            messages=[*request.messages, {"role": "assistant", "content": result}]
+        )
+    
+    async def chat(self, request: ChatRequest) -> ChatResponse:
+        result = await self._client.generate(request.messages)
+        return ChatResponse(
+            content=result,
+            messages=[*request.messages, {"role": "assistant", "content": result}]
+        )
+
+# Optional: provide a wrap() factory function
+def wrap(client, name: str = "my-framework") -> MyFrameworkAdapter:
+    return MyFrameworkAdapter(client, name)
+```
 
 ## Links
 
