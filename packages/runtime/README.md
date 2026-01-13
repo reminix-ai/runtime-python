@@ -44,8 +44,8 @@ The runtime creates a REST server with the following endpoints:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/agents` | GET | List available agents |
-| `/{agent}/invoke` | POST | Single-turn invocation |
-| `/{agent}/chat` | POST | Multi-turn chat |
+| `/agents/{name}/invoke` | POST | Single-turn invocation |
+| `/agents/{name}/chat` | POST | Multi-turn chat |
 
 ### Request Format
 

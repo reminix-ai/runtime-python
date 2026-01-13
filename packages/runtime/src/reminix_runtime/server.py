@@ -37,7 +37,7 @@ def create_app(agents: list[Agent]) -> FastAPI:
         """List available agents."""
         return {"agents": list(agent_map.keys())}
 
-    @app.post("/{agent_name}/invoke")
+    @app.post("/agents/{agent_name}/invoke")
     async def invoke(agent_name: str, request: InvokeRequest) -> InvokeResponse:
         """Invoke an agent."""
         agent = agent_map.get(agent_name)
@@ -46,7 +46,7 @@ def create_app(agents: list[Agent]) -> FastAPI:
 
         return await agent.invoke(request)
 
-    @app.post("/{agent_name}/chat")
+    @app.post("/agents/{agent_name}/chat")
     async def chat(agent_name: str, request: ChatRequest) -> ChatResponse:
         """Chat with an agent."""
         agent = agent_map.get(agent_name)

@@ -91,13 +91,13 @@ class TestInvokeEndpoint:
 
     @pytest.mark.asyncio
     async def test_invoke_success(self):
-        """POST /{agent}/invoke should return invoke response."""
+        """POST /agents/{agent}/invoke should return invoke response."""
         app = create_app([MockAdapter("my-agent")])
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.post(
-                "/my-agent/invoke",
+                "/agents/my-agent/invoke",
                 json={"messages": [{"role": "user", "content": "hello"}]},
             )
 
@@ -108,13 +108,13 @@ class TestInvokeEndpoint:
 
     @pytest.mark.asyncio
     async def test_invoke_with_context(self):
-        """POST /{agent}/invoke should accept context."""
+        """POST /agents/{agent}/invoke should accept context."""
         app = create_app([MockAdapter("my-agent")])
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.post(
-                "/my-agent/invoke",
+                "/agents/my-agent/invoke",
                 json={
                     "messages": [{"role": "user", "content": "hello"}],
                     "context": {"user_id": "123"},
@@ -125,13 +125,13 @@ class TestInvokeEndpoint:
 
     @pytest.mark.asyncio
     async def test_invoke_unknown_agent_returns_404(self):
-        """POST /{agent}/invoke should return 404 for unknown agent."""
+        """POST /agents/{agent}/invoke should return 404 for unknown agent."""
         app = create_app([MockAdapter("my-agent")])
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.post(
-                "/unknown-agent/invoke",
+                "/agents/unknown-agent/invoke",
                 json={"messages": [{"role": "user", "content": "hello"}]},
             )
 
@@ -140,13 +140,13 @@ class TestInvokeEndpoint:
 
     @pytest.mark.asyncio
     async def test_invoke_invalid_request_returns_422(self):
-        """POST /{agent}/invoke should return 422 for invalid request."""
+        """POST /agents/{agent}/invoke should return 422 for invalid request."""
         app = create_app([MockAdapter("my-agent")])
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.post(
-                "/my-agent/invoke",
+                "/agents/my-agent/invoke",
                 json={"messages": []},  # Empty messages not allowed
             )
 
@@ -158,13 +158,13 @@ class TestChatEndpoint:
 
     @pytest.mark.asyncio
     async def test_chat_success(self):
-        """POST /{agent}/chat should return chat response."""
+        """POST /agents/{agent}/chat should return chat response."""
         app = create_app([MockAdapter("my-agent")])
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.post(
-                "/my-agent/chat",
+                "/agents/my-agent/chat",
                 json={"messages": [{"role": "user", "content": "hi there"}]},
             )
 
@@ -175,13 +175,13 @@ class TestChatEndpoint:
 
     @pytest.mark.asyncio
     async def test_chat_unknown_agent_returns_404(self):
-        """POST /{agent}/chat should return 404 for unknown agent."""
+        """POST /agents/{agent}/chat should return 404 for unknown agent."""
         app = create_app([MockAdapter("my-agent")])
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.post(
-                "/unknown-agent/chat",
+                "/agents/unknown-agent/chat",
                 json={"messages": [{"role": "user", "content": "hello"}]},
             )
 
