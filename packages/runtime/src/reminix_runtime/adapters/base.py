@@ -1,9 +1,18 @@
 """Base agent and adapter interface."""
 
 from abc import ABC, abstractmethod
+import json
+import re
 from typing import Any, AsyncIterator, Callable, Awaitable, TypeVar
 
-from ..types import InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
+from ..types import InvokeRequest, InvokeResponse, ChatRequest, ChatResponse, Message
+from .. import __version__
+
+# ASGI type aliases
+Scope = dict[str, Any]
+Receive = Callable[[], Awaitable[dict[str, Any]]]
+Send = Callable[[dict[str, Any]], Awaitable[None]]
+ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
 
 # Type aliases for handlers
 InvokeHandler = Callable[[InvokeRequest], Awaitable[InvokeResponse]]
@@ -65,6 +74,204 @@ class AgentBase(ABC):
         raise NotImplementedError("Streaming not implemented for this agent")
         # Unreachable, but required to make this an async generator
         yield  # type: ignore[misc]
+
+    def to_asgi(self) -> ASGIApp:
+        """Create an ASGI application for this agent.
+
+        Works with any ASGI server (uvicorn, hypercorn, daphne) or serverless
+        platforms that support ASGI (AWS Lambda with Mangum, etc.).
+
+        Example:
+            ```python
+            from mangum import Mangum
+
+            agent = Agent("my-agent")
+
+            @agent.on_invoke
+            async def handle(request):
+                return {"output": "Hello!"}
+
+            # AWS Lambda handler
+            handler = Mangum(agent.to_asgi())
+            ```
+        """
+        agent = self
+
+        async def asgi_app(scope: Scope, receive: Receive, send: Send) -> None:
+            if scope["type"] != "http":
+                return
+
+            path = scope["path"]
+            method = scope["method"]
+
+            # Helper to send JSON response
+            async def json_response(data: Any, status: int = 200) -> None:
+                body = json.dumps(data).encode("utf-8")
+                await send({
+                    "type": "http.response.start",
+                    "status": status,
+                    "headers": [
+                        [b"content-type", b"application/json"],
+                        [b"access-control-allow-origin", b"*"],
+                        [b"access-control-allow-methods", b"GET, POST, OPTIONS"],
+                        [b"access-control-allow-headers", b"content-type"],
+                    ],
+                })
+                await send({
+                    "type": "http.response.body",
+                    "body": body,
+                })
+
+            # Helper to send SSE stream
+            async def sse_response(stream: AsyncIterator[str]) -> None:
+                await send({
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": [
+                        [b"content-type", b"text/event-stream"],
+                        [b"cache-control", b"no-cache"],
+                        [b"connection", b"keep-alive"],
+                        [b"access-control-allow-origin", b"*"],
+                    ],
+                })
+                try:
+                    async for chunk in stream:
+                        await send({
+                            "type": "http.response.body",
+                            "body": f"data: {chunk}\n\n".encode("utf-8"),
+                            "more_body": True,
+                        })
+                    await send({
+                        "type": "http.response.body",
+                        "body": b"data: [DONE]\n\n",
+                        "more_body": False,
+                    })
+                except NotImplementedError as e:
+                    await send({
+                        "type": "http.response.body",
+                        "body": f'data: {{"error": "{str(e)}"}}\n\n'.encode("utf-8"),
+                        "more_body": False,
+                    })
+
+            # Helper to read request body
+            async def read_body() -> bytes:
+                body = b""
+                while True:
+                    message = await receive()
+                    body += message.get("body", b"")
+                    if not message.get("more_body", False):
+                        break
+                return body
+
+            # Handle CORS preflight
+            if method == "OPTIONS":
+                await send({
+                    "type": "http.response.start",
+                    "status": 204,
+                    "headers": [
+                        [b"access-control-allow-origin", b"*"],
+                        [b"access-control-allow-methods", b"GET, POST, OPTIONS"],
+                        [b"access-control-allow-headers", b"content-type"],
+                    ],
+                })
+                await send({"type": "http.response.body", "body": b""})
+                return
+
+            try:
+                # GET /health
+                if method == "GET" and path == "/health":
+                    await json_response({"status": "ok"})
+                    return
+
+                # GET /info
+                if method == "GET" and path == "/info":
+                    await json_response({
+                        "runtime": {
+                            "name": "reminix-runtime",
+                            "version": __version__,
+                            "language": "python",
+                            "framework": "asgi",
+                        },
+                        "agents": [
+                            {
+                                "name": agent.name,
+                                **agent.metadata,
+                                "invoke": {"streaming": agent.invoke_streaming},
+                                "chat": {"streaming": agent.chat_streaming},
+                            }
+                        ],
+                    })
+                    return
+
+                # POST /agents/{name}/invoke
+                invoke_match = re.match(r"^/agents/([^/]+)/invoke$", path)
+                if method == "POST" and invoke_match:
+                    agent_name = invoke_match.group(1)
+                    if agent_name != agent.name:
+                        await json_response({"error": f"Agent '{agent_name}' not found"}, 404)
+                        return
+
+                    body_bytes = await read_body()
+                    body = json.loads(body_bytes)
+
+                    if not body.get("input"):
+                        await json_response({"error": "input is required and must not be empty"}, 400)
+                        return
+
+                    request = InvokeRequest(
+                        input=body["input"],
+                        context=body.get("context"),
+                        stream=body.get("stream", False),
+                    )
+
+                    if request.stream:
+                        await sse_response(agent.invoke_stream(request))
+                        return
+
+                    response = await agent.invoke(request)
+                    await json_response({"output": response.output})
+                    return
+
+                # POST /agents/{name}/chat
+                chat_match = re.match(r"^/agents/([^/]+)/chat$", path)
+                if method == "POST" and chat_match:
+                    agent_name = chat_match.group(1)
+                    if agent_name != agent.name:
+                        await json_response({"error": f"Agent '{agent_name}' not found"}, 404)
+                        return
+
+                    body_bytes = await read_body()
+                    body = json.loads(body_bytes)
+
+                    if not body.get("messages"):
+                        await json_response({"error": "messages is required and must not be empty"}, 400)
+                        return
+
+                    messages = [Message(**m) for m in body["messages"]]
+                    request = ChatRequest(
+                        messages=messages,
+                        context=body.get("context"),
+                        stream=body.get("stream", False),
+                    )
+
+                    if request.stream:
+                        await sse_response(agent.chat_stream(request))
+                        return
+
+                    response = await agent.chat(request)
+                    await json_response({
+                        "output": response.output,
+                        "messages": response.messages,  # Already list[dict]
+                    })
+                    return
+
+                # Not found
+                await json_response({"error": "Not found"}, 404)
+
+            except Exception as e:
+                await json_response({"error": str(e)}, 500)
+
+        return asgi_app
 
 
 class Agent(AgentBase):

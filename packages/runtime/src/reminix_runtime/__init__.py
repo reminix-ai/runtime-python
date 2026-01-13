@@ -2,7 +2,7 @@ __version__ = "0.1.0"
 
 from .server import serve, create_app
 from .types import Role, Message, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
-from .adapters.base import AgentBase, Agent, BaseAdapter
+from .adapters.base import AgentBase, Agent, BaseAdapter, ASGIApp
 
 __all__ = [
     "__version__",
@@ -17,4 +17,5 @@ __all__ = [
     "AgentBase",
     "Agent",
     "BaseAdapter",
+    "ASGIApp",
 ]

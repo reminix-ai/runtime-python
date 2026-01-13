@@ -195,6 +195,31 @@ async def handle_chat_stream(request: ChatRequest):
 | `on_chat(fn)` | Register chat handler |
 | `on_invoke_stream(fn)` | Register streaming invoke handler |
 | `on_chat_stream(fn)` | Register streaming chat handler |
+| `to_asgi()` | Returns an ASGI app for serverless |
+
+### `agent.to_asgi()`
+
+Returns an ASGI application for serverless deployments.
+
+```python
+# AWS Lambda with Mangum
+from mangum import Mangum
+from reminix_runtime import Agent, InvokeResponse
+
+agent = Agent("my-agent")
+
+@agent.on_invoke
+async def handle(request):
+    return InvokeResponse(output="Hello!")
+
+# Lambda handler
+handler = Mangum(agent.to_asgi())
+```
+
+Works with:
+- **AWS Lambda** - Use Mangum adapter
+- **GCP Cloud Functions** - Use functions-framework with ASGI
+- **Any ASGI server** - uvicorn, hypercorn, daphne
 
 ### `BaseAdapter`
 
