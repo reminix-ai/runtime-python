@@ -68,10 +68,8 @@ The runtime creates a REST server with the following endpoints:
       "name": "my-agent",
       "type": "adapter",
       "adapter": "langchain",
-      "endpoints": {
-        "invoke": "/agents/my-agent/invoke",
-        "chat": "/agents/my-agent/chat"
-      }
+      "invoke": { "streaming": true },
+      "chat": { "streaming": true }
     }
   ]
 }
@@ -172,6 +170,10 @@ Abstract base class for building agents from scratch.
 
 ```python
 class Agent(ABC):
+    # Set to True if streaming is implemented
+    invoke_streaming: bool = False
+    chat_streaming: bool = False
+
     @property
     @abstractmethod
     def name(self) -> str: ...
@@ -182,7 +184,7 @@ class Agent(ABC):
     @abstractmethod
     async def chat(self, request: ChatRequest) -> ChatResponse: ...
     
-    # Optional streaming methods
+    # Override these if streaming is supported
     async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]: ...
     async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]: ...
 ```
@@ -197,6 +199,10 @@ from reminix_runtime import BaseAdapter, InvokeRequest, InvokeResponse, ChatRequ
 class MyFrameworkAdapter(BaseAdapter):
     # Adapter name shown in /info endpoint
     adapter_name = "my-framework"
+    
+    # BaseAdapter defaults both to True; override if your adapter doesn't support streaming
+    # invoke_streaming = False
+    # chat_streaming = False
 
     def __init__(self, client, name: str = "my-framework"):
         self._client = client
