@@ -2662,6 +2662,21 @@ name = "reminix-runtime-monorepo"
 version = "0.0.0"
 source = { virtual = "." }
 
+[package.optional-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
+]
+provides-extras = ["dev"]
+
 [[package]]
 name = "requests"
 version = "2.32.5"

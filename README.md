@@ -70,7 +70,12 @@ See the [examples/](./examples) directory for more.
 ### Running Tests
 
 ```bash
-uv run pytest
+# Run all tests across all packages
+uv run --extra dev pytest
+
+# Run tests for a specific package
+cd packages/runtime
+uv run --extra dev pytest
 ```
 
 ### Building
