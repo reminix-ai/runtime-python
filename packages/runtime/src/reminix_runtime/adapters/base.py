@@ -30,9 +30,13 @@ class BaseAdapter(ABC):
     ) -> AsyncIterator[str]:
         """Handle a streaming invoke request."""
         raise NotImplementedError("Streaming not implemented for this adapter")
+        # Unreachable, but required to make this an async generator
+        yield  # type: ignore[misc]
 
     async def chat_stream(
         self, request: ChatRequest
     ) -> AsyncIterator[str]:
         """Handle a streaming chat request."""
         raise NotImplementedError("Streaming not implemented for this adapter")
+        # Unreachable, but required to make this an async generator
+        yield  # type: ignore[misc]
