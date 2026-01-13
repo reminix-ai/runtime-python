@@ -195,6 +195,9 @@ Extends `Agent`. Use this when wrapping an existing AI framework.
 from reminix_runtime import BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
 class MyFrameworkAdapter(BaseAdapter):
+    # Adapter name shown in /info endpoint
+    adapter_name = "my-framework"
+
     def __init__(self, client, name: str = "my-framework"):
         self._client = client
         self._name = name
