@@ -10,6 +10,9 @@ dependencies = [
     "llama-index>=0.10.0",
 ]
 
+[tool.uv.sources]
+reminix-runtime = { workspace = true }
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",

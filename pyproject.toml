@@ -8,3 +8,11 @@ requires-python = ">=3.10"
 
 [tool.uv.workspace]
 members = ["packages/*"]
+
+[tool.uv.sources]
+reminix-runtime = { workspace = true }
+reminix-langchain = { workspace = true }
+reminix-langgraph = { workspace = true }
+reminix-openai = { workspace = true }
+reminix-anthropic = { workspace = true }
+reminix-llamaindex = { workspace = true }

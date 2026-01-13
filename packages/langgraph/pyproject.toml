@@ -10,6 +10,9 @@ dependencies = [
     "langgraph>=0.2.0",
 ]
 
+[tool.uv.sources]
+reminix-runtime = { workspace = true }
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
