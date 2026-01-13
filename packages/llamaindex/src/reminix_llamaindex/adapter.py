@@ -24,6 +24,8 @@ class ChatEngine(Protocol):
 class LlamaIndexAdapter(BaseAdapter):
     """Adapter for LlamaIndex chat engines."""
 
+    adapter_name = "llamaindex"
+
     def __init__(self, engine: ChatEngine, name: str = "llamaindex-agent") -> None:
         """Initialize the adapter.
 

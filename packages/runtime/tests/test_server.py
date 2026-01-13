@@ -9,12 +9,15 @@ from reminix_runtime import (
     InvokeResponse,
     ChatRequest,
     ChatResponse,
+    __version__,
 )
 from reminix_runtime.server import create_app
 
 
 class MockAdapter(BaseAdapter):
     """A mock adapter for testing."""
+
+    adapter_name = "mock"
 
     def __init__(self, name: str = "mock-agent"):
         self._name = name
@@ -70,21 +73,34 @@ class TestHealthEndpoint:
         assert response.json() == {"status": "ok"}
 
 
-class TestAgentsEndpoint:
-    """Tests for listing available agents."""
+class TestInfoEndpoint:
+    """Tests for the discovery endpoint."""
 
     @pytest.mark.asyncio
-    async def test_list_agents(self):
-        """GET /agents should return list of agent names."""
+    async def test_info_endpoint(self):
+        """GET /info should return runtime info and agents."""
         app = create_app([MockAdapter("agent-one"), MockAdapter("agent-two")])
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
-            response = await client.get("/agents")
+            response = await client.get("/info")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["agents"] == ["agent-one", "agent-two"]
+
+        # Check runtime info
+        assert data["runtime"]["name"] == "reminix-runtime"
+        assert data["runtime"]["version"] == __version__
+        assert data["runtime"]["language"] == "python"
+        assert data["runtime"]["framework"] == "fastapi"
+
+        # Check agents
+        assert len(data["agents"]) == 2
+        assert data["agents"][0]["name"] == "agent-one"
+        assert data["agents"][0]["type"] == "adapter"
+        assert data["agents"][0]["adapter"] == "mock"
+        assert data["agents"][0]["endpoints"]["invoke"] == "/agents/agent-one/invoke"
+        assert data["agents"][0]["endpoints"]["chat"] == "/agents/agent-one/chat"
 
 
 class TestInvokeEndpoint:

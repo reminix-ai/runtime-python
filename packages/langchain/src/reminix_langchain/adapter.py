@@ -24,6 +24,8 @@ from reminix_runtime import (
 class LangChainAdapter(BaseAdapter):
     """Adapter for LangChain agents and runnables."""
 
+    adapter_name = "langchain"
+
     def __init__(self, agent: Runnable, name: str = "langchain-agent") -> None:
         """Initialize the adapter.
 

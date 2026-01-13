@@ -17,6 +17,8 @@ from reminix_runtime import (
 class OpenAIAdapter(BaseAdapter):
     """Adapter for OpenAI chat completions."""
 
+    adapter_name = "openai"
+
     def __init__(
         self,
         client: AsyncOpenAI,

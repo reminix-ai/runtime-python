@@ -61,7 +61,7 @@ if __name__ == "__main__":
     print("Server running on http://localhost:8080")
     print("\nEndpoints:")
     print("  GET  /health")
-    print("  GET  /agents")
+    print("  GET  /info")
     print("  POST /agents/langchain-basic/invoke")
     print("  POST /agents/langchain-basic/chat")
     serve([wrapped_agent], port=8080)

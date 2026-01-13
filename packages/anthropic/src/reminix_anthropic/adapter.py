@@ -17,6 +17,8 @@ from reminix_runtime import (
 class AnthropicAdapter(BaseAdapter):
     """Adapter for Anthropic messages API."""
 
+    adapter_name = "anthropic"
+
     def __init__(
         self,
         client: AsyncAnthropic,

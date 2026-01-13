@@ -1,8 +1,10 @@
 """Reminix Runtime Server."""
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from typing import Any
 
+from fastapi import FastAPI, HTTPException
+
+from . import __version__
 from .adapters.base import Agent
 from .types import InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
@@ -32,10 +34,28 @@ def create_app(agents: list[Agent]) -> FastAPI:
         """Health check endpoint."""
         return {"status": "ok"}
 
-    @app.get("/agents")
-    async def list_agents() -> dict[str, list[str]]:
-        """List available agents."""
-        return {"agents": list(agent_map.keys())}
+    @app.get("/info")
+    async def info() -> dict[str, Any]:
+        """Runtime discovery endpoint."""
+        return {
+            "runtime": {
+                "name": "reminix-runtime",
+                "version": __version__,
+                "language": "python",
+                "framework": "fastapi",
+            },
+            "agents": [
+                {
+                    "name": agent.name,
+                    **agent.metadata,
+                    "endpoints": {
+                        "invoke": f"/agents/{agent.name}/invoke",
+                        "chat": f"/agents/{agent.name}/chat",
+                    },
+                }
+                for agent in agents
+            ],
+        }
 
     @app.post("/agents/{agent_name}/invoke")
     async def invoke(agent_name: str, request: InvokeRequest) -> InvokeResponse:

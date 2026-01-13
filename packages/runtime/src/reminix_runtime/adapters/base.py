@@ -1,7 +1,7 @@
 """Base agent and adapter interface."""
 
 from abc import ABC, abstractmethod
-from typing import AsyncIterator
+from typing import Any, AsyncIterator
 
 from ..types import InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
@@ -14,6 +14,14 @@ class Agent(ABC):
     def name(self) -> str:
         """Return the agent name."""
         ...
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        """Return agent metadata for discovery.
+        
+        Override this to provide custom metadata.
+        """
+        return {"type": "agent"}
 
     @abstractmethod
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
@@ -48,6 +56,14 @@ class BaseAdapter(Agent):
     Extend this class when wrapping an existing AI framework
     (e.g., LangChain, OpenAI, Anthropic).
     """
+
+    # Subclasses should override this with the adapter name
+    adapter_name: str = "unknown"
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        """Return adapter metadata for discovery."""
+        return {"type": "adapter", "adapter": self.adapter_name}
 
     async def invoke_stream(
         self, request: InvokeRequest

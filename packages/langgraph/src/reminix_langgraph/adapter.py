@@ -23,6 +23,8 @@ from reminix_runtime import (
 class LangGraphAdapter(BaseAdapter):
     """Adapter for LangGraph compiled graphs."""
 
+    adapter_name = "langgraph"
+
     def __init__(self, graph: Any, name: str = "langgraph-agent") -> None:
         """Initialize the adapter.
 

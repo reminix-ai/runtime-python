@@ -47,9 +47,35 @@ The runtime creates a REST server with the following endpoints:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/agents` | GET | List available agents |
+| `/info` | GET | Runtime discovery (version, agents, endpoints) |
 | `/agents/{name}/invoke` | POST | Task-oriented invocation |
 | `/agents/{name}/chat` | POST | Multi-turn conversation |
+
+### Discovery Endpoint
+
+`GET /info` returns runtime information and available agents:
+
+```json
+{
+  "runtime": {
+    "name": "reminix-runtime",
+    "version": "0.1.0",
+    "language": "python",
+    "framework": "fastapi"
+  },
+  "agents": [
+    {
+      "name": "my-agent",
+      "type": "adapter",
+      "adapter": "langchain",
+      "endpoints": {
+        "invoke": "/agents/my-agent/invoke",
+        "chat": "/agents/my-agent/chat"
+      }
+    }
+  ]
+}
+```
 
 ### Invoke Endpoint
 
