@@ -57,6 +57,16 @@ pip install -e packages/langchain
 # ... etc
 ```
 
+### Running Examples
+
+```bash
+# Run the LangChain example
+cd examples/langchain-basic
+uv run python main.py
+```
+
+See the [examples/](./examples) directory for more.
+
 ### Running Tests
 
 ```bash
