@@ -3,15 +3,15 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
-from .adapters.base import BaseAdapter
+from .adapters.base import Agent
 from .types import InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
 
-def create_app(agents: list[BaseAdapter]) -> FastAPI:
+def create_app(agents: list[Agent]) -> FastAPI:
     """Create a FastAPI application with agent endpoints.
 
     Args:
-        agents: List of wrapped agents (adapters).
+        agents: List of agents.
 
     Returns:
         A FastAPI application instance.
@@ -23,7 +23,7 @@ def create_app(agents: list[BaseAdapter]) -> FastAPI:
         raise ValueError("At least one agent is required")
 
     # Build a lookup dict for agents by name
-    agent_map: dict[str, BaseAdapter] = {agent.name: agent for agent in agents}
+    agent_map: dict[str, Agent] = {agent.name: agent for agent in agents}
 
     app = FastAPI(title="Reminix Runtime")
 
@@ -58,11 +58,11 @@ def create_app(agents: list[BaseAdapter]) -> FastAPI:
     return app
 
 
-def serve(agents: list[BaseAdapter], port: int = 8080, host: str = "0.0.0.0") -> None:
+def serve(agents: list[Agent], port: int = 8080, host: str = "0.0.0.0") -> None:
     """Serve agents via REST API.
 
     Args:
-        agents: List of wrapped agents (adapters).
+        agents: List of agents.
         port: Port to serve on.
         host: Host to bind to.
     """

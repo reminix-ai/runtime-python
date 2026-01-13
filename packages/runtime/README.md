@@ -11,10 +11,10 @@ pip install reminix-runtime
 ## Quick Start
 
 ```python
-from reminix_runtime import serve, BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
+from reminix_runtime import serve, Agent, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
-# Create a custom adapter
-class MyAdapter(BaseAdapter):
+# Create a custom agent
+class MyAgent(Agent):
     @property
     def name(self) -> str:
         return "my-agent"
@@ -33,7 +33,7 @@ class MyAdapter(BaseAdapter):
         )
 
 # Serve the agent
-serve([MyAdapter()], port=8080)
+serve([MyAgent()], port=8080)
 ```
 
 ## How It Works
@@ -103,16 +103,16 @@ Create a FastAPI app without starting the server. Useful for testing or custom d
 ```python
 from reminix_runtime import create_app
 
-app = create_app([MyAdapter()])
+app = create_app([MyAgent()])
 # Use with uvicorn, gunicorn, etc.
 ```
 
-### `BaseAdapter`
+### `Agent`
 
-Abstract base class for all adapters.
+Abstract base class for all agents.
 
 ```python
-class BaseAdapter(ABC):
+class Agent(ABC):
     @property
     @abstractmethod
     def name(self) -> str: ...
@@ -127,6 +127,8 @@ class BaseAdapter(ABC):
     async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]: ...
     async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]: ...
 ```
+
+> **Note:** `BaseAdapter` is available as an alias for `Agent` for backwards compatibility.
 
 ## Links
 

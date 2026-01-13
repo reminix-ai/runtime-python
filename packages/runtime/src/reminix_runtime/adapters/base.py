@@ -1,4 +1,4 @@
-"""Base adapter interface."""
+"""Base agent and adapter interface."""
 
 from abc import ABC, abstractmethod
 from typing import AsyncIterator
@@ -6,8 +6,8 @@ from typing import AsyncIterator
 from ..types import InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
 
-class BaseAdapter(ABC):
-    """Base adapter that all framework adapters must implement."""
+class Agent(ABC):
+    """Base class for all agents and adapters."""
 
     @property
     @abstractmethod
@@ -40,3 +40,7 @@ class BaseAdapter(ABC):
         raise NotImplementedError("Streaming not implemented for this adapter")
         # Unreachable, but required to make this an async generator
         yield  # type: ignore[misc]
+
+
+# Alias for backwards compatibility
+BaseAdapter = Agent

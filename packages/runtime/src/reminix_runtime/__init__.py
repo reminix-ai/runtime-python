@@ -1,6 +1,6 @@
 from .server import serve, create_app
 from .types import Role, Message, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
-from .adapters.base import BaseAdapter
+from .adapters.base import Agent, BaseAdapter
 
 __all__ = [
     "serve",
@@ -11,5 +11,6 @@ __all__ = [
     "InvokeResponse",
     "ChatRequest",
     "ChatResponse",
+    "Agent",
     "BaseAdapter",
 ]
