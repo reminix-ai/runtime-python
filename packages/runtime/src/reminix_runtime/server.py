@@ -59,10 +59,8 @@ def create_app(agents: list[Agent]) -> FastAPI:
                 {
                     "name": agent.name,
                     **agent.metadata,
-                    "endpoints": {
-                        "invoke": f"/agents/{agent.name}/invoke",
-                        "chat": f"/agents/{agent.name}/chat",
-                    },
+                    "invoke": {"streaming": agent.invoke_streaming},
+                    "chat": {"streaming": agent.chat_streaming},
                 }
                 for agent in agents
             ],

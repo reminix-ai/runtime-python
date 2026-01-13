@@ -99,9 +99,8 @@ class TestInfoEndpoint:
         assert data["agents"][0]["name"] == "agent-one"
         assert data["agents"][0]["type"] == "adapter"
         assert data["agents"][0]["adapter"] == "mock"
-        assert data["agents"][0]["capabilities"]["streaming"] is True
-        assert data["agents"][0]["endpoints"]["invoke"] == "/agents/agent-one/invoke"
-        assert data["agents"][0]["endpoints"]["chat"] == "/agents/agent-one/chat"
+        assert data["agents"][0]["invoke"]["streaming"] is True
+        assert data["agents"][0]["chat"]["streaming"] is True
 
 
 class TestInvokeEndpoint:
