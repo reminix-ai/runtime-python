@@ -1,10 +1,20 @@
-name: Test
+name: Unit Tests
 
 on:
   push:
     branches: [main]
+    paths:
+      - "packages/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/test.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "packages/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/test.yml"
   workflow_dispatch:
 
 jobs:
