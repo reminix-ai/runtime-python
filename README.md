@@ -1,10 +1,11 @@
 # Reminix Runtime (Python)
 
-Build AI agents with simple code. REST APIs included. Adapters available for LangChain, LangGraph, OpenAI, Anthropic, and LlamaIndex.
+Your AI agent, live in minutes. Wrap your LangChain, OpenAI, Anthropic, or LlamaIndex agent in one line — deploy and start streaming responses to your users.
 
-**Two interaction modes:**
-- **Invoke** (Stateless) - Single request/response
-- **Chat** (Conversational) - With message history
+**Features:**
+- **Instant APIs**: Invoke and chat endpoints out of the box
+- **Real-Time Streaming**: Built-in SSE support
+- **Bring Your Framework**: Adapters for LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex
 
 ## Packages
 
