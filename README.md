@@ -26,16 +26,38 @@ pip install reminix-langchain
 
 ## Quick Start
 
+### With a Framework
+
 ```python
-from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
 from reminix_langchain import wrap
 from reminix_runtime import serve
 
-# Create your agent with any framework
-agent = create_agent(model="gpt-4o", tools=[...])
+agent = ChatOpenAI(model="gpt-4o")
 
-# Serve it via Reminix
-serve([wrap(agent)], port=8080)
+serve([wrap(agent, name="my-agent")], port=8080)
+```
+
+### With Decorators (No Framework)
+
+```python
+from reminix_runtime import Agent, serve
+
+agent = Agent("my-agent")
+
+@agent.on_invoke
+async def handle_invoke(request):
+    return {"output": f"Received: {request.input}"}
+
+@agent.on_chat
+async def handle_chat(request):
+    last_message = request.messages[-1].content if request.messages else ""
+    return {
+        "output": f"You said: {last_message}",
+        "messages": [*request.messages, {"role": "assistant", "content": f"You said: {last_message}"}]
+    }
+
+serve([agent], port=8080)
 ```
 
 ## Development
