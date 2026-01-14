@@ -1,11 +1,11 @@
 # Reminix Runtime (Python)
 
-Your AI agent, live in minutes. Wrap your LangChain, OpenAI, Anthropic, or LlamaIndex agent in one line — deploy and start streaming responses to your users.
+A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framework and get invoke/chat endpoints with built-in streaming.
 
 **Features:**
-- **Instant APIs**: Invoke and chat endpoints out of the box
-- **Real-Time Streaming**: Built-in SSE support
-- **Bring Your Framework**: Adapters for LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex
+- **REST API Server**: Invoke and chat endpoints powered by [FastAPI](https://fastapi.tiangolo.com)
+- **Streaming Support**: Server-Sent Events (SSE) out of the box
+- **Framework Adapters**: Pre-built integrations for LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex
 
 ## Packages
 
