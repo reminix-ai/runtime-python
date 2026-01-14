@@ -2695,7 +2695,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "langchain-core", marker = "extra == 'dev'", specifier = ">=0.3.0" },
+    { name = "langchain-core", marker = "extra == 'dev'", specifier = ">=1.2.0" },
     { name = "langgraph", specifier = ">=1.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
