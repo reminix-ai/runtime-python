@@ -1,6 +1,8 @@
 # reminix-runtime
 
-Your AI agent, live in minutes. Define handlers, serve your agents, and get instant APIs with built-in streaming.
+Deploy AI agents with instant REST APIs. Define handlers, wrap your existing framework, and serve with built-in streaming.
+
+**Works with:** LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex — or build custom agents from scratch.
 
 ## Installation
 
