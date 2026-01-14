@@ -45,8 +45,8 @@ The runtime creates a REST server with the following endpoints:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Runtime discovery (version, agents, endpoints) |
-| `/agents/{name}/invoke` | POST | Task-oriented invocation |
-| `/agents/{name}/chat` | POST | Multi-turn conversation |
+| `/agents/{name}/invoke` | POST | Stateless invocation |
+| `/agents/{name}/chat` | POST | Conversational chat |
 
 ### Discovery Endpoint
 
