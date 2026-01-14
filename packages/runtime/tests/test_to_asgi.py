@@ -1,9 +1,10 @@
 """Tests for the to_asgi() method."""
 
 import json
+
 import pytest
 
-from reminix_runtime import Agent, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
+from reminix_runtime import Agent, ChatRequest, ChatResponse, InvokeRequest, InvokeResponse
 
 
 async def call_asgi(app, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
@@ -91,8 +92,7 @@ class TestToAsgi:
         app = agent.to_asgi()
 
         status, body = await call_asgi(
-            app, "POST", "/agents/test-agent/invoke",
-            {"input": {"message": "hello"}}
+            app, "POST", "/agents/test-agent/invoke", {"input": {"message": "hello"}}
         )
 
         assert status == 200
@@ -101,7 +101,7 @@ class TestToAsgi:
     @pytest.mark.asyncio
     async def test_chat_endpoint(self):
         """ASGI app handles /agents/{name}/chat endpoint."""
-        from reminix_runtime import Message
+
         agent = Agent("test-agent")
 
         @agent.on_chat
@@ -109,16 +109,17 @@ class TestToAsgi:
             content = request.messages[0].content
             return ChatResponse(
                 output=f"Reply to: {content}",
-                messages=[
-                    {"role": m.role, "content": m.content} for m in request.messages
-                ] + [{"role": "assistant", "content": "hi!"}]
+                messages=[{"role": m.role, "content": m.content} for m in request.messages]
+                + [{"role": "assistant", "content": "hi!"}],
             )
 
         app = agent.to_asgi()
 
         status, body = await call_asgi(
-            app, "POST", "/agents/test-agent/chat",
-            {"messages": [{"role": "user", "content": "hello"}]}
+            app,
+            "POST",
+            "/agents/test-agent/chat",
+            {"messages": [{"role": "user", "content": "hello"}]},
         )
 
         assert status == 200
@@ -137,8 +138,7 @@ class TestToAsgi:
         app = agent.to_asgi()
 
         status, body = await call_asgi(
-            app, "POST", "/agents/wrong-agent/invoke",
-            {"input": {"task": "test"}}
+            app, "POST", "/agents/wrong-agent/invoke", {"input": {"task": "test"}}
         )
 
         assert status == 404

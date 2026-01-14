@@ -2,7 +2,7 @@
 
 import pytest
 
-from reminix_runtime import BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
+from reminix_runtime import BaseAdapter, ChatRequest, ChatResponse, InvokeRequest, InvokeResponse
 
 
 class TestBaseAdapterContract:
@@ -74,7 +74,7 @@ class TestConcreteAdapter:
                 user_msg = request.messages[-1].content
                 return ChatResponse(
                     output=f"Hello from chat: {user_msg}",
-                    messages=[{"role": "assistant", "content": f"Hello from chat: {user_msg}"}]
+                    messages=[{"role": "assistant", "content": f"Hello from chat: {user_msg}"}],
                 )
 
         return TestAdapter()

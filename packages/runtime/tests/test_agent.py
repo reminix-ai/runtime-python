@@ -2,7 +2,7 @@
 
 import pytest
 
-from reminix_runtime import Agent, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
+from reminix_runtime import Agent, ChatRequest, ChatResponse, InvokeRequest, InvokeResponse
 
 
 class TestAgentCreation:
@@ -164,7 +164,7 @@ class TestAgentChat:
             user_msg = request.messages[-1].content
             return ChatResponse(
                 output=f"Hello: {user_msg}",
-                messages=[{"role": "assistant", "content": f"Hello: {user_msg}"}]
+                messages=[{"role": "assistant", "content": f"Hello: {user_msg}"}],
             )
 
         request = ChatRequest(messages=[{"role": "user", "content": "hi"}])
@@ -270,8 +270,7 @@ class TestAgentWithContext:
             return InvokeResponse(output="done")
 
         request = InvokeRequest(
-            input={"task": "test"},
-            context={"user_id": "123", "session": "abc"}
+            input={"task": "test"}, context={"user_id": "123", "session": "abc"}
         )
         await agent.invoke(request)
 
@@ -290,8 +289,7 @@ class TestAgentWithContext:
             return ChatResponse(output="done", messages=[])
 
         request = ChatRequest(
-            messages=[{"role": "user", "content": "hi"}],
-            context={"user_id": "456"}
+            messages=[{"role": "user", "content": "hi"}], context={"user_id": "456"}
         )
         await agent.chat(request)
 

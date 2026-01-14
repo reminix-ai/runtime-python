@@ -1,7 +1,7 @@
 """Integration tests for OpenAI adapter."""
 
-import pytest
 import httpx
+import pytest
 from httpx import ASGITransport
 from openai import AsyncOpenAI
 
@@ -47,11 +47,7 @@ class TestOpenAIAdapter:
         response = await client.post(
             "/agents/test-openai/invoke",
             json={
-                "input": {
-                    "messages": [
-                        {"role": "user", "content": "Say 'test' and nothing else."}
-                    ]
-                }
+                "input": {"messages": [{"role": "user", "content": "Say 'test' and nothing else."}]}
             },
         )
 
@@ -64,9 +60,7 @@ class TestOpenAIAdapter:
         """Test chat endpoint."""
         response = await client.post(
             "/agents/test-openai/chat",
-            json={
-                "messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]
-            },
+            json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
         )
 
         assert response.status_code == 200
@@ -97,9 +91,7 @@ class TestOpenAIAdapter:
         async with client.stream(
             "POST",
             "/agents/test-openai/chat/stream",
-            json={
-                "messages": [{"role": "user", "content": "Say 'ok' and nothing else."}]
-            },
+            json={"messages": [{"role": "user", "content": "Say 'ok' and nothing else."}]},
         ) as response:
             assert response.status_code == 200
             chunks = []
@@ -107,4 +99,3 @@ class TestOpenAIAdapter:
                 if line.startswith("data: "):
                     chunks.append(line)
             assert len(chunks) > 0
-

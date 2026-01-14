@@ -1,13 +1,14 @@
 """LangChain adapter for Reminix Runtime."""
 
 import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from langchain_core.messages import (
-    BaseMessage,
-    HumanMessage,
     AIMessage,
     AIMessageChunk,
+    BaseMessage,
+    HumanMessage,
     SystemMessage,
     ToolMessage,
 )
@@ -15,10 +16,10 @@ from langchain_core.runnables import Runnable
 
 from reminix_runtime import (
     BaseAdapter,
-    InvokeRequest,
-    InvokeResponse,
     ChatRequest,
     ChatResponse,
+    InvokeRequest,
+    InvokeResponse,
     Message,
 )
 
@@ -55,7 +56,7 @@ class LangChainAdapter(BaseAdapter):
             return SystemMessage(content=content)
         elif role == "tool":
             # Tool messages require a tool_call_id
-            tool_call_id = getattr(message, 'tool_call_id', None) or "unknown"
+            tool_call_id = getattr(message, "tool_call_id", None) or "unknown"
             return ToolMessage(content=content, tool_call_id=tool_call_id)
         else:
             # Fallback to HumanMessage for unknown roles
@@ -107,7 +108,9 @@ class LangChainAdapter(BaseAdapter):
 
         # Extract output from response
         if isinstance(response, BaseMessage):
-            output = response.content if isinstance(response.content, str) else str(response.content)
+            output = (
+                response.content if isinstance(response.content, str) else str(response.content)
+            )
         elif isinstance(response, dict):
             output = response
         else:
@@ -134,7 +137,9 @@ class LangChainAdapter(BaseAdapter):
 
         # Extract content from response
         if isinstance(response, BaseMessage):
-            content = response.content if isinstance(response.content, str) else str(response.content)
+            content = (
+                response.content if isinstance(response.content, str) else str(response.content)
+            )
             response_message = self._to_reminix_message(response)
         else:
             content = str(response)

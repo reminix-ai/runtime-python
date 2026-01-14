@@ -1,9 +1,8 @@
 """Reminix Runtime Types."""
 
-from typing import Literal, Any, Union
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
-
 
 # Valid message roles
 Role = Literal["user", "assistant", "system", "tool"]
@@ -13,7 +12,7 @@ class Message(BaseModel):
     """A message in the conversation."""
 
     role: Role
-    content: Union[str, None] = None
+    content: str | None = None
     tool_calls: list[dict[str, Any]] | None = None
     tool_call_id: str | None = None
     name: str | None = None

@@ -36,12 +36,13 @@ Then test the endpoints:
 """
 
 import json
+
 from reminix_runtime import (
     Agent,
-    InvokeRequest,
-    InvokeResponse,
     ChatRequest,
     ChatResponse,
+    InvokeRequest,
+    InvokeResponse,
     serve,
 )
 

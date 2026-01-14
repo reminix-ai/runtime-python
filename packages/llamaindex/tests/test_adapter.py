@@ -1,10 +1,11 @@
 """Tests for the LlamaIndex adapter."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from reminix_runtime import InvokeRequest, ChatRequest, BaseAdapter
-from reminix_llamaindex import wrap, LlamaIndexAdapter
+import pytest
+
+from reminix_llamaindex import LlamaIndexAdapter, wrap
+from reminix_runtime import BaseAdapter, ChatRequest, InvokeRequest
 
 
 class TestWrap:

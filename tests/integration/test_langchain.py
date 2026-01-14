@@ -1,10 +1,10 @@
 """Integration tests for LangChain adapter with tool calling."""
 
-import pytest
 import httpx
+import pytest
 from httpx import ASGITransport
-from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
 
 from reminix_langchain import wrap
 from reminix_runtime import create_app
@@ -50,9 +50,7 @@ class TestLangChainAdapter:
             "/agents/test-langchain/invoke",
             json={
                 "input": {
-                    "messages": [
-                        {"role": "user", "content": "Say 'hello' and nothing else."}
-                    ]
+                    "messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]
                 }
             },
         )
@@ -65,9 +63,7 @@ class TestLangChainAdapter:
         """Test chat endpoint."""
         response = await client.post(
             "/agents/test-langchain/chat",
-            json={
-                "messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]
-            },
+            json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
         )
 
         assert response.status_code == 200
@@ -81,7 +77,10 @@ class TestLangChainAdapter:
             "/agents/test-langchain/chat",
             json={
                 "messages": [
-                    {"role": "user", "content": "What's the weather in Paris? Use the get_weather tool."}
+                    {
+                        "role": "user",
+                        "content": "What's the weather in Paris? Use the get_weather tool.",
+                    }
                 ]
             },
         )

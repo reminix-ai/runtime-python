@@ -1,3 +1,10 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["scripts"]
+
 [project]
 name = "reminix-runtime-monorepo"
 version = "0.0.0"
@@ -5,6 +12,11 @@ description = "Reminix Runtime - Monorepo"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
+classifiers = ["Private :: Do Not Upload"]
+
+[project.scripts]
+check = "scripts.check:main"
+prepush = "scripts.prepush:main"
 
 [project.optional-dependencies]
 dev = [
@@ -12,6 +24,8 @@ dev = [
     "pytest-asyncio>=0.24.0",
     "httpx>=0.28.0",
     "python-dotenv>=1.0.0",
+    "ruff>=0.14.11",
+    "pyright>=1.1.408",
 ]
 
 [tool.pytest.ini_options]
@@ -20,6 +34,9 @@ testpaths = ["packages/*/tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "--import-mode=importlib"
+
+[tool.uv]
+package = true
 
 [tool.uv.workspace]
 members = ["packages/*", "examples/*"]
@@ -31,3 +48,49 @@ reminix-langgraph = { workspace = true }
 reminix-openai = { workspace = true }
 reminix-anthropic = { workspace = true }
 reminix-llamaindex = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["ARG001", "ARG002", "F841"]  # allow unused args/vars in tests
+"examples/**" = ["ARG001"]  # allow unused args in examples
+"**/adapters/base.py" = ["ARG002"]  # abstract methods have unused args
+
+[tool.ruff.lint.isort]
+known-first-party = ["reminix_runtime", "reminix_openai", "reminix_anthropic", "reminix_langchain", "reminix_langgraph", "reminix_llamaindex"]
+
+[tool.pyright]
+typeCheckingMode = "standard"
+pythonVersion = "3.10"
+exclude = [
+    ".venv",
+    "**/__pycache__",
+    "examples",
+    "**/tests",
+]
+extraPaths = [
+    "packages/runtime/src",
+    "packages/openai/src",
+    "packages/anthropic/src",
+    "packages/langchain/src",
+    "packages/langgraph/src",
+    "packages/llamaindex/src",
+]

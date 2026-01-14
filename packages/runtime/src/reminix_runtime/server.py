@@ -1,23 +1,24 @@
 """Reminix Runtime Server."""
 
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 
 from . import __version__
 from .adapters.base import AgentBase
-from .types import InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
+from .types import ChatRequest, ChatResponse, InvokeRequest, InvokeResponse
 
 
 async def _sse_generator(stream: AsyncIterator[str]) -> AsyncIterator[bytes]:
     """Convert an async string iterator to SSE format."""
     try:
         async for chunk in stream:
-            yield f"data: {chunk}\n\n".encode("utf-8")
+            yield f"data: {chunk}\n\n".encode()
         yield b"data: [DONE]\n\n"
     except NotImplementedError as e:
-        yield f"data: {{\"error\": \"{str(e)}\"}}\n\n".encode("utf-8")
+        yield f'data: {{"error": "{str(e)}"}}\n\n'.encode()
 
 
 def create_app(agents: list[AgentBase]) -> FastAPI:

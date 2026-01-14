@@ -1,14 +1,15 @@
 """LlamaIndex adapter for Reminix Runtime."""
 
 import json
-from typing import Any, AsyncIterator, Protocol, runtime_checkable
+from collections.abc import AsyncIterator
+from typing import Any, Protocol, runtime_checkable
 
 from reminix_runtime import (
     BaseAdapter,
-    InvokeRequest,
-    InvokeResponse,
     ChatRequest,
     ChatResponse,
+    InvokeRequest,
+    InvokeResponse,
     Message,
 )
 

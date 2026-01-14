@@ -5,10 +5,10 @@ from httpx import ASGITransport, AsyncClient
 
 from reminix_runtime import (
     BaseAdapter,
-    InvokeRequest,
-    InvokeResponse,
     ChatRequest,
     ChatResponse,
+    InvokeRequest,
+    InvokeResponse,
     __version__,
 )
 from reminix_runtime.server import create_app
@@ -64,9 +64,7 @@ class TestHealthEndpoint:
     async def test_health_endpoint(self):
         """GET /health should return 200 OK."""
         app = create_app([MockAdapter()])
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/health")
 
         assert response.status_code == 200
@@ -80,9 +78,7 @@ class TestInfoEndpoint:
     async def test_info_endpoint(self):
         """GET /info should return runtime info and agents."""
         app = create_app([MockAdapter("agent-one"), MockAdapter("agent-two")])
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/info")
 
         assert response.status_code == 200
@@ -110,9 +106,7 @@ class TestInvokeEndpoint:
     async def test_invoke_success(self):
         """POST /agents/{agent}/invoke should return invoke response."""
         app = create_app([MockAdapter("my-agent")])
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
                 json={"input": {"task": "summarize"}},
@@ -126,9 +120,7 @@ class TestInvokeEndpoint:
     async def test_invoke_with_context(self):
         """POST /agents/{agent}/invoke should accept context."""
         app = create_app([MockAdapter("my-agent")])
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
                 json={
@@ -143,9 +135,7 @@ class TestInvokeEndpoint:
     async def test_invoke_unknown_agent_returns_404(self):
         """POST /agents/{agent}/invoke should return 404 for unknown agent."""
         app = create_app([MockAdapter("my-agent")])
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/unknown-agent/invoke",
                 json={"input": {"task": "test"}},
@@ -158,9 +148,7 @@ class TestInvokeEndpoint:
     async def test_invoke_invalid_request_returns_422(self):
         """POST /agents/{agent}/invoke should return 422 for invalid request."""
         app = create_app([MockAdapter("my-agent")])
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
                 json={"input": {}},  # Empty input not allowed
@@ -176,9 +164,7 @@ class TestChatEndpoint:
     async def test_chat_success(self):
         """POST /agents/{agent}/chat should return chat response."""
         app = create_app([MockAdapter("my-agent")])
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/chat",
                 json={"messages": [{"role": "user", "content": "hi there"}]},
@@ -193,9 +179,7 @@ class TestChatEndpoint:
     async def test_chat_unknown_agent_returns_404(self):
         """POST /agents/{agent}/chat should return 404 for unknown agent."""
         app = create_app([MockAdapter("my-agent")])
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/unknown-agent/chat",
                 json={"messages": [{"role": "user", "content": "hello"}]},

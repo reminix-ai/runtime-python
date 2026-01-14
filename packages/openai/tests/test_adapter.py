@@ -1,10 +1,11 @@
 """Tests for the OpenAI adapter."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from reminix_runtime import InvokeRequest, ChatRequest, BaseAdapter
-from reminix_openai import wrap, OpenAIAdapter
+import pytest
+
+from reminix_openai import OpenAIAdapter, wrap
+from reminix_runtime import BaseAdapter, ChatRequest, InvokeRequest
 
 
 class TestWrap:
@@ -83,9 +84,7 @@ class TestOpenAIAdapterInvoke:
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap(mock_client)
-        request = InvokeRequest(input={
-            "messages": [{"role": "user", "content": "Hello"}]
-        })
+        request = InvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
         response = await adapter.invoke(request)
 

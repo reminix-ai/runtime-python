@@ -1,16 +1,17 @@
 """Anthropic adapter for Reminix Runtime."""
 
 import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from anthropic import AsyncAnthropic
 
 from reminix_runtime import (
     BaseAdapter,
-    InvokeRequest,
-    InvokeResponse,
     ChatRequest,
     ChatResponse,
+    InvokeRequest,
+    InvokeResponse,
     Message,
 )
 
@@ -66,10 +67,12 @@ class AnthropicAdapter(BaseAdapter):
                 # Anthropic only supports one system message, use the last one
                 system_message = message.content
             else:
-                anthropic_messages.append({
-                    "role": message.role,
-                    "content": message.content or "",
-                })
+                anthropic_messages.append(
+                    {
+                        "role": message.role,
+                        "content": message.content or "",
+                    }
+                )
 
         return system_message, anthropic_messages
 
@@ -97,12 +100,15 @@ class AnthropicAdapter(BaseAdapter):
             messages_data = request.input["messages"]
             # Convert to Message objects for processing
             from reminix_runtime.types import Message
+
             messages = [Message(**m) if isinstance(m, dict) else m for m in messages_data]
         elif "prompt" in request.input:
             from reminix_runtime.types import Message
+
             messages = [Message(role="user", content=request.input["prompt"])]
         else:
             from reminix_runtime.types import Message
+
             messages = [Message(role="user", content=str(request.input))]
 
         # Extract system message and convert messages
@@ -137,9 +143,7 @@ class AnthropicAdapter(BaseAdapter):
             The chat response with output and messages.
         """
         # Extract system message and convert messages
-        system_message, anthropic_messages = self._extract_system_and_messages(
-            request.messages
-        )
+        system_message, anthropic_messages = self._extract_system_and_messages(request.messages)
 
         # Build API call kwargs
         kwargs: dict[str, Any] = {
@@ -177,12 +181,15 @@ class AnthropicAdapter(BaseAdapter):
         if "messages" in request.input:
             messages_data = request.input["messages"]
             from reminix_runtime.types import Message
+
             messages = [Message(**m) if isinstance(m, dict) else m for m in messages_data]
         elif "prompt" in request.input:
             from reminix_runtime.types import Message
+
             messages = [Message(role="user", content=request.input["prompt"])]
         else:
             from reminix_runtime.types import Message
+
             messages = [Message(role="user", content=str(request.input))]
 
         # Extract system message and convert messages
@@ -212,9 +219,7 @@ class AnthropicAdapter(BaseAdapter):
             JSON-encoded chunks from the stream.
         """
         # Extract system message and convert messages
-        system_message, anthropic_messages = self._extract_system_and_messages(
-            request.messages
-        )
+        system_message, anthropic_messages = self._extract_system_and_messages(request.messages)
 
         # Build API call kwargs
         kwargs: dict[str, Any] = {

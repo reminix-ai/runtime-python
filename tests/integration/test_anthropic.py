@@ -1,9 +1,9 @@
 """Integration tests for Anthropic adapter."""
 
-import pytest
 import httpx
-from httpx import ASGITransport
+import pytest
 from anthropic import AsyncAnthropic
+from httpx import ASGITransport
 
 from reminix_anthropic import wrap
 from reminix_runtime import create_app
@@ -52,11 +52,7 @@ class TestAnthropicAdapter:
         response = await client.post(
             "/agents/test-anthropic/invoke",
             json={
-                "input": {
-                    "messages": [
-                        {"role": "user", "content": "Say 'test' and nothing else."}
-                    ]
-                }
+                "input": {"messages": [{"role": "user", "content": "Say 'test' and nothing else."}]}
             },
         )
 
@@ -88,9 +84,7 @@ class TestAnthropicAdapter:
         """Test chat endpoint."""
         response = await client.post(
             "/agents/test-anthropic/chat",
-            json={
-                "messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]
-            },
+            json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
         )
 
         assert response.status_code == 200
@@ -121,9 +115,7 @@ class TestAnthropicAdapter:
         async with client.stream(
             "POST",
             "/agents/test-anthropic/chat/stream",
-            json={
-                "messages": [{"role": "user", "content": "Say 'ok' and nothing else."}]
-            },
+            json={"messages": [{"role": "user", "content": "Say 'ok' and nothing else."}]},
         ) as response:
             assert response.status_code == 200
             chunks = []
@@ -131,4 +123,3 @@ class TestAnthropicAdapter:
                 if line.startswith("data: "):
                     chunks.append(line)
             assert len(chunks) > 0
-

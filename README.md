@@ -140,6 +140,29 @@ uv run --extra dev pytest tests/integration/test_anthropic.py -v
 uv build
 ```
 
+### Code Quality
+
+```bash
+# Format code (auto-fix)
+uv run ruff format .
+uv run ruff check --fix .
+
+# Check formatting (CI)
+uv run ruff format --check .
+
+# Lint code
+uv run ruff check .
+
+# Type check
+uv run pyright
+
+# Run all checks (before pushing)
+uv run check
+
+# Run all checks + tests (before pushing)
+uv run prepush
+```
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request.

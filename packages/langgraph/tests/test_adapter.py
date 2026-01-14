@@ -1,12 +1,12 @@
 """Tests for the LangGraph adapter."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+import pytest
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from reminix_runtime import InvokeRequest, ChatRequest, BaseAdapter
-from reminix_langgraph import wrap, LangGraphAdapter
+from reminix_langgraph import LangGraphAdapter, wrap
+from reminix_runtime import BaseAdapter, ChatRequest, InvokeRequest
 
 
 class TestWrap:
@@ -55,12 +55,11 @@ class TestLangGraphAdapterInvoke:
     async def test_invoke_returns_output_from_messages(self):
         """invoke() should extract output from messages in the result."""
         mock_graph = MagicMock()
-        mock_graph.ainvoke = AsyncMock(return_value={
-            "messages": [
-                HumanMessage(content="Hello"),
-                AIMessage(content="Hi there!")
-            ]
-        })
+        mock_graph.ainvoke = AsyncMock(
+            return_value={
+                "messages": [HumanMessage(content="Hello"), AIMessage(content="Hi there!")]
+            }
+        )
 
         adapter = wrap(mock_graph)
         request = InvokeRequest(input={"messages": []})
@@ -107,12 +106,14 @@ class TestLangGraphAdapterChat:
     async def test_chat_returns_output_and_messages(self):
         """chat() should return output and all messages from the graph."""
         mock_graph = MagicMock()
-        mock_graph.ainvoke = AsyncMock(return_value={
-            "messages": [
-                HumanMessage(content="Hi"),
-                AIMessage(content="Hello! How can I help?")
-            ]
-        })
+        mock_graph.ainvoke = AsyncMock(
+            return_value={
+                "messages": [
+                    HumanMessage(content="Hi"),
+                    AIMessage(content="Hello! How can I help?"),
+                ]
+            }
+        )
 
         adapter = wrap(mock_graph)
         request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
@@ -127,13 +128,15 @@ class TestLangGraphAdapterChat:
     async def test_chat_converts_messages_correctly(self):
         """chat() should convert messages to/from LangChain format."""
         mock_graph = MagicMock()
-        mock_graph.ainvoke = AsyncMock(return_value={
-            "messages": [
-                SystemMessage(content="You are helpful"),
-                HumanMessage(content="Hello"),
-                AIMessage(content="Hi!")
-            ]
-        })
+        mock_graph.ainvoke = AsyncMock(
+            return_value={
+                "messages": [
+                    SystemMessage(content="You are helpful"),
+                    HumanMessage(content="Hello"),
+                    AIMessage(content="Hi!"),
+                ]
+            }
+        )
 
         adapter = wrap(mock_graph)
         request = ChatRequest(

@@ -4,11 +4,11 @@ import pytest
 from pydantic import ValidationError
 
 from reminix_runtime.types import (
-    Message,
-    InvokeRequest,
-    InvokeResponse,
     ChatRequest,
     ChatResponse,
+    InvokeRequest,
+    InvokeResponse,
+    Message,
 )
 
 
@@ -28,7 +28,13 @@ class TestMessage:
 
     def test_message_content_can_be_none(self):
         """Message content can be None (for tool_calls)."""
-        msg = Message(role="assistant", content=None, tool_calls=[{"id": "1", "type": "function", "function": {"name": "test", "arguments": "{}"}}])
+        msg = Message(
+            role="assistant",
+            content=None,
+            tool_calls=[
+                {"id": "1", "type": "function", "function": {"name": "test", "arguments": "{}"}}
+            ],
+        )
         assert msg.content is None
         assert msg.tool_calls is not None
 
@@ -75,10 +81,7 @@ class TestInvokeRequest:
 
     def test_invoke_request_accepts_context(self):
         """InvokeRequest can have optional context."""
-        req = InvokeRequest(
-            input={"task": "test"},
-            context={"user_id": "123"}
-        )
+        req = InvokeRequest(input={"task": "test"}, context={"user_id": "123"})
         assert req.context == {"user_id": "123"}
 
 
@@ -132,17 +135,13 @@ class TestChatRequest:
 
     def test_chat_request_accepts_stream(self):
         """ChatRequest can have stream flag."""
-        req = ChatRequest(
-            messages=[{"role": "user", "content": "hello"}],
-            stream=True
-        )
+        req = ChatRequest(messages=[{"role": "user", "content": "hello"}], stream=True)
         assert req.stream is True
 
     def test_chat_request_accepts_context(self):
         """ChatRequest can have optional context."""
         req = ChatRequest(
-            messages=[{"role": "user", "content": "hello"}],
-            context={"user_id": "123"}
+            messages=[{"role": "user", "content": "hello"}], context={"user_id": "123"}
         )
         assert req.context == {"user_id": "123"}
 
@@ -167,7 +166,7 @@ class TestChatResponse:
             messages=[
                 {"role": "user", "content": "how are you?"},
                 {"role": "assistant", "content": "I'm doing well!"},
-            ]
+            ],
         )
         assert resp.output == "I'm doing well!"
         assert len(resp.messages) == 2
@@ -178,10 +177,20 @@ class TestChatResponse:
             output="The weather is 72°F",
             messages=[
                 {"role": "user", "content": "What's the weather?"},
-                {"role": "assistant", "content": None, "tool_calls": [{"id": "1", "type": "function", "function": {"name": "get_weather", "arguments": "{}"}}]},
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "1",
+                            "type": "function",
+                            "function": {"name": "get_weather", "arguments": "{}"},
+                        }
+                    ],
+                },
                 {"role": "tool", "content": "72°F", "tool_call_id": "1"},
                 {"role": "assistant", "content": "The weather is 72°F"},
-            ]
+            ],
         )
         assert resp.output == "The weather is 72°F"
         assert len(resp.messages) == 4

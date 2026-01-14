@@ -1,10 +1,11 @@
 """Tests for the Anthropic adapter."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from reminix_runtime import InvokeRequest, ChatRequest, BaseAdapter
-from reminix_anthropic import wrap, AnthropicAdapter
+import pytest
+
+from reminix_anthropic import AnthropicAdapter, wrap
+from reminix_runtime import BaseAdapter, ChatRequest, InvokeRequest
 
 
 class TestWrap:
@@ -83,9 +84,7 @@ class TestAnthropicAdapterInvoke:
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap(mock_client)
-        request = InvokeRequest(input={
-            "messages": [{"role": "user", "content": "Hello"}]
-        })
+        request = InvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
         response = await adapter.invoke(request)
 

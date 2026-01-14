@@ -1,23 +1,24 @@
 """LangGraph adapter for Reminix Runtime."""
 
 import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from langchain_core.messages import (
-    BaseMessage,
-    HumanMessage,
     AIMessage,
     AIMessageChunk,
+    BaseMessage,
+    HumanMessage,
     SystemMessage,
     ToolMessage,
 )
 
 from reminix_runtime import (
     BaseAdapter,
-    InvokeRequest,
-    InvokeResponse,
     ChatRequest,
     ChatResponse,
+    InvokeRequest,
+    InvokeResponse,
     Message,
 )
 
@@ -53,7 +54,7 @@ class LangGraphAdapter(BaseAdapter):
         elif role == "system":
             return SystemMessage(content=content)
         elif role == "tool":
-            tool_call_id = getattr(message, 'tool_call_id', None) or "unknown"
+            tool_call_id = getattr(message, "tool_call_id", None) or "unknown"
             return ToolMessage(content=content, tool_call_id=tool_call_id)
         else:
             return HumanMessage(content=content)
@@ -147,11 +148,15 @@ class LangGraphAdapter(BaseAdapter):
         async for chunk in self._graph.astream(request.input):
             # LangGraph streams dicts with node outputs
             if isinstance(chunk, dict):
-                for node_name, node_output in chunk.items():
+                for _node_name, node_output in chunk.items():
                     if isinstance(node_output, dict) and "messages" in node_output:
                         for msg in node_output["messages"]:
                             if isinstance(msg, (AIMessage, AIMessageChunk)):
-                                content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                                content = (
+                                    msg.content
+                                    if isinstance(msg.content, str)
+                                    else str(msg.content)
+                                )
                                 if content:
                                     yield json.dumps({"chunk": content})
                     else:
@@ -175,11 +180,15 @@ class LangGraphAdapter(BaseAdapter):
         async for chunk in self._graph.astream({"messages": lc_messages}):
             # LangGraph streams dicts with node outputs
             if isinstance(chunk, dict):
-                for node_name, node_output in chunk.items():
+                for _node_name, node_output in chunk.items():
                     if isinstance(node_output, dict) and "messages" in node_output:
                         for msg in node_output["messages"]:
                             if isinstance(msg, (AIMessage, AIMessageChunk)):
-                                content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                                content = (
+                                    msg.content
+                                    if isinstance(msg.content, str)
+                                    else str(msg.content)
+                                )
                                 if content:
                                     yield json.dumps({"chunk": content})
                     else:

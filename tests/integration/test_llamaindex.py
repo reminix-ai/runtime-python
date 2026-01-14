@@ -1,8 +1,7 @@
 """Integration tests for LlamaIndex adapter with tool calling."""
 
-import asyncio
-import pytest
 import httpx
+import pytest
 from httpx import ASGITransport
 from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.workflow import Context
@@ -79,9 +78,7 @@ class TestLlamaIndexAdapter:
         """Test chat endpoint."""
         response = await client.post(
             "/agents/test-llamaindex/chat",
-            json={
-                "messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]
-            },
+            json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
         )
 
         assert response.status_code == 200
@@ -93,11 +90,7 @@ class TestLlamaIndexAdapter:
         """Test that the agent calls tools and returns results."""
         response = await client.post(
             "/agents/test-llamaindex/chat",
-            json={
-                "messages": [
-                    {"role": "user", "content": "What's the weather in Paris?"}
-                ]
-            },
+            json={"messages": [{"role": "user", "content": "What's the weather in Paris?"}]},
         )
 
         assert response.status_code == 200
