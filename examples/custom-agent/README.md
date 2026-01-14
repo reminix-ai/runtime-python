@@ -17,7 +17,7 @@ Once running, the following endpoints are available:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
-| `/agents/echo/invoke` | POST | Task-oriented invocation |
+| `/agents/echo/invoke` | POST | Stateless invocation |
 | `/agents/echo/chat` | POST | Conversational chat |
 
 ## Testing

@@ -74,7 +74,7 @@ The runtime creates a REST server with the following endpoints:
 
 ### Invoke Endpoint
 
-For task-oriented operations that take arbitrary input and return output.
+For stateless operations that take arbitrary input and return output.
 
 **Request:**
 ```json
