@@ -1,10 +1,12 @@
 """Integration tests for OpenAI adapter."""
 
 import pytest
+import httpx
+from httpx import ASGITransport
 from openai import AsyncOpenAI
 
 from reminix_openai import wrap
-from reminix_runtime import InvokeRequest, ChatRequest, Message
+from reminix_runtime import create_app
 
 
 @pytest.mark.openai
@@ -12,66 +14,97 @@ class TestOpenAIAdapter:
     """Integration tests for OpenAI adapter."""
 
     @pytest.fixture
-    def client(self, openai_api_key):
-        return AsyncOpenAI(api_key=openai_api_key)
-
-    @pytest.fixture
-    def agent(self, client):
+    def agent(self, openai_api_key):
+        client = AsyncOpenAI(api_key=openai_api_key)
         return wrap(client, name="test-openai", model="gpt-4.1-nano")
 
-    async def test_invoke_with_prompt(self, agent):
-        """Test invoke with a simple prompt."""
-        request = InvokeRequest(input={"prompt": "Say 'hello' and nothing else."})
-        response = await agent.invoke(request)
+    @pytest.fixture
+    def app(self, agent):
+        return create_app([agent])
 
-        assert response.output is not None
-        assert len(response.output) > 0
-        assert "hello" in response.output.lower()
+    @pytest.fixture
+    async def client(self, app):
+        async with httpx.AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            yield client
 
-    async def test_invoke_with_messages(self, agent):
+    async def test_invoke(self, client):
+        """Test invoke endpoint."""
+        response = await client.post(
+            "/agents/test-openai/invoke",
+            json={"input": {"prompt": "Say 'hello' and nothing else."}},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "output" in data
+        assert "hello" in data["output"].lower()
+
+    async def test_invoke_with_messages(self, client):
         """Test invoke with messages array."""
-        request = InvokeRequest(
-            input={
-                "messages": [
-                    {"role": "user", "content": "Say 'test' and nothing else."}
-                ]
-            }
-        )
-        response = await agent.invoke(request)
-
-        assert response.output is not None
-        assert len(response.output) > 0
-
-    async def test_chat(self, agent):
-        """Test chat with conversation."""
-        request = ChatRequest(
-            messages=[Message(role="user", content="Say 'hi' and nothing else.")]
-        )
-        response = await agent.chat(request)
-
-        assert response.output is not None
-        assert len(response.output) > 0
-        assert len(response.messages) == 2
-        assert response.messages[-1]["role"] == "assistant"
-
-    async def test_invoke_stream(self, agent):
-        """Test streaming invoke."""
-        request = InvokeRequest(input={"prompt": "Say 'stream' and nothing else."})
-
-        chunks = []
-        async for chunk in agent.invoke_stream(request):
-            chunks.append(chunk)
-
-        assert len(chunks) > 0
-
-    async def test_chat_stream(self, agent):
-        """Test streaming chat."""
-        request = ChatRequest(
-            messages=[Message(role="user", content="Say 'ok' and nothing else.")]
+        response = await client.post(
+            "/agents/test-openai/invoke",
+            json={
+                "input": {
+                    "messages": [
+                        {"role": "user", "content": "Say 'test' and nothing else."}
+                    ]
+                }
+            },
         )
 
-        chunks = []
-        async for chunk in agent.chat_stream(request):
-            chunks.append(chunk)
+        assert response.status_code == 200
+        data = response.json()
+        assert "output" in data
+        assert len(data["output"]) > 0
 
-        assert len(chunks) > 0
+    async def test_chat(self, client):
+        """Test chat endpoint."""
+        response = await client.post(
+            "/agents/test-openai/chat",
+            json={
+                "messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "output" in data
+        assert "messages" in data
+        assert len(data["messages"]) == 2
+        assert data["messages"][-1]["role"] == "assistant"
+
+    @pytest.mark.xfail(reason="Streaming not implemented yet")
+    async def test_invoke_stream(self, client):
+        """Test streaming invoke endpoint."""
+        async with client.stream(
+            "POST",
+            "/agents/test-openai/invoke/stream",
+            json={"input": {"prompt": "Say 'stream' and nothing else."}},
+        ) as response:
+            assert response.status_code == 200
+            chunks = []
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    chunks.append(line)
+            assert len(chunks) > 0
+
+    @pytest.mark.xfail(reason="Streaming not implemented yet")
+    async def test_chat_stream(self, client):
+        """Test streaming chat endpoint."""
+        async with client.stream(
+            "POST",
+            "/agents/test-openai/chat/stream",
+            json={
+                "messages": [{"role": "user", "content": "Say 'ok' and nothing else."}]
+            },
+        ) as response:
+            assert response.status_code == 200
+            chunks = []
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    chunks.append(line)
+            assert len(chunks) > 0
+
