@@ -32,3 +32,21 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: uv run --extra dev pytest tests/integration/test_anthropic.py -v
+
+      - name: Run LangChain integration tests
+        if: env.OPENAI_API_KEY != ''
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: uv run --extra dev pytest tests/integration/test_langchain.py -v
+
+      - name: Run LangGraph integration tests
+        if: env.OPENAI_API_KEY != ''
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: uv run --extra dev pytest tests/integration/test_langgraph.py -v
+
+      - name: Run LlamaIndex integration tests
+        if: env.OPENAI_API_KEY != ''
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: uv run --extra dev pytest tests/integration/test_llamaindex.py -v

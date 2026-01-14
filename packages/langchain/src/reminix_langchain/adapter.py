@@ -80,7 +80,8 @@ class LangChainAdapter(BaseAdapter):
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
         """Handle an invoke request.
 
-        For task-oriented operations. Passes the input directly to the runnable.
+        For task-oriented operations. Expects input with 'messages' key
+        or a 'prompt' key for simple text generation.
 
         Args:
             request: The invoke request with input data.
@@ -88,8 +89,21 @@ class LangChainAdapter(BaseAdapter):
         Returns:
             The invoke response with the output.
         """
-        # Pass input directly to the runnable
-        response = await self._agent.ainvoke(request.input)
+        # Build input for the runnable
+        if "messages" in request.input:
+            # Convert message dicts to LangChain messages
+            lc_messages = []
+            for m in request.input["messages"]:
+                msg = Message(role=m.get("role", "user"), content=m.get("content", ""))
+                lc_messages.append(self._to_langchain_message(msg))
+            invoke_input = lc_messages
+        elif "prompt" in request.input:
+            invoke_input = request.input["prompt"]
+        else:
+            # Pass input directly to the runnable
+            invoke_input = request.input
+
+        response = await self._agent.ainvoke(invoke_input)
 
         # Extract output from response
         if isinstance(response, BaseMessage):
@@ -145,7 +159,20 @@ class LangChainAdapter(BaseAdapter):
         Yields:
             JSON-encoded chunks from the stream.
         """
-        async for chunk in self._agent.astream(request.input):
+        # Build input for the runnable
+        if "messages" in request.input:
+            # Convert message dicts to LangChain messages
+            lc_messages = []
+            for m in request.input["messages"]:
+                msg = Message(role=m.get("role", "user"), content=m.get("content", ""))
+                lc_messages.append(self._to_langchain_message(msg))
+            stream_input = lc_messages
+        elif "prompt" in request.input:
+            stream_input = request.input["prompt"]
+        else:
+            stream_input = request.input
+
+        async for chunk in self._agent.astream(stream_input):
             if isinstance(chunk, BaseMessage):
                 content = chunk.content if isinstance(chunk.content, str) else str(chunk.content)
             elif isinstance(chunk, dict):
