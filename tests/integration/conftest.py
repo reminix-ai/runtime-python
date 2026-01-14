@@ -14,7 +14,7 @@ def pytest_configure(config):
 def openai_api_key():
     key = os.environ.get("OPENAI_API_KEY")
     if not key:
-        pytest.skip("OPENAI_API_KEY not set")
+        pytest.fail("OPENAI_API_KEY not set")
     return key
 
 
@@ -22,5 +22,5 @@ def openai_api_key():
 def anthropic_api_key():
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
-        pytest.skip("ANTHROPIC_API_KEY not set")
+        pytest.fail("ANTHROPIC_API_KEY not set")
     return key
