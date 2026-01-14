@@ -112,6 +112,21 @@ cd packages/runtime
 uv run --extra dev pytest
 ```
 
+### Running Integration Tests
+
+Integration tests require API keys to be set:
+
+```bash
+# Run all integration tests
+OPENAI_API_KEY=sk-... ANTHROPIC_API_KEY=sk-... uv run --extra dev pytest tests/integration -v
+
+# Run OpenAI integration tests only
+OPENAI_API_KEY=sk-... uv run --extra dev pytest tests/integration/test_openai.py -v
+
+# Run Anthropic integration tests only
+ANTHROPIC_API_KEY=sk-... uv run --extra dev pytest tests/integration/test_anthropic.py -v
+```
+
 ### Building
 
 ```bash
