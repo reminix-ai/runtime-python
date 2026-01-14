@@ -114,17 +114,24 @@ uv run --extra dev pytest
 
 ### Running Integration Tests
 
-Integration tests require API keys to be set:
+Integration tests require API keys. Create a `.env` file from the example:
+
+```bash
+cp .env.example .env
+# Edit .env with your API keys
+```
+
+Then run:
 
 ```bash
 # Run all integration tests
-OPENAI_API_KEY=sk-... ANTHROPIC_API_KEY=sk-... uv run --extra dev pytest tests/integration -v
+uv run --extra dev pytest tests/integration -v
 
 # Run OpenAI integration tests only
-OPENAI_API_KEY=sk-... uv run --extra dev pytest tests/integration/test_openai.py -v
+uv run --extra dev pytest tests/integration/test_openai.py -v
 
 # Run Anthropic integration tests only
-ANTHROPIC_API_KEY=sk-... uv run --extra dev pytest tests/integration/test_anthropic.py -v
+uv run --extra dev pytest tests/integration/test_anthropic.py -v
 ```
 
 ### Building
