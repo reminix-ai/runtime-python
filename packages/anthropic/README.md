@@ -60,6 +60,66 @@ request = {
 }
 ```
 
+## Endpoint Input/Output Formats
+
+### POST /agents/{name}/invoke
+
+Stateless invocation for task-oriented operations.
+
+**Request:**
+```json
+{
+  "input": {
+    "prompt": "Summarize this text: ..."
+  }
+}
+```
+
+Or with messages:
+```json
+{
+  "input": {
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Hello!"}
+    ]
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "output": "Hello! How can I help you today?"
+}
+```
+
+### POST /agents/{name}/chat
+
+Conversational chat with message history.
+
+**Request:**
+```json
+{
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "What is the capital of France?"}
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "output": "The capital of France is Paris.",
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "What is the capital of France?"},
+    {"role": "assistant", "content": "The capital of France is Paris."}
+  ]
+}
+```
+
 ## Runtime Documentation
 
 For information about the server, endpoints, request/response formats, and more, see the [`reminix-runtime`](https://pypi.org/project/reminix-runtime/) package.

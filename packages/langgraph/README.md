@@ -54,6 +54,54 @@ LangGraph uses a state-based approach. The adapter:
 3. Extracts the last AI message from the response
 4. Returns it in the Reminix response format
 
+## Endpoint Input/Output Formats
+
+### POST /agents/{name}/invoke
+
+Stateless invocation. Input is passed directly to the graph.
+
+**Request:**
+```json
+{
+  "input": {
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ]
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "output": "Hello! How can I help you today?"
+}
+```
+
+### POST /agents/{name}/chat
+
+Conversational chat with message history.
+
+**Request:**
+```json
+{
+  "messages": [
+    {"role": "user", "content": "What is the capital of France?"}
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "output": "The capital of France is Paris.",
+  "messages": [
+    {"role": "user", "content": "What is the capital of France?"},
+    {"role": "assistant", "content": "The capital of France is Paris."}
+  ]
+}
+```
+
 ## Runtime Documentation
 
 For information about the server, endpoints, request/response formats, and more, see the [`reminix-runtime`](https://pypi.org/project/reminix-runtime/) package.
