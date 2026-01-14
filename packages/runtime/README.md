@@ -2,7 +2,7 @@
 
 Core runtime package for serving AI agents via REST APIs. Provides the `serve()` function, `Agent` class, and `BaseAdapter` for building framework integrations.
 
-Built on [FastAPI](https://fastapi.tiangolo.com) with async support and automatic OpenAPI documentation.
+Built on [FastAPI](https://fastapi.tiangolo.com) with full async support.
 
 ## Installation
 
