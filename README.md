@@ -101,6 +101,9 @@ See the [examples/](./examples) directory for more.
 ### Running Tests
 
 ```bash
+# Install all packages with dev dependencies
+uv sync --all-packages --extra dev
+
 # Run all tests across all packages
 uv run --extra dev pytest
 
