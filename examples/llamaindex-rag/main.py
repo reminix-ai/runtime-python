@@ -8,7 +8,7 @@ Requirements:
     pip install reminix-llamaindex llama-index-llms-openai python-dotenv
 
 Environment:
-    Create a .env file with:
+    Create a .env file in the repository root with:
     OPENAI_API_KEY=your-api-key
 
 Usage:
@@ -31,6 +31,8 @@ Then test the endpoints:
     # Response: {"output": "The weather in Tokyo is rainy with a temperature of 18°C.", "messages": [...]}
 """
 
+from pathlib import Path
+
 from dotenv import load_dotenv
 from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.workflow import Context
@@ -39,8 +41,8 @@ from llama_index.llms.openai import OpenAI
 from reminix_llamaindex import wrap
 from reminix_runtime import serve
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from root .env file
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 
 # Define a tool for the agent to use

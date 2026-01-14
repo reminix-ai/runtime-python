@@ -9,8 +9,12 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "example-anthropic-basic",
     "example-custom-agent",
     "example-langchain-basic",
+    "example-langgraph-tools",
+    "example-llamaindex-rag",
+    "example-openai-basic",
     "reminix-anthropic",
     "reminix-langchain",
     "reminix-langgraph",
@@ -459,6 +463,25 @@ wheels = [
 ]
 
 [[package]]
+name = "example-anthropic-basic"
+version = "0.0.0"
+source = { virtual = "examples/anthropic-basic" }
+dependencies = [
+    { name = "anthropic" },
+    { name = "python-dotenv" },
+    { name = "reminix-anthropic" },
+    { name = "reminix-runtime" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anthropic", specifier = ">=0.75.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "reminix-anthropic", editable = "packages/anthropic" },
+    { name = "reminix-runtime", editable = "packages/runtime" },
+]
+
+[[package]]
 name = "example-custom-agent"
 version = "0.0.0"
 source = { virtual = "examples/custom-agent" }
@@ -474,15 +497,80 @@ name = "example-langchain-basic"
 version = "0.0.0"
 source = { virtual = "examples/langchain-basic" }
 dependencies = [
+    { name = "langchain-core" },
     { name = "langchain-openai" },
+    { name = "python-dotenv" },
     { name = "reminix-langchain" },
     { name = "reminix-runtime" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "langchain-core", specifier = ">=1.2.0" },
     { name = "langchain-openai", specifier = ">=1.1.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "reminix-langchain", editable = "packages/langchain" },
+    { name = "reminix-runtime", editable = "packages/runtime" },
+]
+
+[[package]]
+name = "example-langgraph-tools"
+version = "0.0.0"
+source = { virtual = "examples/langgraph-tools" }
+dependencies = [
+    { name = "langchain-openai" },
+    { name = "langgraph" },
+    { name = "python-dotenv" },
+    { name = "reminix-langgraph" },
+    { name = "reminix-runtime" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "langchain-openai", specifier = ">=1.1.0" },
+    { name = "langgraph", specifier = ">=1.0.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "reminix-langgraph", editable = "packages/langgraph" },
+    { name = "reminix-runtime", editable = "packages/runtime" },
+]
+
+[[package]]
+name = "example-llamaindex-rag"
+version = "0.0.0"
+source = { virtual = "examples/llamaindex-rag" }
+dependencies = [
+    { name = "llama-index" },
+    { name = "llama-index-llms-openai" },
+    { name = "python-dotenv" },
+    { name = "reminix-llamaindex" },
+    { name = "reminix-runtime" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "llama-index", specifier = ">=0.14.0" },
+    { name = "llama-index-llms-openai", specifier = ">=0.4.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "reminix-llamaindex", editable = "packages/llamaindex" },
+    { name = "reminix-runtime", editable = "packages/runtime" },
+]
+
+[[package]]
+name = "example-openai-basic"
+version = "0.0.0"
+source = { virtual = "examples/openai-basic" }
+dependencies = [
+    { name = "openai" },
+    { name = "python-dotenv" },
+    { name = "reminix-openai" },
+    { name = "reminix-runtime" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "openai", specifier = ">=2.15.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "reminix-openai", editable = "packages/openai" },
     { name = "reminix-runtime", editable = "packages/runtime" },
 ]
 

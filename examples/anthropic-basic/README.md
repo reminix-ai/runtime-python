@@ -14,7 +14,7 @@ cd examples/anthropic-basic
 
 ## Environment
 
-Create a `.env` file with your API key:
+Create a `.env` file in the repository root with your API key:
 
 ```bash
 ANTHROPIC_API_KEY=your-api-key

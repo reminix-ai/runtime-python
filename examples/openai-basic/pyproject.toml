@@ -6,7 +6,7 @@ requires-python = ">=3.10"
 dependencies = [
     "reminix-runtime",
     "reminix-openai",
-    "openai>=1.0.0",
+    "openai>=2.15.0",
     "python-dotenv>=1.0.0",
 ]
 

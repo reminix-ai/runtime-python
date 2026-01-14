@@ -8,7 +8,7 @@ Requirements:
     pip install reminix-langchain langchain-openai python-dotenv
 
 Environment:
-    Create a .env file with:
+    Create a .env file in the repository root with:
     OPENAI_API_KEY=your-api-key
 
 Usage:
@@ -31,14 +31,16 @@ Then test the endpoints:
     # Response: {"output": "Hello! How can I help you today?", "messages": [...]}
 """
 
+from pathlib import Path
+
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
 from reminix_langchain import wrap
 from reminix_runtime import serve
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from root .env file
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 # Create a LangChain chat model
 model = ChatOpenAI(model="gpt-4o-mini")

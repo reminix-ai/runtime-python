@@ -6,8 +6,8 @@ requires-python = ">=3.10"
 dependencies = [
     "reminix-runtime",
     "reminix-langgraph",
-    "langchain-openai>=0.3.0",
-    "langgraph>=0.2.0",
+    "langchain-openai>=1.1.0",
+    "langgraph>=1.0.0",
     "python-dotenv>=1.0.0",
 ]
 
