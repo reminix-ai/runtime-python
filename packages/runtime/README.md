@@ -48,9 +48,21 @@ The runtime creates a REST server with the following endpoints:
 | `/agents/{name}/invoke` | POST | Stateless invocation |
 | `/agents/{name}/chat` | POST | Conversational chat |
 
+### Health Endpoint
+
+```bash
+curl http://localhost:8080/health
+```
+
+Returns `{"status": "ok"}` if the server is running.
+
 ### Discovery Endpoint
 
-`GET /info` returns runtime information and available agents:
+```bash
+curl http://localhost:8080/info
+```
+
+Returns runtime information and available agents:
 
 ```json
 {
@@ -74,18 +86,17 @@ The runtime creates a REST server with the following endpoints:
 
 ### Invoke Endpoint
 
-For stateless operations that take arbitrary input and return output.
+`POST /agents/{name}/invoke` - For stateless operations.
 
-**Request:**
-```json
-{
-  "input": {
-    "task": "summarize",
-    "text": "Lorem ipsum..."
-  },
-  "stream": false,
-  "context": {}
-}
+```bash
+curl -X POST http://localhost:8080/agents/my-agent/invoke \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": {
+      "task": "summarize",
+      "text": "Lorem ipsum..."
+    }
+  }'
 ```
 
 **Response:**
@@ -97,18 +108,17 @@ For stateless operations that take arbitrary input and return output.
 
 ### Chat Endpoint
 
-For conversational interactions with message history.
+`POST /agents/{name}/chat` - For conversational interactions.
 
-**Request:**
-```json
-{
-  "messages": [
-    {"role": "system", "content": "You are helpful"},
-    {"role": "user", "content": "What's the weather?"}
-  ],
-  "stream": false,
-  "context": {}
-}
+```bash
+curl -X POST http://localhost:8080/agents/my-agent/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "system", "content": "You are helpful"},
+      {"role": "user", "content": "What is the weather?"}
+    ]
+  }'
 ```
 
 **Response:**
@@ -116,15 +126,14 @@ For conversational interactions with message history.
 {
   "output": "The weather is 72°F and sunny!",
   "messages": [
-    {"role": "user", "content": "What's the weather?"},
-    {"role": "assistant", "content": null, "tool_calls": [...]},
-    {"role": "tool", "content": "72°F, sunny", "tool_call_id": "..."},
+    {"role": "system", "content": "You are helpful"},
+    {"role": "user", "content": "What is the weather?"},
     {"role": "assistant", "content": "The weather is 72°F and sunny!"}
   ]
 }
 ```
 
-The `output` field contains the final answer, while `messages` includes the full execution history (useful for agentic workflows with tool calls).
+The `output` field contains the assistant's response, while `messages` includes the full conversation history.
 
 ## Framework Adapters
 
