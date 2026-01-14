@@ -1,6 +1,6 @@
 # reminix-runtime
 
-Build AI agents with simple code. REST APIs included. Define handlers, add tools, and serve your agents with built-in streaming.
+Your AI agent, live in minutes. Define handlers, serve your agents, and get instant APIs with built-in streaming.
 
 ## Installation
 
