@@ -60,6 +60,10 @@ async def handle_chat(request):
 serve([agent], port=8080)
 ```
 
+Your agent is now available at:
+- `POST /agents/my-agent/invoke` - Stateless invocation
+- `POST /agents/my-agent/chat` - Conversational chat
+
 ## Development
 
 ### Prerequisites
