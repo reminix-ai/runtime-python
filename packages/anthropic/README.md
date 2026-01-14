@@ -28,8 +28,8 @@ serve([agent], port=8080)
 ```
 
 Your agent is now available at:
-- `POST /agents/my-claude/invoke` - Stateless invocation
-- `POST /agents/my-claude/chat` - Conversational chat
+- `POST /agents/my-claude/invoke` - Task-oriented invocation
+- `POST /agents/my-claude/chat` - Multi-turn conversation
 
 ## API Reference
 

@@ -28,8 +28,8 @@ serve([agent], port=8080)
 ```
 
 Your agent is now available at:
-- `POST /agents/my-chatbot/invoke` - Stateless invocation
-- `POST /agents/my-chatbot/chat` - Conversational chat
+- `POST /agents/my-chatbot/invoke` - Task-oriented invocation
+- `POST /agents/my-chatbot/chat` - Multi-turn conversation
 
 ## API Reference
 
