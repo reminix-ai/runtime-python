@@ -1,6 +1,6 @@
 # reminix-runtime
 
-The core runtime for deploying AI agents via REST APIs. Provides a lightweight server with a unified interface for any AI framework.
+Build AI agents with simple code. REST APIs included. Define handlers, add tools, and serve your agents with built-in streaming.
 
 ## Installation
 

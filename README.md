@@ -1,6 +1,6 @@
 # Reminix Runtime (Python)
 
-Deploy AI agents as REST APIs. Lightweight runtime with adapters for LangChain, LangGraph, OpenAI, Anthropic, and more.
+Build AI agents with simple code. REST APIs included. Adapters available for LangChain, LangGraph, OpenAI, Anthropic, and LlamaIndex.
 
 **Two interaction modes:**
 - **Invoke** (Stateless) - Single request/response
