@@ -1,8 +1,8 @@
 # reminix-runtime
 
-Deploy AI agents with instant REST APIs. Define handlers, wrap your existing framework, and serve with built-in streaming.
+Core runtime package for serving AI agents via REST APIs. Provides the `serve()` function, `Agent` class, and `BaseAdapter` for building framework integrations.
 
-**Works with:** LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex — or build custom agents from scratch.
+Built on [FastAPI](https://fastapi.tiangolo.com) with async support and automatic OpenAPI documentation.
 
 ## Installation
 
