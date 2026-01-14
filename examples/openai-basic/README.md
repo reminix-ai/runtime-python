@@ -1,6 +1,6 @@
-# LangChain Basic Example
+# OpenAI Basic Example
 
-A simple example showing how to serve a LangChain agent via Reminix Runtime.
+A simple example showing how to serve an OpenAI chat agent via Reminix Runtime.
 
 ## Setup
 
@@ -9,7 +9,7 @@ A simple example showing how to serve a LangChain agent via Reminix Runtime.
 uv sync
 
 # Navigate to this example
-cd examples/langchain-basic
+cd examples/openai-basic
 ```
 
 ## Environment
@@ -34,8 +34,8 @@ Once running, the following endpoints are available:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
-| `/agents/langchain-basic/invoke` | POST | Stateless invocation |
-| `/agents/langchain-basic/chat` | POST | Conversational chat |
+| `/agents/openai-basic/invoke` | POST | Stateless invocation |
+| `/agents/openai-basic/chat` | POST | Conversational chat |
 
 ## Testing
 
@@ -47,29 +47,29 @@ curl http://localhost:8080/health
 curl http://localhost:8080/info
 
 # Invoke
-curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
+curl -X POST http://localhost:8080/agents/openai-basic/invoke \
   -H "Content-Type: application/json" \
-  -d '{"input": {"prompt": "What is AI?"}}'
+  -d '{"input": {"prompt": "What is the capital of France?"}}'
 
 # Chat
-curl -X POST http://localhost:8080/agents/langchain-basic/chat \
+curl -X POST http://localhost:8080/agents/openai-basic/chat \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
 ```
 
 ## How it works
 
-1. Create a LangChain chat model using `langchain-openai`
-2. Wrap it with `reminix-langchain`
+1. Create an OpenAI client using `openai`
+2. Wrap it with `reminix-openai`
 3. Serve it with `reminix-runtime`
 
 ```python
-from langchain_openai import ChatOpenAI
-from reminix_langchain import wrap
+from openai import AsyncOpenAI
+from reminix_openai import wrap
 from reminix_runtime import serve
 
-model = ChatOpenAI(model="gpt-4o-mini")
-agent = wrap(model, name="langchain-basic")
+client = AsyncOpenAI()
+agent = wrap(client, name="openai-basic", model="gpt-4o-mini")
 
 serve([agent], port=8080)
 ```

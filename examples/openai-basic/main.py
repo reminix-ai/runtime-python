@@ -1,11 +1,11 @@
 """
-Basic LangChain agent example
+Basic OpenAI example
 
-This example shows how to create a simple LangChain agent
+This example shows how to create a simple OpenAI chat agent
 and serve it via Reminix Runtime.
 
 Requirements:
-    pip install reminix-langchain langchain-openai python-dotenv
+    pip install reminix-openai python-dotenv
 
 Environment:
     Create a .env file with:
@@ -17,14 +17,14 @@ Usage:
 Then test the endpoints:
 
     # Invoke endpoint (task-oriented)
-    curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
+    curl -X POST http://localhost:8080/agents/openai-basic/invoke \
       -H "Content-Type: application/json" \
-      -d '{"input": {"prompt": "What is AI?"}}'
+      -d '{"input": {"prompt": "What is the capital of France?"}}'
 
-    # Response: {"output": "AI (Artificial Intelligence) is..."}
+    # Response: {"output": "The capital of France is Paris."}
 
     # Chat endpoint (conversational)
-    curl -X POST http://localhost:8080/agents/langchain-basic/chat \
+    curl -X POST http://localhost:8080/agents/openai-basic/chat \
       -H "Content-Type: application/json" \
       -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
 
@@ -32,19 +32,19 @@ Then test the endpoints:
 """
 
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+from openai import AsyncOpenAI
 
-from reminix_langchain import wrap
+from reminix_openai import wrap
 from reminix_runtime import serve
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Create a LangChain chat model
-model = ChatOpenAI(model="gpt-4o-mini")
+# Create an OpenAI client
+client = AsyncOpenAI()
 
-# Wrap the model with the Reminix adapter
-agent = wrap(model, name="langchain-basic")
+# Wrap the client with the Reminix adapter
+agent = wrap(client, name="openai-basic", model="gpt-4o-mini")
 
 # Serve the agent
 if __name__ == "__main__":
@@ -52,6 +52,6 @@ if __name__ == "__main__":
     print("\nEndpoints:")
     print("  GET  /health")
     print("  GET  /info")
-    print("  POST /agents/langchain-basic/invoke")
-    print("  POST /agents/langchain-basic/chat")
+    print("  POST /agents/openai-basic/invoke")
+    print("  POST /agents/openai-basic/chat")
     serve([agent], port=8080)

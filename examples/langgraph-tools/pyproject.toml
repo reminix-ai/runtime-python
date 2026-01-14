@@ -1,0 +1,16 @@
+[project]
+name = "example-langgraph-tools"
+version = "0.0.0"
+description = "LangGraph with tools example"
+requires-python = ">=3.10"
+dependencies = [
+    "reminix-runtime",
+    "reminix-langgraph",
+    "langchain-openai>=0.3.0",
+    "langgraph>=0.2.0",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.uv.sources]
+reminix-runtime = { workspace = true }
+reminix-langgraph = { workspace = true }

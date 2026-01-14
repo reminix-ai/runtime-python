@@ -1,15 +1,15 @@
 [project]
-name = "example-langchain-basic"
+name = "example-anthropic-basic"
 version = "0.0.0"
-description = "Basic LangChain agent example"
+description = "Basic Anthropic agent example"
 requires-python = ">=3.10"
 dependencies = [
     "reminix-runtime",
-    "reminix-langchain",
-    "langchain-openai>=1.1.0",
+    "reminix-anthropic",
+    "anthropic>=0.39.0",
     "python-dotenv>=1.0.0",
 ]
 
 [tool.uv.sources]
 reminix-runtime = { workspace = true }
-reminix-langchain = { workspace = true }
+reminix-anthropic = { workspace = true }
