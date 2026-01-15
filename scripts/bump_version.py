@@ -105,7 +105,9 @@ def update_runtime_version_files(root: Path, new_version: str, dry_run: bool = F
 
     if runtime_init.exists():
         content = runtime_init.read_text()
-        new_content = re.sub(init_pattern, f'__version__ = "{new_version}"', content, flags=re.MULTILINE)
+        new_content = re.sub(
+            init_pattern, f'__version__ = "{new_version}"', content, flags=re.MULTILINE
+        )
         if new_content != content:
             if not dry_run:
                 runtime_init.write_text(new_content)
