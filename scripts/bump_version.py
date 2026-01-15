@@ -165,6 +165,7 @@ def get_current_version(root: Path) -> str | None:
 def is_valid_version(version: str) -> bool:
     """Check if version string is valid semver format (x.y.z)."""
     import re
+
     semver_regex = re.compile(r"^\d+\.\d+\.\d+$")
     return bool(semver_regex.match(version))
 
