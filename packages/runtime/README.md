@@ -4,6 +4,8 @@ Core runtime package for serving AI agents via REST APIs. Provides the `serve()`
 
 Built on [FastAPI](https://fastapi.tiangolo.com) with full async support.
 
+> **Ready to go live?** [Deploy to Reminix](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
+
 ## Installation
 
 ```bash
@@ -296,6 +298,13 @@ class ChatResponse:
     output: str                # The final answer
     messages: list[dict]       # Full execution history
 ```
+
+## Deployment
+
+Ready to go live?
+
+- **[Deploy to Reminix](https://reminix.com/docs/deployment)** - Zero-config cloud hosting
+- **[Self-host](https://reminix.com/docs/deployment/self-hosting)** - Run on your own infrastructure
 
 ## Links
 
