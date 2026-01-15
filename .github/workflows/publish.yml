@@ -51,6 +51,21 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-packages --all-extras
 
+      - name: Verify tag matches runtime version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          data = tomllib.loads(Path("packages/runtime/pyproject.toml").read_text())
+          print(data["project"]["version"])
+          PY
+          )"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "Tag v$TAG does not match runtime version $VERSION"
+            exit 1
+          fi
+
       - name: Publish packages
         # uv publish builds and publishes in one command, but we need to loop since
         # uv doesn't have a workspace-level publish command yet
