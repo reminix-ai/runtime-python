@@ -77,12 +77,13 @@ def update_pyproject_toml(
 
     # Update dependencies that reference packages in packages/ directory
     # Match any package name that looks like it's from our monorepo (reminix-*)
-    # Pattern: "package-name==0.0.0" or "package-name>=0.0.0"
-    pattern = rf'("(reminix-[a-z-]+))(==|>=)({re.escape(old_version)})"'
+    # Pattern: "package-name==0.0.0", "package-name>=0.0.0", or "package-name~=0.0.0"
+    pattern = rf'("(reminix-[a-z-]+))(==|>=|~=)({re.escape(old_version)})"'
 
     def replace_dep(match):
         pkg_name = match.group(2)
-        return f'"{pkg_name}=={new_version}"'
+        operator = match.group(3)
+        return f'"{pkg_name}{operator}{new_version}"'
 
     content = re.sub(pattern, replace_dep, content)
 
@@ -91,6 +92,34 @@ def update_pyproject_toml(
             file_path.write_text(content)
         return True
     return False
+
+
+def update_runtime_version_files(root: Path, new_version: str, dry_run: bool = False) -> list[Path]:
+    """Update runtime version constants and docs to match package version."""
+    updated = []
+    runtime_init = root / "packages" / "runtime" / "src" / "reminix_runtime" / "__init__.py"
+    runtime_readme = root / "packages" / "runtime" / "README.md"
+
+    init_pattern = r'^__version__\s*=\s*"[0-9]+\.[0-9]+\.[0-9]+"'
+    readme_pattern = r'"version":\s*"[0-9]+\.[0-9]+\.[0-9]+"'
+
+    if runtime_init.exists():
+        content = runtime_init.read_text()
+        new_content = re.sub(init_pattern, f'__version__ = "{new_version}"', content, flags=re.MULTILINE)
+        if new_content != content:
+            if not dry_run:
+                runtime_init.write_text(new_content)
+            updated.append(runtime_init)
+
+    if runtime_readme.exists():
+        content = runtime_readme.read_text()
+        new_content = re.sub(readme_pattern, f'"version": "{new_version}"', content)
+        if new_content != content:
+            if not dry_run:
+                runtime_readme.write_text(new_content)
+            updated.append(runtime_readme)
+
+    return updated
 
 
 def is_managed_package(file_path: Path, root: Path) -> bool:
@@ -181,6 +210,12 @@ def main() -> int:
         ):
             print(f"  ✓ {pyproject.relative_to(python_root)}")
             updated_count += 1
+
+    for updated_file in update_runtime_version_files(
+        python_root, new_version, dry_run=args.dry_run
+    ):
+        print(f"  ✓ {updated_file.relative_to(python_root)}")
+        updated_count += 1
 
     if args.dry_run:
         print(f"\n[DRY RUN] Would update {updated_count} files")
