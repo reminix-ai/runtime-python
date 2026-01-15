@@ -1,0 +1,159 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    branches:
+      - main
+    inputs:
+      bump_type:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - custom
+      custom_version:
+        description: 'Custom version (e.g., 1.2.3) - only used if bump_type is "custom"'
+        required: false
+        type: string
+      release_notes:
+        description: 'Release notes (optional)'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --all-packages --all-extras
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(python -c "import tomllib; f=open('packages/runtime/pyproject.toml','rb'); data=tomllib.load(f); print(data['project']['version']); f.close()")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Determine new version
+        id: new_version
+        run: |
+          if [ "${{ inputs.bump_type }}" == "custom" ]; then
+            if [ -z "${{ inputs.custom_version }}" ]; then
+              echo "Error: custom_version is required when bump_type is 'custom'"
+              exit 1
+            fi
+            NEW_VERSION="${{ inputs.custom_version }}"
+          else
+            # Calculate new version based on current version and bump type
+            CURRENT="${{ steps.current_version.outputs.version }}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+            case "${{ inputs.bump_type }}" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          fi
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Bump version
+        run: |
+          if [ "${{ inputs.bump_type }}" == "custom" ]; then
+            uv run bump-version "${{ inputs.custom_version }}"
+          else
+            uv run bump-version "${{ inputs.bump_type }}"
+          fi
+
+      - name: Verify version was updated
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          ACTUAL_VERSION=$(python -c "import tomllib; f=open('packages/runtime/pyproject.toml','rb'); data=tomllib.load(f); print(data['project']['version']); f.close()")
+          if [ "$NEW_VERSION" != "$ACTUAL_VERSION" ]; then
+            echo "Error: Version mismatch. Expected $NEW_VERSION but got $ACTUAL_VERSION"
+            exit 1
+          fi
+          echo "✓ Version verified: $ACTUAL_VERSION"
+
+      - name: Commit version changes
+        run: |
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: bump version to ${{ steps.new_version.outputs.version }}"
+          fi
+
+      - name: Create git tag
+        id: tag
+        run: |
+          TAG="v${{ steps.new_version.outputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+            exit 1
+          fi
+          git tag -a "$TAG" -m "Release $TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Created tag: $TAG"
+
+      - name: Push changes and tag
+        run: |
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "${{ steps.tag.outputs.tag }}"
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.tag.outputs.tag }}';
+            const releaseNotes = `${{ inputs.release_notes }}`.trim();
+            
+            const releaseBody = releaseNotes || `Release ${tag}\n\nSee the [changelog](https://github.com/${{ github.repository }}/compare/v${{ steps.current_version.outputs.version }}...${tag}) for details.`;
+            
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: tag,
+              body: releaseBody,
+              draft: true, // Create as draft so you can review/edit before publishing
+              prerelease: false
+            });
+            
+            console.log(`✓ Created draft release: ${tag}`);
+            console.log(`  Review and publish at: https://github.com/${{ github.repository }}/releases`);

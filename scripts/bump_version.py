@@ -162,11 +162,23 @@ def get_current_version(root: Path) -> str | None:
     return None
 
 
+def is_valid_version(version: str) -> bool:
+    """Check if version string is valid semver format (x.y.z)."""
+    import re
+    semver_regex = re.compile(r"^\d+\.\d+\.\d+$")
+    return bool(semver_regex.match(version))
+
+
 def main() -> int:
     """Main entry point."""
-    parser = argparse.ArgumentParser(description="Bump version numbers across all packages")
+    parser = argparse.ArgumentParser(
+        description="Bump version numbers across all packages",
+        epilog="Examples:\n  bump-version patch        # Bump patch version\n  bump-version 1.2.3       # Set to specific version",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
-        "bump_type", choices=["major", "minor", "patch"], help="Type of version bump"
+        "bump_type_or_version",
+        help="Type of version bump (major/minor/patch) or specific version (e.g., 1.2.3)",
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="Show what would be changed without making changes"
@@ -188,9 +200,19 @@ def main() -> int:
         print("Error: Could not determine current version")
         return 1
 
-    new_version = bump_version(current_version, args.bump_type)
+    # Check if it's a custom version or a bump type
+    if args.bump_type_or_version in ["major", "minor", "patch"]:
+        new_version = bump_version(current_version, args.bump_type_or_version)
+        bump_description = args.bump_type_or_version
+    elif is_valid_version(args.bump_type_or_version):
+        new_version = args.bump_type_or_version
+        bump_description = f"custom ({args.bump_type_or_version})"
+    else:
+        print(f"Error: Invalid version or bump type: {args.bump_type_or_version}")
+        print("Must be one of: major, minor, patch, or a version string (e.g., 1.2.3)")
+        return 1
 
-    print(f"Bumping version from {current_version} to {new_version} ({args.bump_type})")
+    print(f"Bumping version from {current_version} to {new_version} ({bump_description})")
     if args.dry_run:
         print("\n[DRY RUN] Would update the following files:")
     else:
