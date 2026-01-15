@@ -16,16 +16,21 @@ This will also install `reminix-runtime` as a dependency.
 
 ```python
 from anthropic import AsyncAnthropic
+from reminix_anthropic import wrap_and_serve
+
+client = AsyncAnthropic()
+wrap_and_serve(client, name="my-claude", model="claude-sonnet-4-20250514", port=8080)
+```
+
+For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+
+```python
+from anthropic import AsyncAnthropic
 from reminix_anthropic import wrap
 from reminix_runtime import serve
 
-# Create an Anthropic client
 client = AsyncAnthropic()
-
-# Wrap it with the Reminix adapter
 agent = wrap(client, name="my-claude", model="claude-sonnet-4-20250514")
-
-# Serve it as a REST API
 serve([agent], port=8080)
 ```
 
@@ -35,9 +40,22 @@ Your agent is now available at:
 
 ## API Reference
 
+### `wrap_and_serve(client, name, model, max_tokens, port, host)`
+
+Wrap an Anthropic client and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `client` | `AsyncAnthropic` | required | An Anthropic async client |
+| `name` | `str` | `"anthropic-agent"` | Name for the agent (used in URL path) |
+| `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
+| `max_tokens` | `int` | `4096` | Maximum tokens in response |
+| `port` | `int` | `8080` | Port to serve on |
+| `host` | `str` | `"0.0.0.0"` | Host to bind to |
+
 ### `wrap(client, name, model, max_tokens)`
 
-Wrap an Anthropic client for use with Reminix Runtime.
+Wrap an Anthropic client for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|

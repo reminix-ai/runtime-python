@@ -16,16 +16,21 @@ This will also install `reminix-runtime` as a dependency.
 
 ```python
 from openai import AsyncOpenAI
+from reminix_openai import wrap_and_serve
+
+client = AsyncOpenAI()
+wrap_and_serve(client, name="my-chatbot", model="gpt-4o", port=8080)
+```
+
+For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+
+```python
+from openai import AsyncOpenAI
 from reminix_openai import wrap
 from reminix_runtime import serve
 
-# Create an OpenAI client
 client = AsyncOpenAI()
-
-# Wrap it with the Reminix adapter
 agent = wrap(client, name="my-chatbot", model="gpt-4o")
-
-# Serve it as a REST API
 serve([agent], port=8080)
 ```
 
@@ -35,9 +40,21 @@ Your agent is now available at:
 
 ## API Reference
 
-### `wrap(client, name, model, max_tokens)`
+### `wrap_and_serve(client, name, model, port, host)`
 
-Wrap an OpenAI client for use with Reminix Runtime.
+Wrap an OpenAI client and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `client` | `AsyncOpenAI` | required | An OpenAI async client |
+| `name` | `str` | `"openai-agent"` | Name for the agent (used in URL path) |
+| `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
+| `port` | `int` | `8080` | Port to serve on |
+| `host` | `str` | `"0.0.0.0"` | Host to bind to |
+
+### `wrap(client, name, model)`
+
+Wrap an OpenAI client for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|

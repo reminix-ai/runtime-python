@@ -17,17 +17,24 @@ This will also install `reminix-runtime` as a dependency.
 ```python
 from llama_index.core.chat_engine import SimpleChatEngine
 from llama_index.llms.openai import OpenAI
+from reminix_llamaindex import wrap_and_serve
+
+llm = OpenAI(model="gpt-4o")
+engine = SimpleChatEngine.from_defaults(llm=llm)
+wrap_and_serve(engine, name="my-chatbot", port=8080)
+```
+
+For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+
+```python
+from llama_index.core.chat_engine import SimpleChatEngine
+from llama_index.llms.openai import OpenAI
 from reminix_llamaindex import wrap
 from reminix_runtime import serve
 
-# Create a LlamaIndex chat engine
 llm = OpenAI(model="gpt-4o")
 engine = SimpleChatEngine.from_defaults(llm=llm)
-
-# Wrap it with the Reminix adapter
 agent = wrap(engine, name="my-chatbot")
-
-# Serve it as a REST API
 serve([agent], port=8080)
 ```
 
@@ -37,9 +44,20 @@ Your agent is now available at:
 
 ## API Reference
 
+### `wrap_and_serve(engine, name, port, host)`
+
+Wrap a LlamaIndex chat engine and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `engine` | `BaseChatEngine` | required | A LlamaIndex chat engine |
+| `name` | `str` | `"llamaindex-agent"` | Name for the agent (used in URL path) |
+| `port` | `int` | `8080` | Port to serve on |
+| `host` | `str` | `"0.0.0.0"` | Host to bind to |
+
 ### `wrap(engine, name)`
 
-Wrap a LlamaIndex chat engine for use with Reminix Runtime.
+Wrap a LlamaIndex chat engine for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|

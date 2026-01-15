@@ -17,17 +17,24 @@ This will also install `reminix-runtime` as a dependency.
 ```python
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
+from reminix_langgraph import wrap_and_serve
+
+llm = ChatOpenAI(model="gpt-4o")
+graph = create_react_agent(llm, tools=[])
+wrap_and_serve(graph, name="my-agent", port=8080)
+```
+
+For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+
+```python
+from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
 from reminix_langgraph import wrap
 from reminix_runtime import serve
 
-# Create a LangGraph agent
 llm = ChatOpenAI(model="gpt-4o")
 graph = create_react_agent(llm, tools=[])
-
-# Wrap it with the Reminix adapter
 agent = wrap(graph, name="my-agent")
-
-# Serve it as a REST API
 serve([agent], port=8080)
 ```
 
@@ -37,9 +44,20 @@ Your agent is now available at:
 
 ## API Reference
 
+### `wrap_and_serve(graph, name, port, host)`
+
+Wrap a LangGraph graph and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
+| `name` | `str` | `"langgraph-agent"` | Name for the agent (used in URL path) |
+| `port` | `int` | `8080` | Port to serve on |
+| `host` | `str` | `"0.0.0.0"` | Host to bind to |
+
 ### `wrap(graph, name)`
 
-Wrap a LangGraph compiled graph for use with Reminix Runtime.
+Wrap a LangGraph compiled graph for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|

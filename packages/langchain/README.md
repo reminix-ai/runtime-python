@@ -16,16 +16,21 @@ This will also install `reminix-runtime` as a dependency.
 
 ```python
 from langchain_openai import ChatOpenAI
+from reminix_langchain import wrap_and_serve
+
+llm = ChatOpenAI(model="gpt-4o")
+wrap_and_serve(llm, name="my-chatbot", port=8080)
+```
+
+For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+
+```python
+from langchain_openai import ChatOpenAI
 from reminix_langchain import wrap
 from reminix_runtime import serve
 
-# Create a LangChain model or chain
 llm = ChatOpenAI(model="gpt-4o")
-
-# Wrap it with the Reminix adapter
 agent = wrap(llm, name="my-chatbot")
-
-# Serve it as a REST API
 serve([agent], port=8080)
 ```
 
@@ -35,9 +40,20 @@ Your agent is now available at:
 
 ## API Reference
 
+### `wrap_and_serve(runnable, name, port, host)`
+
+Wrap a LangChain runnable and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `runnable` | `Runnable` | required | Any LangChain runnable (LLM, chain, agent, etc.) |
+| `name` | `str` | `"langchain-agent"` | Name for the agent (used in URL path) |
+| `port` | `int` | `8080` | Port to serve on |
+| `host` | `str` | `"0.0.0.0"` | Host to bind to |
+
 ### `wrap(runnable, name)`
 
-Wrap a LangChain runnable for use with Reminix Runtime.
+Wrap a LangChain runnable for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
