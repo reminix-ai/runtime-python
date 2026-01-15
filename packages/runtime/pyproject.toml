@@ -1,7 +1,7 @@
 [project]
 name = "reminix-runtime"
 version = "0.0.1"
-description = "Reminix Runtime - Deploy AI agents via REST APIs"
+description = "Reminix Runtime - Serve AI agents as REST APIs with streaming support"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
