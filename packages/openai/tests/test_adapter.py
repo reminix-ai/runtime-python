@@ -1,10 +1,10 @@
 """Tests for the OpenAI adapter."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from reminix_openai import OpenAIAdapter, wrap
+from reminix_openai import OpenAIAdapter, wrap, wrap_and_serve
 from reminix_runtime import BaseAdapter, ChatRequest, InvokeRequest
 
 
@@ -144,3 +144,37 @@ class TestOpenAIAdapterChat:
 
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         assert call_kwargs["model"] == "gpt-4o"
+
+
+class TestWrapAndServe:
+    """Tests for the wrap_and_serve() function."""
+
+    def test_wrap_and_serve_is_callable(self):
+        """wrap_and_serve() should be callable."""
+        assert callable(wrap_and_serve)
+
+    @patch("reminix_openai.adapter.serve")
+    def test_wrap_and_serve_calls_serve(self, mock_serve):
+        """wrap_and_serve() should call serve with wrapped adapter."""
+        mock_client = MagicMock()
+
+        wrap_and_serve(mock_client, name="test-agent")
+
+        mock_serve.assert_called_once()
+        call_args = mock_serve.call_args
+        agents = call_args[0][0]
+        assert len(agents) == 1
+        assert isinstance(agents[0], OpenAIAdapter)
+        assert agents[0].name == "test-agent"
+
+    @patch("reminix_openai.adapter.serve")
+    def test_wrap_and_serve_passes_serve_options(self, mock_serve):
+        """wrap_and_serve() should pass port and host to serve."""
+        mock_client = MagicMock()
+
+        wrap_and_serve(mock_client, name="test-agent", port=3000, host="localhost")
+
+        mock_serve.assert_called_once()
+        call_kwargs = mock_serve.call_args[1]
+        assert call_kwargs["port"] == 3000
+        assert call_kwargs["host"] == "localhost"

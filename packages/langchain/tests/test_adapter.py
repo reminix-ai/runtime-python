@@ -1,12 +1,12 @@
 """Tests for the LangChain adapter."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import Runnable
 
-from reminix_langchain import LangChainAdapter, wrap
+from reminix_langchain import LangChainAdapter, wrap, wrap_and_serve
 from reminix_runtime import BaseAdapter, ChatRequest, InvokeRequest
 
 
@@ -171,3 +171,37 @@ class TestMessageConversion:
         # Should not raise an error
         response = await adapter.chat(request)
         assert response.output == "Response"
+
+
+class TestWrapAndServe:
+    """Tests for the wrap_and_serve() function."""
+
+    def test_wrap_and_serve_is_callable(self):
+        """wrap_and_serve() should be callable."""
+        assert callable(wrap_and_serve)
+
+    @patch("reminix_langchain.adapter.serve")
+    def test_wrap_and_serve_calls_serve(self, mock_serve):
+        """wrap_and_serve() should call serve with wrapped adapter."""
+        mock_runnable = MagicMock(spec=Runnable)
+
+        wrap_and_serve(mock_runnable, name="test-agent")
+
+        mock_serve.assert_called_once()
+        call_args = mock_serve.call_args
+        agents = call_args[0][0]
+        assert len(agents) == 1
+        assert isinstance(agents[0], LangChainAdapter)
+        assert agents[0].name == "test-agent"
+
+    @patch("reminix_langchain.adapter.serve")
+    def test_wrap_and_serve_passes_serve_options(self, mock_serve):
+        """wrap_and_serve() should pass port and host to serve."""
+        mock_runnable = MagicMock(spec=Runnable)
+
+        wrap_and_serve(mock_runnable, name="test-agent", port=3000, host="localhost")
+
+        mock_serve.assert_called_once()
+        call_kwargs = mock_serve.call_args[1]
+        assert call_kwargs["port"] == 3000
+        assert call_kwargs["host"] == "localhost"

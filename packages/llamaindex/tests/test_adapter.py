@@ -1,10 +1,10 @@
 """Tests for the LlamaIndex adapter."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from reminix_llamaindex import LlamaIndexAdapter, wrap
+from reminix_llamaindex import LlamaIndexAdapter, wrap, wrap_and_serve
 from reminix_runtime import BaseAdapter, ChatRequest, InvokeRequest
 
 
@@ -150,3 +150,39 @@ class TestLlamaIndexAdapterChat:
         await adapter.chat(request)
 
         mock_engine.achat.assert_called_once_with("Second message")
+
+
+class TestWrapAndServe:
+    """Tests for the wrap_and_serve() function."""
+
+    def test_wrap_and_serve_is_callable(self):
+        """wrap_and_serve() should be callable."""
+        assert callable(wrap_and_serve)
+
+    @patch("reminix_llamaindex.adapter.serve")
+    def test_wrap_and_serve_calls_serve(self, mock_serve):
+        """wrap_and_serve() should call serve with wrapped adapter."""
+        mock_engine = MagicMock()
+        mock_engine.achat = AsyncMock()
+
+        wrap_and_serve(mock_engine, name="test-agent")
+
+        mock_serve.assert_called_once()
+        call_args = mock_serve.call_args
+        agents = call_args[0][0]
+        assert len(agents) == 1
+        assert isinstance(agents[0], LlamaIndexAdapter)
+        assert agents[0].name == "test-agent"
+
+    @patch("reminix_llamaindex.adapter.serve")
+    def test_wrap_and_serve_passes_serve_options(self, mock_serve):
+        """wrap_and_serve() should pass port and host to serve."""
+        mock_engine = MagicMock()
+        mock_engine.achat = AsyncMock()
+
+        wrap_and_serve(mock_engine, name="test-agent", port=3000, host="localhost")
+
+        mock_serve.assert_called_once()
+        call_kwargs = mock_serve.call_args[1]
+        assert call_kwargs["port"] == 3000
+        assert call_kwargs["host"] == "localhost"
