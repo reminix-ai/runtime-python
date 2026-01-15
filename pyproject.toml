@@ -18,6 +18,7 @@ classifiers = ["Private :: Do Not Upload"]
 check = "scripts.check:main"
 prepush = "scripts.prepush:main"
 bump-version = "scripts.bump_version:main"
+check-tag-version = "scripts.check_tag_version:main"
 
 [project.optional-dependencies]
 dev = [
