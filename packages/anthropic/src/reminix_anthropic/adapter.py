@@ -13,6 +13,7 @@ from reminix_runtime import (
     InvokeRequest,
     InvokeResponse,
     Message,
+    serve,
 )
 
 
@@ -265,3 +266,36 @@ def wrap(
         ```
     """
     return AnthropicAdapter(client, name=name, model=model, max_tokens=max_tokens)
+
+
+def wrap_and_serve(
+    client: AsyncAnthropic,
+    name: str = "anthropic-agent",
+    model: str = "claude-sonnet-4-20250514",
+    max_tokens: int = 4096,
+    port: int = 8080,
+    host: str = "0.0.0.0",
+) -> None:
+    """Wrap an Anthropic client and serve it immediately.
+
+    This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+
+    Args:
+        client: An Anthropic async client.
+        name: Name for the agent.
+        model: The model to use for completions.
+        max_tokens: Maximum tokens in the response.
+        port: Port to serve on.
+        host: Host to bind to.
+
+    Example:
+        ```python
+        from anthropic import AsyncAnthropic
+        from reminix_anthropic import wrap_and_serve
+
+        client = AsyncAnthropic()
+        wrap_and_serve(client, name="my-agent", model="claude-sonnet-4-20250514", port=8080)
+        ```
+    """
+    agent = wrap(client, name=name, model=model, max_tokens=max_tokens)
+    serve([agent], port=port, host=host)

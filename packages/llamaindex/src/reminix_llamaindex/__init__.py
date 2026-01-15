@@ -1,3 +1,3 @@
-from .adapter import LlamaIndexAdapter, wrap
+from .adapter import LlamaIndexAdapter, wrap, wrap_and_serve
 
-__all__ = ["LlamaIndexAdapter", "wrap"]
+__all__ = ["LlamaIndexAdapter", "wrap", "wrap_and_serve"]

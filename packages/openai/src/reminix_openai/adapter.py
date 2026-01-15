@@ -13,6 +13,7 @@ from reminix_runtime import (
     InvokeRequest,
     InvokeResponse,
     Message,
+    serve,
 )
 
 
@@ -201,3 +202,34 @@ def wrap(
         ```
     """
     return OpenAIAdapter(client, name=name, model=model)
+
+
+def wrap_and_serve(
+    client: AsyncOpenAI,
+    name: str = "openai-agent",
+    model: str = "gpt-4o-mini",
+    port: int = 8080,
+    host: str = "0.0.0.0",
+) -> None:
+    """Wrap an OpenAI client and serve it immediately.
+
+    This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+
+    Args:
+        client: An OpenAI async client.
+        name: Name for the agent.
+        model: The model to use for completions.
+        port: Port to serve on.
+        host: Host to bind to.
+
+    Example:
+        ```python
+        from openai import AsyncOpenAI
+        from reminix_openai import wrap_and_serve
+
+        client = AsyncOpenAI()
+        wrap_and_serve(client, name="my-agent", model="gpt-4o", port=8080)
+        ```
+    """
+    agent = wrap(client, name=name, model=model)
+    serve([agent], port=port, host=host)

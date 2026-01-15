@@ -11,6 +11,7 @@ from reminix_runtime import (
     InvokeRequest,
     InvokeResponse,
     Message,
+    serve,
 )
 
 
@@ -177,3 +178,34 @@ def wrap(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndexAdapte
         ```
     """
     return LlamaIndexAdapter(engine, name=name)
+
+
+def wrap_and_serve(
+    engine: ChatEngine,
+    name: str = "llamaindex-agent",
+    port: int = 8080,
+    host: str = "0.0.0.0",
+) -> None:
+    """Wrap a LlamaIndex chat engine and serve it immediately.
+
+    This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+
+    Args:
+        engine: A LlamaIndex chat engine (e.g., SimpleChatEngine, ContextChatEngine).
+        name: Name for the agent.
+        port: Port to serve on.
+        host: Host to bind to.
+
+    Example:
+        ```python
+        from llama_index.core.chat_engine import SimpleChatEngine
+        from llama_index.llms.openai import OpenAI
+        from reminix_llamaindex import wrap_and_serve
+
+        llm = OpenAI(model="gpt-4")
+        engine = SimpleChatEngine.from_defaults(llm=llm)
+        wrap_and_serve(engine, name="my-agent", port=8080)
+        ```
+    """
+    agent = wrap(engine, name=name)
+    serve([agent], port=port, host=host)

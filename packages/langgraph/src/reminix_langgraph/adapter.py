@@ -20,6 +20,7 @@ from reminix_runtime import (
     InvokeRequest,
     InvokeResponse,
     Message,
+    serve,
 )
 
 
@@ -221,3 +222,34 @@ def wrap(graph: Any, name: str = "langgraph-agent") -> LangGraphAdapter:
         ```
     """
     return LangGraphAdapter(graph, name=name)
+
+
+def wrap_and_serve(
+    graph: Any,
+    name: str = "langgraph-agent",
+    port: int = 8080,
+    host: str = "0.0.0.0",
+) -> None:
+    """Wrap a LangGraph graph and serve it immediately.
+
+    This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+
+    Args:
+        graph: A LangGraph compiled graph.
+        name: Name for the agent.
+        port: Port to serve on.
+        host: Host to bind to.
+
+    Example:
+        ```python
+        from langgraph.prebuilt import create_react_agent
+        from langchain_openai import ChatOpenAI
+        from reminix_langgraph import wrap_and_serve
+
+        llm = ChatOpenAI(model="gpt-4")
+        graph = create_react_agent(llm, tools=[])
+        wrap_and_serve(graph, name="my-agent", port=8080)
+        ```
+    """
+    agent = wrap(graph, name=name)
+    serve([agent], port=port, host=host)

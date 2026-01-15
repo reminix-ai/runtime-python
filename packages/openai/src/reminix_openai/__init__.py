@@ -1,3 +1,3 @@
-from .adapter import OpenAIAdapter, wrap
+from .adapter import OpenAIAdapter, wrap, wrap_and_serve
 
-__all__ = ["OpenAIAdapter", "wrap"]
+__all__ = ["OpenAIAdapter", "wrap", "wrap_and_serve"]

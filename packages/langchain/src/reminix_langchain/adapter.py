@@ -21,6 +21,7 @@ from reminix_runtime import (
     InvokeRequest,
     InvokeResponse,
     Message,
+    serve,
 )
 
 
@@ -233,3 +234,32 @@ def wrap(agent: Runnable, name: str = "langchain-agent") -> LangChainAdapter:
         ```
     """
     return LangChainAdapter(agent, name=name)
+
+
+def wrap_and_serve(
+    agent: Runnable,
+    name: str = "langchain-agent",
+    port: int = 8080,
+    host: str = "0.0.0.0",
+) -> None:
+    """Wrap a LangChain runnable and serve it immediately.
+
+    This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+
+    Args:
+        agent: A LangChain runnable (e.g., ChatModel, chain, agent).
+        name: Name for the agent.
+        port: Port to serve on.
+        host: Host to bind to.
+
+    Example:
+        ```python
+        from langchain_openai import ChatOpenAI
+        from reminix_langchain import wrap_and_serve
+
+        llm = ChatOpenAI(model="gpt-4")
+        wrap_and_serve(llm, name="my-agent", port=8080)
+        ```
+    """
+    wrapped_agent = wrap(agent, name=name)
+    serve([wrapped_agent], port=port, host=host)
