@@ -1,12 +1,12 @@
 [project]
 name = "reminix-langchain"
-version = "0.0.0"
+version = "0.0.1"
 description = "Reminix adapter for LangChain"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 dependencies = [
-    "reminix-runtime~=0.0.0",
+    "reminix-runtime~=0.0.1",
     "langchain-core>=1.2.0",
 ]
 
