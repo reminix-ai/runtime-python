@@ -1,6 +1,6 @@
 [project]
 name = "reminix-runtime"
-version = "0.0.1"
+version = "0.0.2"
 description = "Reminix Runtime - Serve AI agents as REST APIs with streaming support"
 readme = "README.md"
 license = "Apache-2.0"

@@ -72,7 +72,7 @@ Returns runtime information and available agents:
 {
   "runtime": {
     "name": "reminix-runtime",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "language": "python",
     "framework": "fastapi"
   },
