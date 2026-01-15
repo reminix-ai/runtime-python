@@ -126,6 +126,13 @@ Conversational chat with message history.
 
 For information about the server, endpoints, request/response formats, and more, see the [`reminix-runtime`](https://pypi.org/project/reminix-runtime/) package.
 
+## Deployment
+
+Ready to go live?
+
+- **[Deploy to Reminix](https://reminix.com/docs/deployment)** - Zero-config cloud hosting
+- **[Self-host](https://reminix.com/docs/deployment/self-hosting)** - Run on your own infrastructure
+
 ## Links
 
 - [GitHub Repository](https://github.com/reminix-ai/runtime-python)
