@@ -5,10 +5,29 @@ description = "Reminix adapter for LlamaIndex"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
+authors = [{ name = "Reminix Team", email = "team@reminix.com" }]
+keywords = ["ai", "agents", "llamaindex", "llama-index", "rag", "llm", "reminix"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "reminix-runtime~=0.0.1",
     "llama-index>=0.14.0",
 ]
+
+[project.urls]
+Homepage = "https://reminix.com"
+Documentation = "https://reminix.com/docs"
+Repository = "https://github.com/reminix-ai/runtime-python"
+Changelog = "https://github.com/reminix-ai/runtime-python/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/reminix-ai/runtime-python/issues"
 
 [project.optional-dependencies]
 dev = [
