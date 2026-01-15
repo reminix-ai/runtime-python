@@ -64,7 +64,9 @@ jobs:
               if ! grep -q 'name = "reminix-runtime-monorepo"' "$package/pyproject.toml" 2>/dev/null; then
                 echo "Publishing $package"
                 cd "$package"
-                uv publish --token ${{ secrets.PYPI_TOKEN }}
+                rm -rf dist
+                uv build --sdist --wheel
+                uv publish --token ${{ secrets.PYPI_TOKEN }} dist/*
                 cd ../..
               fi
             fi
