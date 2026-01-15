@@ -1,4 +1,5 @@
 """Base agent and adapter interface."""
+# ruff: noqa: ARG002  # abstract methods have unused args in interface definitions
 
 import json
 import re
