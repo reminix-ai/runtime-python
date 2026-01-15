@@ -58,15 +58,16 @@ jobs:
         # uv publish builds and publishes in one command, but we need to loop since
         # uv doesn't have a workspace-level publish command yet
         run: |
+          ROOT="$GITHUB_WORKSPACE"
           for package in packages/*/; do
             if [ -f "$package/pyproject.toml" ]; then
               # Skip if it's the monorepo package (shouldn't be in packages/, but double-check)
               if ! grep -q 'name = "reminix-runtime-monorepo"' "$package/pyproject.toml" 2>/dev/null; then
                 echo "Publishing $package"
                 cd "$package"
-                rm -rf dist
+                rm -rf "$ROOT/dist"
                 uv build --sdist --wheel
-                uv publish --token ${{ secrets.PYPI_TOKEN }} dist/*
+                uv publish --token ${{ secrets.PYPI_TOKEN }} "$ROOT"/dist/*
                 cd ../..
               fi
             fi
