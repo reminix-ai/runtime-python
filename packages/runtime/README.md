@@ -300,7 +300,7 @@ class ChatResponse:
 ## Links
 
 - [GitHub Repository](https://github.com/reminix-ai/runtime-python)
-- [Documentation](https://docs.reminix.ai)
+- [Documentation](https://reminix.com/docs)
 
 ## License
 
