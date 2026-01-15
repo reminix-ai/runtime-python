@@ -2,8 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    branches:
-      - main
     inputs:
       bump_type:
         description: 'Version bump type'
@@ -27,6 +25,7 @@ on:
 jobs:
   release:
     name: Create Release
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
