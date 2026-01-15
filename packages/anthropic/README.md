@@ -1,6 +1,6 @@
 # reminix-anthropic
 
-Reminix Runtime adapter for the [Anthropic API](https://docs.anthropic.com/). Deploy Claude models as a REST API.
+Reminix Runtime adapter for the [Anthropic API](https://docs.anthropic.com/). Serve Claude models as a REST API.
 
 ## Installation
 

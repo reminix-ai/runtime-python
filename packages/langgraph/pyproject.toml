@@ -1,7 +1,7 @@
 [project]
 name = "reminix-langgraph"
 version = "0.0.1"
-description = "Reminix integration for LangGraph - serve graph-based agents as REST APIs"
+description = "Reminix adapter for LangGraph - serve agents as REST APIs"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"

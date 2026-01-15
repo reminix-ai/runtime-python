@@ -1,6 +1,6 @@
 # reminix-llamaindex
 
-Reminix Runtime adapter for [LlamaIndex](https://www.llamaindex.ai/). Deploy LlamaIndex chat engines as a REST API.
+Reminix Runtime adapter for [LlamaIndex](https://www.llamaindex.ai/). Serve LlamaIndex chat engines as a REST API.
 
 ## Installation
 

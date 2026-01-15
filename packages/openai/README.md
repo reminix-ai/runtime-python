@@ -1,6 +1,6 @@
 # reminix-openai
 
-Reminix Runtime adapter for the [OpenAI API](https://platform.openai.com/docs). Deploy OpenAI models as a REST API.
+Reminix Runtime adapter for the [OpenAI API](https://platform.openai.com/docs). Serve OpenAI models as a REST API.
 
 ## Installation
 

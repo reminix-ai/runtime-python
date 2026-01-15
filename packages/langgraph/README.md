@@ -1,6 +1,6 @@
 # reminix-langgraph
 
-Reminix Runtime adapter for [LangGraph](https://langchain-ai.github.io/langgraph/). Deploy any LangGraph agent as a REST API.
+Reminix Runtime adapter for [LangGraph](https://langchain-ai.github.io/langgraph/). Serve any LangGraph agent as a REST API.
 
 ## Installation
 
