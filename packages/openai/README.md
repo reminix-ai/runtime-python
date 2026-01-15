@@ -2,7 +2,7 @@
 
 Reminix Runtime adapter for the [OpenAI API](https://platform.openai.com/docs). Serve OpenAI models as a REST API.
 
-> **Ready to go live?** [Deploy to Reminix](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
+> **Ready to go live?** [Deploy to Reminix Cloud](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
 
 ## Installation
 
@@ -151,7 +151,7 @@ For information about the server, endpoints, request/response formats, and more,
 
 Ready to go live?
 
-- **[Deploy to Reminix](https://reminix.com/docs/deployment)** - Zero-config cloud hosting
+- **[Deploy to Reminix Cloud](https://reminix.com/docs/deployment)** - Zero-config cloud hosting
 - **[Self-host](https://reminix.com/docs/deployment/self-hosting)** - Run on your own infrastructure
 
 ## Links
