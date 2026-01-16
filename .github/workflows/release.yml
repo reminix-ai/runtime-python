@@ -7,10 +7,11 @@ on:
         description: 'Version bump type'
         required: true
         type: choice
+        default: 'patch'
         options:
-          - major
-          - minor
           - patch
+          - minor
+          - major
           - custom
       custom_version:
         description: 'Custom version (e.g., 1.2.3) - only used if bump_type is "custom"'
