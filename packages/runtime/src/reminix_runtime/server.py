@@ -100,15 +100,24 @@ def create_app(agents: list[AgentBase]) -> FastAPI:
     return app
 
 
-def serve(agents: list[AgentBase], port: int = 8080, host: str = "::") -> None:
+def serve(agents: list[AgentBase], port: int | None = None, host: str | None = None) -> None:
     """Serve agents via REST API.
 
     Args:
         agents: List of agents.
-        port: Port to serve on.
-        host: Host to bind to. Defaults to "::" (IPv6) which also accepts IPv4 connections.
+        port: Port to serve on. Defaults to PORT environment variable or 8080.
+        host: Host to bind to. Defaults to "0.0.0.0" (all interfaces, IPv4 and IPv6).
+            Can be overridden via HOST environment variable. Set to "::" for IPv6-only.
     """
+    import os
     import uvicorn
+
+    # Allow override via environment variable (useful for Fly deployments)
+    if host is None:
+        host = os.getenv("HOST", "0.0.0.0")
+    
+    if port is None:
+        port = int(os.getenv("PORT", "8080"))
 
     app = create_app(agents)
     uvicorn.run(app, host=host, port=port)
