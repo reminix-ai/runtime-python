@@ -1,4 +1,4 @@
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 from .adapters.base import Agent, AgentBase, ASGIApp, BaseAdapter
 from .server import create_app, serve
