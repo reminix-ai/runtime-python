@@ -110,12 +110,13 @@ def serve(agents: list[AgentBase], port: int | None = None, host: str | None = N
             Can be overridden via HOST environment variable. Set to "::" for IPv6-only.
     """
     import os
+
     import uvicorn
 
     # Allow override via environment variable (useful for Fly deployments)
     if host is None:
         host = os.getenv("HOST", "0.0.0.0")
-    
+
     if port is None:
         port = int(os.getenv("PORT", "8080"))
 
