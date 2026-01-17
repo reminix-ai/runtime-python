@@ -161,7 +161,7 @@ Start the runtime server.
 |-----------|------|---------|-------------|
 | `agents` | `list[Agent]` | required | List of agents |
 | `port` | `int` | `8080` | Port to listen on |
-| `host` | `str` | `"0.0.0.0"` | Host to bind to |
+| `host` | `str` | `"::"` | Host to bind to (IPv6, also accepts IPv4) |
 
 ### `create_app(agents)`
 

@@ -100,13 +100,13 @@ def create_app(agents: list[AgentBase]) -> FastAPI:
     return app
 
 
-def serve(agents: list[AgentBase], port: int = 8080, host: str = "0.0.0.0") -> None:
+def serve(agents: list[AgentBase], port: int = 8080, host: str = "::") -> None:
     """Serve agents via REST API.
 
     Args:
         agents: List of agents.
         port: Port to serve on.
-        host: Host to bind to.
+        host: Host to bind to. Defaults to "::" (IPv6) which also accepts IPv4 connections.
     """
     import uvicorn
 
