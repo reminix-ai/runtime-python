@@ -75,4 +75,4 @@ if __name__ == "__main__":
     print("  POST /agents/langgraph-tools/chat")
     print("\nAvailable tools:")
     print("  - get_weather(city): Get weather for Paris, London, Tokyo, or New York")
-    serve([agent], port=8080)
+    serve(agents=[agent], port=8080)

@@ -1,3 +1,3 @@
-from .adapter import LangGraphAdapter, wrap, wrap_and_serve
+from .adapter import LangGraphAdapter, serve_agent, wrap_agent
 
-__all__ = ["LangGraphAdapter", "wrap", "wrap_and_serve"]
+__all__ = ["LangGraphAdapter", "wrap_agent", "serve_agent"]

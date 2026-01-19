@@ -1,13 +1,26 @@
 __version__ = "0.0.5"
 
-from .adapters.base import Agent, AgentBase, ASGIApp, BaseAdapter
+from .adapter import AdapterBase
+from .agent import Agent, AgentBase, ASGIApp
 from .server import create_app, serve
-from .types import ChatRequest, ChatResponse, InvokeRequest, InvokeResponse, Message, Role
+from .tool import Tool, ToolBase, tool
+from .types import (
+    ChatRequest,
+    ChatResponse,
+    InvokeRequest,
+    InvokeResponse,
+    Message,
+    Role,
+    ToolExecuteRequest,
+    ToolExecuteResponse,
+    ToolSchema,
+)
 
 __all__ = [
     "__version__",
     "serve",
     "create_app",
+    # Agent types
     "Role",
     "Message",
     "InvokeRequest",
@@ -16,6 +29,13 @@ __all__ = [
     "ChatResponse",
     "AgentBase",
     "Agent",
-    "BaseAdapter",
+    "AdapterBase",
     "ASGIApp",
+    # Tool types
+    "ToolBase",
+    "Tool",
+    "tool",
+    "ToolSchema",
+    "ToolExecuteRequest",
+    "ToolExecuteResponse",
 ]

@@ -36,7 +36,7 @@ from reminix_runtime import serve
 
 agent = ChatOpenAI(model="gpt-4o")
 
-serve([wrap(agent, name="my-agent")], port=8080)
+serve(agents=[wrap(agent, name="my-agent")], port=8080)
 ```
 
 ### With Decorators (No Framework)
@@ -58,7 +58,7 @@ async def handle_chat(request):
         "messages": [*request.messages, {"role": "assistant", "content": f"You said: {last_message}"}]
     }
 
-serve([agent], port=8080)
+serve(agents=[agent], port=8080)
 ```
 
 Your agent is now available at:

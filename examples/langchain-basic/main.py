@@ -56,4 +56,4 @@ if __name__ == "__main__":
     print("  GET  /info")
     print("  POST /agents/langchain-basic/invoke")
     print("  POST /agents/langchain-basic/chat")
-    serve([agent], port=8080)
+    serve(agents=[agent], port=8080)

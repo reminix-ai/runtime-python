@@ -8,7 +8,7 @@ def test_setup_works():
 
 def test_can_import_package():
     """Verify we can import the package."""
-    from reminix_runtime import BaseAdapter, serve
+    from reminix_runtime import AdapterBase, serve
 
     assert serve is not None
-    assert BaseAdapter is not None
+    assert AdapterBase is not None

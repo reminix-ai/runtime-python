@@ -14,7 +14,7 @@ from langchain_core.messages import (
 )
 
 from reminix_runtime import (
-    BaseAdapter,
+    AdapterBase,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
@@ -24,7 +24,7 @@ from reminix_runtime import (
 )
 
 
-class LangGraphAdapter(BaseAdapter):
+class LangGraphAdapter(AdapterBase):
     """Adapter for LangGraph compiled graphs."""
 
     adapter_name = "langgraph"
@@ -198,7 +198,7 @@ class LangGraphAdapter(BaseAdapter):
                 yield json.dumps({"chunk": str(chunk)})
 
 
-def wrap(graph: Any, name: str = "langgraph-agent") -> LangGraphAdapter:
+def wrap_agent(graph: Any, name: str = "langgraph-agent") -> LangGraphAdapter:
     """Wrap a LangGraph compiled graph for use with Reminix Runtime.
 
     Args:
@@ -217,14 +217,14 @@ def wrap(graph: Any, name: str = "langgraph-agent") -> LangGraphAdapter:
 
         llm = ChatOpenAI(model="gpt-4")
         graph = create_react_agent(llm, tools=[])
-        agent = wrap(graph, name="my-agent")
-        serve([agent], port=8080)
+        agent = wrap_agent(graph, name="my-agent")
+        serve(agents=[agent], port=8080)
         ```
     """
     return LangGraphAdapter(graph, name=name)
 
 
-def wrap_and_serve(
+def serve_agent(
     graph: Any,
     name: str = "langgraph-agent",
     port: int = 8080,
@@ -244,12 +244,12 @@ def wrap_and_serve(
         ```python
         from langgraph.prebuilt import create_react_agent
         from langchain_openai import ChatOpenAI
-        from reminix_langgraph import wrap_and_serve
+        from reminix_langgraph import serve_agent
 
         llm = ChatOpenAI(model="gpt-4")
         graph = create_react_agent(llm, tools=[])
-        wrap_and_serve(graph, name="my-agent", port=8080)
+        serve_agent(graph, name="my-agent", port=8080)
         ```
     """
-    agent = wrap(graph, name=name)
-    serve([agent], port=port, host=host)
+    agent = wrap_agent(graph, name=name)
+    serve(agents=[agent], port=port, host=host)

@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 from typing import Any, Protocol, runtime_checkable
 
 from reminix_runtime import (
-    BaseAdapter,
+    AdapterBase,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
@@ -28,7 +28,7 @@ class ChatEngine(Protocol):
         ...
 
 
-class LlamaIndexAdapter(BaseAdapter):
+class LlamaIndexAdapter(AdapterBase):
     """Adapter for LlamaIndex chat engines."""
 
     adapter_name = "llamaindex"
@@ -154,7 +154,7 @@ class LlamaIndexAdapter(BaseAdapter):
             yield json.dumps({"chunk": token})
 
 
-def wrap(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndexAdapter:
+def wrap_agent(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndexAdapter:
     """Wrap a LlamaIndex chat engine for use with Reminix Runtime.
 
     Args:
@@ -173,14 +173,14 @@ def wrap(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndexAdapte
 
         llm = OpenAI(model="gpt-4")
         engine = SimpleChatEngine.from_defaults(llm=llm)
-        agent = wrap(engine, name="my-agent")
-        serve([agent], port=8080)
+        agent = wrap_agent(engine, name="my-agent")
+        serve(agents=[agent], port=8080)
         ```
     """
     return LlamaIndexAdapter(engine, name=name)
 
 
-def wrap_and_serve(
+def serve_agent(
     engine: ChatEngine,
     name: str = "llamaindex-agent",
     port: int = 8080,
@@ -200,12 +200,12 @@ def wrap_and_serve(
         ```python
         from llama_index.core.chat_engine import SimpleChatEngine
         from llama_index.llms.openai import OpenAI
-        from reminix_llamaindex import wrap_and_serve
+        from reminix_llamaindex import serve_agent
 
         llm = OpenAI(model="gpt-4")
         engine = SimpleChatEngine.from_defaults(llm=llm)
-        wrap_and_serve(engine, name="my-agent", port=8080)
+        serve_agent(engine, name="my-agent", port=8080)
         ```
     """
-    agent = wrap(engine, name=name)
-    serve([agent], port=port, host=host)
+    agent = wrap_agent(engine, name=name)
+    serve(agents=[agent], port=port, host=host)

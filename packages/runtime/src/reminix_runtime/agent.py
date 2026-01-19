@@ -1,4 +1,4 @@
-"""Base agent and adapter interface."""
+"""Agent classes for Reminix Runtime."""
 # ruff: noqa: ARG002  # abstract methods have unused args in interface definitions
 
 import json
@@ -7,8 +7,8 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, TypeVar
 
-from .. import __version__
-from ..types import ChatRequest, ChatResponse, InvokeRequest, InvokeResponse, Message
+from . import __version__
+from .types import ChatRequest, ChatResponse, InvokeRequest, InvokeResponse, Message
 
 # ASGI type aliases
 Scope = dict[str, Any]
@@ -316,7 +316,7 @@ class Agent(AgentBase):
         async def handle_chat(request: ChatRequest) -> ChatResponse:
             return ChatResponse(output="Hi!", messages=[...])
 
-        serve([agent], port=8080)
+        serve(agents=[agent], port=8080)
     """
 
     def __init__(self, name: str, *, metadata: dict[str, Any] | None = None):
@@ -433,41 +433,3 @@ class Agent(AgentBase):
             )
         async for chunk in self._chat_stream_handler(request):
             yield chunk
-
-
-class BaseAdapter(AgentBase):
-    """Base class for framework adapters.
-
-    Extend this class when wrapping an existing AI framework
-    (e.g., LangChain, OpenAI, Anthropic).
-    """
-
-    # Subclasses should override this with the adapter name
-    adapter_name: str = "unknown"
-
-    @property
-    def invoke_streaming(self) -> bool:
-        """Whether this adapter supports streaming invoke requests."""
-        return True
-
-    @property
-    def chat_streaming(self) -> bool:
-        """Whether this adapter supports streaming chat requests."""
-        return True
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        """Return adapter metadata for discovery."""
-        return {"type": "adapter", "adapter": self.adapter_name}
-
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request."""
-        raise NotImplementedError("Streaming not implemented for this adapter")
-        # Unreachable, but required to make this an async generator
-        yield  # type: ignore[misc]
-
-    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
-        """Handle a streaming chat request."""
-        raise NotImplementedError("Streaming not implemented for this adapter")
-        # Unreachable, but required to make this an async generator
-        yield  # type: ignore[misc]

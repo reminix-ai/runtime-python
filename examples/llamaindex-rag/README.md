@@ -85,5 +85,5 @@ react_agent = ReActAgent(tools=[get_weather], llm=llm)
 engine = ChatEngineWrapper(react_agent)
 agent = wrap(engine, name="llamaindex-rag")
 
-serve([agent], port=8080)
+serve(agents=[agent], port=8080)
 ```

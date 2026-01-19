@@ -16,22 +16,22 @@ This will also install `reminix-runtime` as a dependency.
 
 ```python
 from langchain_openai import ChatOpenAI
-from reminix_langchain import wrap_and_serve
+from reminix_langchain import serve_agent
 
 llm = ChatOpenAI(model="gpt-4o")
-wrap_and_serve(llm, name="my-chatbot", port=8080)
+serve_agent(llm, name="my-chatbot", port=8080)
 ```
 
-For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
 
 ```python
 from langchain_openai import ChatOpenAI
-from reminix_langchain import wrap
+from reminix_langchain import wrap_agent
 from reminix_runtime import serve
 
 llm = ChatOpenAI(model="gpt-4o")
-agent = wrap(llm, name="my-chatbot")
-serve([agent], port=8080)
+agent = wrap_agent(llm, name="my-chatbot")
+serve(agents=[agent], port=8080)
 ```
 
 Your agent is now available at:
@@ -40,9 +40,9 @@ Your agent is now available at:
 
 ## API Reference
 
-### `wrap_and_serve(runnable, name, port, host)`
+### `serve_agent(runnable, name, port, host)`
 
-Wrap a LangChain runnable and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+Wrap a LangChain runnable and serve it immediately. Combines `wrap_agent` and `serve` for single-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -51,7 +51,7 @@ Wrap a LangChain runnable and serve it immediately. Combines `wrap` and `serve` 
 | `port` | `int` | `8080` | Port to serve on |
 | `host` | `str` | `"0.0.0.0"` | Host to bind to |
 
-### `wrap(runnable, name)`
+### `wrap_agent(runnable, name)`
 
 Wrap a LangChain runnable for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
 
@@ -67,7 +67,7 @@ Wrap a LangChain runnable for use with Reminix Runtime. Use this with `serve` fr
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from reminix_langchain import wrap
+from reminix_langchain import wrap_agent
 from reminix_runtime import serve
 
 # Create a chain
@@ -79,8 +79,8 @@ llm = ChatOpenAI(model="gpt-4o")
 chain = prompt | llm
 
 # Wrap and serve
-agent = wrap(chain, name="my-chain")
-serve([agent], port=8080)
+agent = wrap_agent(chain, name="my-chain")
+serve(agents=[agent], port=8080)
 ```
 
 ## Endpoint Input/Output Formats

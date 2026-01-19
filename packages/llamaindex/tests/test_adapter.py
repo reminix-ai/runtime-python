@@ -4,35 +4,35 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from reminix_llamaindex import LlamaIndexAdapter, wrap, wrap_and_serve
-from reminix_runtime import BaseAdapter, ChatRequest, InvokeRequest
+from reminix_llamaindex import LlamaIndexAdapter, serve_agent, wrap_agent
+from reminix_runtime import AdapterBase, ChatRequest, InvokeRequest
 
 
 class TestWrap:
-    """Tests for the wrap() function."""
+    """Tests for the wrap_agent() function."""
 
     def test_wrap_returns_adapter(self):
-        """wrap() should return a LlamaIndexAdapter."""
+        """wrap_agent() should return a LlamaIndexAdapter."""
         mock_engine = MagicMock()
         mock_engine.achat = AsyncMock()
-        adapter = wrap(mock_engine)
+        adapter = wrap_agent(mock_engine)
 
         assert isinstance(adapter, LlamaIndexAdapter)
-        assert isinstance(adapter, BaseAdapter)
+        assert isinstance(adapter, AdapterBase)
 
     def test_wrap_with_custom_name(self):
-        """wrap() should accept a custom name."""
+        """wrap_agent() should accept a custom name."""
         mock_engine = MagicMock()
         mock_engine.achat = AsyncMock()
-        adapter = wrap(mock_engine, name="my-custom-agent")
+        adapter = wrap_agent(mock_engine, name="my-custom-agent")
 
         assert adapter.name == "my-custom-agent"
 
     def test_wrap_default_name(self):
-        """wrap() should use default name if not provided."""
+        """wrap_agent() should use default name if not provided."""
         mock_engine = MagicMock()
         mock_engine.achat = AsyncMock()
-        adapter = wrap(mock_engine)
+        adapter = wrap_agent(mock_engine)
 
         assert adapter.name == "llamaindex-agent"
 
@@ -47,7 +47,7 @@ class TestLlamaIndexAdapterInvoke:
         mock_response = MagicMock(response="Hello from LlamaIndex!")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
-        adapter = wrap(mock_engine)
+        adapter = wrap_agent(mock_engine)
         request = InvokeRequest(input={"query": "What is AI?"})
 
         response = await adapter.invoke(request)
@@ -61,7 +61,7 @@ class TestLlamaIndexAdapterInvoke:
         mock_response = MagicMock(response="Hello from LlamaIndex!")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
-        adapter = wrap(mock_engine)
+        adapter = wrap_agent(mock_engine)
         request = InvokeRequest(input={"query": "Hi"})
 
         response = await adapter.invoke(request)
@@ -75,7 +75,7 @@ class TestLlamaIndexAdapterInvoke:
         mock_response = MagicMock(response="Response")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
-        adapter = wrap(mock_engine)
+        adapter = wrap_agent(mock_engine)
         request = InvokeRequest(input={"prompt": "Tell me about AI"})
 
         response = await adapter.invoke(request)
@@ -89,7 +89,7 @@ class TestLlamaIndexAdapterInvoke:
         mock_response = MagicMock(response="Response")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
-        adapter = wrap(mock_engine)
+        adapter = wrap_agent(mock_engine)
         request = InvokeRequest(input={"message": "Hello there"})
 
         response = await adapter.invoke(request)
@@ -107,7 +107,7 @@ class TestLlamaIndexAdapterChat:
         mock_response = MagicMock(response="Hello!")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
-        adapter = wrap(mock_engine)
+        adapter = wrap_agent(mock_engine)
         request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
 
         response = await adapter.chat(request)
@@ -121,7 +121,7 @@ class TestLlamaIndexAdapterChat:
         mock_response = MagicMock(response="Chat response")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
-        adapter = wrap(mock_engine)
+        adapter = wrap_agent(mock_engine)
         request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
 
         response = await adapter.chat(request)
@@ -138,7 +138,7 @@ class TestLlamaIndexAdapterChat:
         mock_response = MagicMock(response="Response")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
-        adapter = wrap(mock_engine)
+        adapter = wrap_agent(mock_engine)
         request = ChatRequest(
             messages=[
                 {"role": "user", "content": "First message"},
@@ -153,34 +153,34 @@ class TestLlamaIndexAdapterChat:
 
 
 class TestWrapAndServe:
-    """Tests for the wrap_and_serve() function."""
+    """Tests for the serve_agent() function."""
 
-    def test_wrap_and_serve_is_callable(self):
-        """wrap_and_serve() should be callable."""
-        assert callable(wrap_and_serve)
+    def test_serve_agent_is_callable(self):
+        """serve_agent() should be callable."""
+        assert callable(serve_agent)
 
     @patch("reminix_llamaindex.adapter.serve")
-    def test_wrap_and_serve_calls_serve(self, mock_serve):
-        """wrap_and_serve() should call serve with wrapped adapter."""
+    def test_serve_agent_calls_serve(self, mock_serve):
+        """serve_agent() should call serve with wrapped adapter."""
         mock_engine = MagicMock()
         mock_engine.achat = AsyncMock()
 
-        wrap_and_serve(mock_engine, name="test-agent")
+        serve_agent(mock_engine, name="test-agent")
 
         mock_serve.assert_called_once()
         call_args = mock_serve.call_args
-        agents = call_args[0][0]
+        agents = call_args.kwargs["agents"]
         assert len(agents) == 1
         assert isinstance(agents[0], LlamaIndexAdapter)
         assert agents[0].name == "test-agent"
 
     @patch("reminix_llamaindex.adapter.serve")
-    def test_wrap_and_serve_passes_serve_options(self, mock_serve):
-        """wrap_and_serve() should pass port and host to serve."""
+    def test_serve_agent_passes_serve_options(self, mock_serve):
+        """serve_agent() should pass port and host to serve."""
         mock_engine = MagicMock()
         mock_engine.achat = AsyncMock()
 
-        wrap_and_serve(mock_engine, name="test-agent", port=3000, host="localhost")
+        serve_agent(mock_engine, name="test-agent", port=3000, host="localhost")
 
         mock_serve.assert_called_once()
         call_kwargs = mock_serve.call_args[1]

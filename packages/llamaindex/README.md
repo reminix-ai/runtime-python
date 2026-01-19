@@ -17,25 +17,25 @@ This will also install `reminix-runtime` as a dependency.
 ```python
 from llama_index.core.chat_engine import SimpleChatEngine
 from llama_index.llms.openai import OpenAI
-from reminix_llamaindex import wrap_and_serve
+from reminix_llamaindex import serve_agent
 
 llm = OpenAI(model="gpt-4o")
 engine = SimpleChatEngine.from_defaults(llm=llm)
-wrap_and_serve(engine, name="my-chatbot", port=8080)
+serve_agent(engine, name="my-chatbot", port=8080)
 ```
 
-For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
 
 ```python
 from llama_index.core.chat_engine import SimpleChatEngine
 from llama_index.llms.openai import OpenAI
-from reminix_llamaindex import wrap
+from reminix_llamaindex import wrap_agent
 from reminix_runtime import serve
 
 llm = OpenAI(model="gpt-4o")
 engine = SimpleChatEngine.from_defaults(llm=llm)
-agent = wrap(engine, name="my-chatbot")
-serve([agent], port=8080)
+agent = wrap_agent(engine, name="my-chatbot")
+serve(agents=[agent], port=8080)
 ```
 
 Your agent is now available at:
@@ -44,9 +44,9 @@ Your agent is now available at:
 
 ## API Reference
 
-### `wrap_and_serve(engine, name, port, host)`
+### `serve_agent(engine, name, port, host)`
 
-Wrap a LlamaIndex chat engine and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+Wrap a LlamaIndex chat engine and serve it immediately. Combines `wrap_agent` and `serve` for single-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -55,7 +55,7 @@ Wrap a LlamaIndex chat engine and serve it immediately. Combines `wrap` and `ser
 | `port` | `int` | `8080` | Port to serve on |
 | `host` | `str` | `"0.0.0.0"` | Host to bind to |
 
-### `wrap(engine, name)`
+### `wrap_agent(engine, name)`
 
 Wrap a LlamaIndex chat engine for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
 
@@ -71,7 +71,7 @@ Wrap a LlamaIndex chat engine for use with Reminix Runtime. Use this with `serve
 ```python
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.llms.openai import OpenAI
-from reminix_llamaindex import wrap
+from reminix_llamaindex import wrap_agent
 from reminix_runtime import serve
 
 # Load documents and create index
@@ -82,8 +82,8 @@ index = VectorStoreIndex.from_documents(documents)
 engine = index.as_chat_engine(llm=OpenAI(model="gpt-4o"))
 
 # Wrap and serve
-agent = wrap(engine, name="rag-chatbot")
-serve([agent], port=8080)
+agent = wrap_agent(engine, name="rag-chatbot")
+serve(agents=[agent], port=8080)
 ```
 
 ## Endpoint Input/Output Formats

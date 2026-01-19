@@ -15,7 +15,7 @@ from langchain_core.messages import (
 from langchain_core.runnables import Runnable
 
 from reminix_runtime import (
-    BaseAdapter,
+    AdapterBase,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
@@ -25,7 +25,7 @@ from reminix_runtime import (
 )
 
 
-class LangChainAdapter(BaseAdapter):
+class LangChainAdapter(AdapterBase):
     """Adapter for LangChain agents and runnables."""
 
     adapter_name = "langchain"
@@ -212,7 +212,7 @@ class LangChainAdapter(BaseAdapter):
             yield json.dumps({"chunk": content})
 
 
-def wrap(agent: Runnable, name: str = "langchain-agent") -> LangChainAdapter:
+def wrap_agent(agent: Runnable, name: str = "langchain-agent") -> LangChainAdapter:
     """Wrap a LangChain agent for use with Reminix Runtime.
 
     Args:
@@ -229,14 +229,14 @@ def wrap(agent: Runnable, name: str = "langchain-agent") -> LangChainAdapter:
         from reminix_runtime import serve
 
         llm = ChatOpenAI(model="gpt-4")
-        agent = wrap(llm, name="my-agent")
-        serve([agent], port=8080)
+        agent = wrap_agent(llm, name="my-agent")
+        serve(agents=[agent], port=8080)
         ```
     """
     return LangChainAdapter(agent, name=name)
 
 
-def wrap_and_serve(
+def serve_agent(
     agent: Runnable,
     name: str = "langchain-agent",
     port: int = 8080,
@@ -255,11 +255,11 @@ def wrap_and_serve(
     Example:
         ```python
         from langchain_openai import ChatOpenAI
-        from reminix_langchain import wrap_and_serve
+        from reminix_langchain import serve_agent
 
         llm = ChatOpenAI(model="gpt-4")
-        wrap_and_serve(llm, name="my-agent", port=8080)
+        serve_agent(llm, name="my-agent", port=8080)
         ```
     """
-    wrapped_agent = wrap(agent, name=name)
-    serve([wrapped_agent], port=port, host=host)
+    wrapped_agent = wrap_agent(agent, name=name)
+    serve(agents=[wrapped_agent], port=port, host=host)

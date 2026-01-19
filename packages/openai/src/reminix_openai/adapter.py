@@ -7,7 +7,7 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from reminix_runtime import (
-    BaseAdapter,
+    AdapterBase,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
@@ -17,7 +17,7 @@ from reminix_runtime import (
 )
 
 
-class OpenAIAdapter(BaseAdapter):
+class OpenAIAdapter(AdapterBase):
     """Adapter for OpenAI chat completions."""
 
     adapter_name = "openai"
@@ -175,7 +175,7 @@ class OpenAIAdapter(BaseAdapter):
                 yield json.dumps({"chunk": content})
 
 
-def wrap(
+def wrap_agent(
     client: AsyncOpenAI,
     name: str = "openai-agent",
     model: str = "gpt-4o-mini",
@@ -197,14 +197,14 @@ def wrap(
         from reminix_runtime import serve
 
         client = AsyncOpenAI()
-        agent = wrap(client, name="my-agent", model="gpt-4o")
-        serve([agent], port=8080)
+        agent = wrap_agent(client, name="my-agent", model="gpt-4o")
+        serve(agents=[agent], port=8080)
         ```
     """
     return OpenAIAdapter(client, name=name, model=model)
 
 
-def wrap_and_serve(
+def serve_agent(
     client: AsyncOpenAI,
     name: str = "openai-agent",
     model: str = "gpt-4o-mini",
@@ -225,11 +225,11 @@ def wrap_and_serve(
     Example:
         ```python
         from openai import AsyncOpenAI
-        from reminix_openai import wrap_and_serve
+        from reminix_openai import serve_agent
 
         client = AsyncOpenAI()
-        wrap_and_serve(client, name="my-agent", model="gpt-4o", port=8080)
+        serve_agent(client, name="my-agent", model="gpt-4o", port=8080)
         ```
     """
-    agent = wrap(client, name=name, model=model)
-    serve([agent], port=port, host=host)
+    agent = wrap_agent(client, name=name, model=model)
+    serve(agents=[agent], port=port, host=host)

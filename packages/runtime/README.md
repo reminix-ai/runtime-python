@@ -1,6 +1,6 @@
 # reminix-runtime
 
-Core runtime package for serving AI agents via REST APIs. Provides the `serve()` function, `Agent` class, and `BaseAdapter` for building framework integrations.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `serve()` function, `Agent` class, `@tool` decorator, and `BaseAdapter` for building framework integrations.
 
 Built on [FastAPI](https://fastapi.tiangolo.com) with full async support.
 
@@ -38,7 +38,7 @@ async def handle_chat(request: ChatRequest) -> ChatResponse:
     )
 
 # Serve the agent
-serve([agent], port=8080)
+serve(agents=[agent], port=8080)
 ```
 
 ## How It Works
@@ -48,9 +48,10 @@ The runtime creates a REST server with the following endpoints:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/info` | GET | Runtime discovery (version, agents, endpoints) |
+| `/info` | GET | Runtime discovery (version, agents, tools) |
 | `/agents/{name}/invoke` | POST | Stateless invocation |
 | `/agents/{name}/chat` | POST | Conversational chat |
+| `/tools/{name}/execute` | POST | Execute a tool |
 
 ### Health Endpoint
 
@@ -139,6 +140,87 @@ curl -X POST http://localhost:8080/agents/my-agent/chat \
 
 The `output` field contains the assistant's response, while `messages` includes the full conversation history.
 
+### Tool Execute Endpoint
+
+`POST /tools/{name}/execute` - Execute a standalone tool.
+
+```bash
+curl -X POST http://localhost:8080/tools/get_weather/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": {
+      "location": "San Francisco"
+    }
+  }'
+```
+
+**Response:**
+```json
+{
+  "output": { "temp": 72, "condition": "sunny" }
+}
+```
+
+## Tools
+
+Tools are standalone functions that can be served via the runtime. They're useful for exposing utility functions, external API integrations, or any reusable logic.
+
+### Creating Tools
+
+Use the `@tool` decorator to create tools:
+
+```python
+from reminix_runtime import tool, serve
+
+@tool
+async def get_weather(location: str, units: str = "celsius") -> dict:
+    """Get current weather for a location."""
+    # Call weather API...
+    return {"temp": 72, "condition": "sunny", "location": location}
+
+# Serve tools (with or without agents)
+serve(tools=[get_weather], port=8080)
+```
+
+The decorator automatically extracts:
+- **name** from the function name
+- **description** from the docstring
+- **parameters** from type hints and defaults
+- **output** from the return type hint (e.g., `-> dict`, `-> str`, `-> list`)
+
+The output schema is included in the `/info` endpoint for documentation and enables better type inference for clients.
+
+### Custom Tool Configuration
+
+You can customize the tool name and description:
+
+```python
+@tool(name="weather_lookup", description="Look up weather for any city")
+async def get_weather(location: str) -> dict:
+    return {"temp": 72, "condition": "sunny"}
+```
+
+### Serving Agents and Tools Together
+
+You can serve both agents and tools from the same runtime:
+
+```python
+from reminix_runtime import Agent, tool, serve
+
+agent = Agent("my-agent")
+
+@agent.on_invoke
+async def handle(request):
+    return {"output": "Hello!"}
+
+@tool
+def calculate(expression: str) -> dict:
+    """Perform basic math operations."""
+    return {"result": eval(expression)}  # Note: use a safe evaluator in production
+
+serve(agents=[agent], tools=[calculate], port=8080)
+```
+
 ## Framework Adapters
 
 Instead of creating custom agents, use our pre-built adapters for popular frameworks:
@@ -153,26 +235,49 @@ Instead of creating custom agents, use our pre-built adapters for popular framew
 
 ## API Reference
 
-### `serve(agents, port, host)`
+### `serve(agents, tools, port, host)`
 
 Start the runtime server.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `agents` | `list[Agent]` | required | List of agents |
+| `agents` | `list[Agent]` | `[]` | List of agents to serve |
+| `tools` | `list[Tool]` | `[]` | List of tools to serve |
 | `port` | `int` | `8080` | Port to listen on. Falls back to `PORT` environment variable if not provided. |
 | `host` | `str` | `"0.0.0.0"` | Host to bind to (all interfaces). Can be overridden via `HOST` env var. |
 
-### `create_app(agents)`
+At least one agent or tool is required.
+
+### `create_app(agents, tools)`
 
 Create a FastAPI app without starting the server. Useful for testing or custom deployment.
 
 ```python
 from reminix_runtime import create_app
 
-app = create_app([MyAgent()])
+app = create_app(agents=[my_agent], tools=[my_tool])
 # Use with uvicorn, gunicorn, etc.
 ```
+
+### `@tool`
+
+Decorator to create a tool from a function.
+
+```python
+from reminix_runtime import tool
+
+@tool
+async def my_tool(param: str, optional_param: int = 10) -> dict:
+    """Tool description from docstring."""
+    return {"result": param, "value": optional_param}
+
+# Or with custom name/description
+@tool(name="custom_name", description="Custom description")
+def another_tool(x: int) -> int:
+    return x * 2
+```
+
+The decorator automatically extracts parameters from type hints. Supports both sync and async functions.
 
 ### `Agent`
 

@@ -7,7 +7,7 @@ from typing import Any
 from anthropic import AsyncAnthropic
 
 from reminix_runtime import (
-    BaseAdapter,
+    AdapterBase,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
@@ -17,7 +17,7 @@ from reminix_runtime import (
 )
 
 
-class AnthropicAdapter(BaseAdapter):
+class AnthropicAdapter(AdapterBase):
     """Adapter for Anthropic messages API."""
 
     adapter_name = "anthropic"
@@ -237,7 +237,7 @@ class AnthropicAdapter(BaseAdapter):
                 yield json.dumps({"chunk": text})
 
 
-def wrap(
+def wrap_agent(
     client: AsyncAnthropic,
     name: str = "anthropic-agent",
     model: str = "claude-sonnet-4-20250514",
@@ -261,14 +261,14 @@ def wrap(
         from reminix_runtime import serve
 
         client = AsyncAnthropic()
-        agent = wrap(client, name="my-agent", model="claude-sonnet-4-20250514")
-        serve([agent], port=8080)
+        agent = wrap_agent(client, name="my-agent", model="claude-sonnet-4-20250514")
+        serve(agents=[agent], port=8080)
         ```
     """
     return AnthropicAdapter(client, name=name, model=model, max_tokens=max_tokens)
 
 
-def wrap_and_serve(
+def serve_agent(
     client: AsyncAnthropic,
     name: str = "anthropic-agent",
     model: str = "claude-sonnet-4-20250514",
@@ -291,11 +291,11 @@ def wrap_and_serve(
     Example:
         ```python
         from anthropic import AsyncAnthropic
-        from reminix_anthropic import wrap_and_serve
+        from reminix_anthropic import serve_agent
 
         client = AsyncAnthropic()
-        wrap_and_serve(client, name="my-agent", model="claude-sonnet-4-20250514", port=8080)
+        serve_agent(client, name="my-agent", model="claude-sonnet-4-20250514", port=8080)
         ```
     """
-    agent = wrap(client, name=name, model=model, max_tokens=max_tokens)
-    serve([agent], port=port, host=host)
+    agent = wrap_agent(client, name=name, model=model, max_tokens=max_tokens)
+    serve(agents=[agent], port=port, host=host)

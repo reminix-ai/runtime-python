@@ -4,17 +4,18 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from reminix_runtime import (
-    BaseAdapter,
+    AdapterBase,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
     InvokeResponse,
     __version__,
+    tool,
 )
 from reminix_runtime.server import create_app
 
 
-class MockAdapter(BaseAdapter):
+class MockAdapter(AdapterBase):
     """A mock adapter for testing."""
 
     adapter_name = "mock"
@@ -47,14 +48,25 @@ class TestCreateApp:
 
     def test_create_app_returns_fastapi_app(self):
         """create_app should return a FastAPI application."""
-        app = create_app([MockAdapter()])
+        app = create_app(agents=[MockAdapter()])
         # FastAPI apps have a 'routes' attribute
         assert hasattr(app, "routes")
 
-    def test_create_app_with_empty_agents_raises(self):
-        """create_app should raise if no agents provided."""
-        with pytest.raises(ValueError, match="At least one agent is required"):
-            create_app([])
+    def test_create_app_with_no_agents_or_tools_raises(self):
+        """create_app should raise if no agents or tools provided."""
+        with pytest.raises(ValueError, match="At least one agent or tool is required"):
+            create_app()
+
+    def test_create_app_with_only_tools(self):
+        """create_app should work with only tools."""
+
+        @tool
+        async def my_tool(param: str) -> dict:
+            """A test tool."""
+            return {"result": param}
+
+        app = create_app(tools=[my_tool])
+        assert hasattr(app, "routes")
 
 
 class TestHealthEndpoint:
@@ -63,7 +75,7 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_health_endpoint(self):
         """GET /health should return 200 OK."""
-        app = create_app([MockAdapter()])
+        app = create_app(agents=[MockAdapter()])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/health")
 
@@ -77,7 +89,7 @@ class TestInfoEndpoint:
     @pytest.mark.asyncio
     async def test_info_endpoint(self):
         """GET /info should return runtime info and agents."""
-        app = create_app([MockAdapter("agent-one"), MockAdapter("agent-two")])
+        app = create_app(agents=[MockAdapter("agent-one"), MockAdapter("agent-two")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/info")
 
@@ -105,7 +117,7 @@ class TestInvokeEndpoint:
     @pytest.mark.asyncio
     async def test_invoke_success(self):
         """POST /agents/{agent}/invoke should return invoke response."""
-        app = create_app([MockAdapter("my-agent")])
+        app = create_app(agents=[MockAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
@@ -119,7 +131,7 @@ class TestInvokeEndpoint:
     @pytest.mark.asyncio
     async def test_invoke_with_context(self):
         """POST /agents/{agent}/invoke should accept context."""
-        app = create_app([MockAdapter("my-agent")])
+        app = create_app(agents=[MockAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
@@ -134,7 +146,7 @@ class TestInvokeEndpoint:
     @pytest.mark.asyncio
     async def test_invoke_unknown_agent_returns_404(self):
         """POST /agents/{agent}/invoke should return 404 for unknown agent."""
-        app = create_app([MockAdapter("my-agent")])
+        app = create_app(agents=[MockAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/unknown-agent/invoke",
@@ -147,7 +159,7 @@ class TestInvokeEndpoint:
     @pytest.mark.asyncio
     async def test_invoke_invalid_request_returns_422(self):
         """POST /agents/{agent}/invoke should return 422 for invalid request."""
-        app = create_app([MockAdapter("my-agent")])
+        app = create_app(agents=[MockAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
@@ -163,7 +175,7 @@ class TestChatEndpoint:
     @pytest.mark.asyncio
     async def test_chat_success(self):
         """POST /agents/{agent}/chat should return chat response."""
-        app = create_app([MockAdapter("my-agent")])
+        app = create_app(agents=[MockAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/chat",
@@ -178,7 +190,7 @@ class TestChatEndpoint:
     @pytest.mark.asyncio
     async def test_chat_unknown_agent_returns_404(self):
         """POST /agents/{agent}/chat should return 404 for unknown agent."""
-        app = create_app([MockAdapter("my-agent")])
+        app = create_app(agents=[MockAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/unknown-agent/chat",
@@ -186,3 +198,155 @@ class TestChatEndpoint:
             )
 
         assert response.status_code == 404
+
+
+class TestToolExecuteEndpoint:
+    """Tests for the tool execute endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_success(self):
+        """POST /tools/{tool}/execute should return tool response."""
+
+        @tool
+        async def greet(name: str) -> dict:
+            """Greet someone."""
+            return {"message": f"Hello, {name}!"}
+
+        app = create_app(tools=[greet])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/tools/greet/execute",
+                json={"input": {"name": "World"}},
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["output"] == {"message": "Hello, World!"}
+        assert data["error"] is None
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_with_context(self):
+        """POST /tools/{tool}/execute should accept context."""
+
+        @tool
+        async def my_tool(param: str) -> dict:
+            """A test tool."""
+            return {"param": param}
+
+        app = create_app(tools=[my_tool])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/tools/my_tool/execute",
+                json={"input": {"param": "test"}, "context": {"user_id": "123"}},
+            )
+
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_unknown_returns_404(self):
+        """POST /tools/{tool}/execute should return 404 for unknown tool."""
+
+        @tool
+        async def my_tool(param: str) -> dict:
+            """A test tool."""
+            return {"param": param}
+
+        app = create_app(tools=[my_tool])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/tools/unknown_tool/execute",
+                json={"input": {"param": "test"}},
+            )
+
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_with_error(self):
+        """POST /tools/{tool}/execute should return error on exception."""
+
+        @tool
+        async def failing_tool(param: str) -> dict:
+            """A tool that fails."""
+            raise ValueError("Something went wrong")
+
+        app = create_app(tools=[failing_tool])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/tools/failing_tool/execute",
+                json={"input": {"param": "test"}},
+            )
+
+        assert response.status_code == 200  # Tool errors are returned in response, not HTTP errors
+        data = response.json()
+        assert data["output"] is None
+        assert data["error"] == "Something went wrong"
+
+    @pytest.mark.asyncio
+    async def test_execute_sync_tool(self):
+        """POST /tools/{tool}/execute should work with sync tools."""
+
+        @tool
+        def add(a: int, b: int) -> int:
+            """Add two numbers."""
+            return a + b
+
+        app = create_app(tools=[add])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/tools/add/execute",
+                json={"input": {"a": 2, "b": 3}},
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["output"] == 5
+
+
+class TestInfoEndpointWithTools:
+    """Tests for the info endpoint with tools."""
+
+    @pytest.mark.asyncio
+    async def test_info_includes_tools(self):
+        """GET /info should include tools."""
+
+        @tool
+        async def my_tool(param: str) -> dict:
+            """My tool description."""
+            return {"param": param}
+
+        app = create_app(tools=[my_tool])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/info")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert "tools" in data
+        assert len(data["tools"]) == 1
+        assert data["tools"][0]["name"] == "my_tool"
+        assert data["tools"][0]["type"] == "tool"
+        assert data["tools"][0]["description"] == "My tool description."
+        assert "parameters" in data["tools"][0]
+
+    @pytest.mark.asyncio
+    async def test_info_with_agents_and_tools(self):
+        """GET /info should include both agents and tools."""
+
+        @tool
+        async def my_tool(param: str) -> dict:
+            """A test tool."""
+            return {"param": param}
+
+        app = create_app(agents=[MockAdapter("my-agent")], tools=[my_tool])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/info")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert len(data["agents"]) == 1
+        assert data["agents"][0]["name"] == "my-agent"
+
+        assert len(data["tools"]) == 1
+        assert data["tools"][0]["name"] == "my_tool"

@@ -130,4 +130,4 @@ if __name__ == "__main__":
     print("  POST /agents/echo/chat")
     print()
 
-    serve([agent], port=8080)
+    serve(agents=[agent], port=8080)
