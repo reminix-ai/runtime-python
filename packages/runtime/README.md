@@ -80,10 +80,9 @@ Returns runtime information and available agents:
   "agents": [
     {
       "name": "my-agent",
-      "type": "adapter",
-      "adapter": "langchain",
-      "invoke": { "streaming": true },
-      "chat": { "streaming": true }
+      "type": "agent",
+      "invoke": { "streaming": false },
+      "chat": { "streaming": false }
     }
   ]
 }
