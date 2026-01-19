@@ -1,4 +1,4 @@
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 from .adapter import AdapterBase
 from .agent import Agent, AgentBase, ASGIApp
