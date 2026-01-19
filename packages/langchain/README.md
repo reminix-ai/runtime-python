@@ -60,7 +60,7 @@ Wrap a LangChain runnable for use with Reminix Runtime. Use this with `serve` fr
 | `runnable` | `Runnable` | required | Any LangChain runnable (LLM, chain, agent, etc.) |
 | `name` | `str` | `"langchain-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LangChainAdapter` - A Reminix adapter instance
+**Returns:** `LangChainAgentAdapter` - A Reminix adapter instance
 
 ### Example with a Chain
 

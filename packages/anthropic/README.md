@@ -64,7 +64,7 @@ Wrap an Anthropic client for use with Reminix Runtime. Use this with `serve` fro
 | `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
 | `max_tokens` | `int` | `4096` | Maximum tokens in response |
 
-**Returns:** `AnthropicAdapter` - A Reminix adapter instance
+**Returns:** `AnthropicAgentAdapter` - A Reminix adapter instance
 
 ### System Messages
 

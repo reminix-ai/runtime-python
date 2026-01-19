@@ -64,7 +64,7 @@ Wrap a LangGraph compiled graph for use with Reminix Runtime. Use this with `ser
 | `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
 | `name` | `str` | `"langgraph-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LangGraphAdapter` - A Reminix adapter instance
+**Returns:** `LangGraphAgentAdapter` - A Reminix adapter instance
 
 ### How It Works
 

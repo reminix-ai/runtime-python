@@ -64,7 +64,7 @@ Wrap a LlamaIndex chat engine for use with Reminix Runtime. Use this with `serve
 | `engine` | `BaseChatEngine` | required | A LlamaIndex chat engine |
 | `name` | `str` | `"llamaindex-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LlamaIndexAdapter` - A Reminix adapter instance
+**Returns:** `LlamaIndexAgentAdapter` - A Reminix adapter instance
 
 ### Example with RAG
 
