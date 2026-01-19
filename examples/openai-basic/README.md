@@ -65,11 +65,11 @@ curl -X POST http://localhost:8080/agents/openai-basic/chat \
 
 ```python
 from openai import AsyncOpenAI
-from reminix_openai import wrap
+from reminix_openai import wrap_agent
 from reminix_runtime import serve
 
 client = AsyncOpenAI()
-agent = wrap(client, name="openai-basic", model="gpt-4o-mini")
+agent = wrap_agent(client, name="openai-basic", model="gpt-4o-mini")
 
 serve(agents=[agent], port=8080)
 ```

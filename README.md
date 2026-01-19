@@ -31,12 +31,12 @@ pip install reminix-langchain
 
 ```python
 from langchain_openai import ChatOpenAI
-from reminix_langchain import wrap
+from reminix_langchain import wrap_agent
 from reminix_runtime import serve
 
 agent = ChatOpenAI(model="gpt-4o")
 
-serve(agents=[wrap(agent, name="my-agent")], port=8080)
+serve(agents=[wrap_agent(agent, name="my-agent")], port=8080)
 ```
 
 ### With Decorators (No Framework)

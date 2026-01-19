@@ -65,11 +65,11 @@ curl -X POST http://localhost:8080/agents/anthropic-basic/chat \
 
 ```python
 from anthropic import AsyncAnthropic
-from reminix_anthropic import wrap
+from reminix_anthropic import wrap_agent
 from reminix_runtime import serve
 
 client = AsyncAnthropic()
-agent = wrap(client, name="anthropic-basic", model="claude-3-haiku-20240307")
+agent = wrap_agent(client, name="anthropic-basic", model="claude-3-haiku-20240307")
 
 serve(agents=[agent], port=8080)
 ```

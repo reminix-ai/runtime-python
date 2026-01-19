@@ -65,11 +65,11 @@ curl -X POST http://localhost:8080/agents/langchain-basic/chat \
 
 ```python
 from langchain_openai import ChatOpenAI
-from reminix_langchain import wrap
+from reminix_langchain import wrap_agent
 from reminix_runtime import serve
 
 model = ChatOpenAI(model="gpt-4o-mini")
-agent = wrap(model, name="langchain-basic")
+agent = wrap_agent(model, name="langchain-basic")
 
 serve(agents=[agent], port=8080)
 ```

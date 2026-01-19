@@ -72,7 +72,7 @@ curl -X POST http://localhost:8080/agents/langgraph-tools/chat \
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
-from reminix_langgraph import wrap
+from reminix_langgraph import wrap_agent
 from reminix_runtime import serve
 
 @tool
@@ -82,7 +82,7 @@ def get_weather(city: str) -> str:
 
 llm = ChatOpenAI(model="gpt-4o-mini")
 graph = create_react_agent(llm, tools=[get_weather])
-agent = wrap(graph, name="langgraph-tools")
+agent = wrap_agent(graph, name="langgraph-tools")
 
 serve(agents=[agent], port=8080)
 ```
