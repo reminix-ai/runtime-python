@@ -1,4 +1,4 @@
-"""LangGraph adapter for Reminix Runtime."""
+"""LangGraph agent adapter for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -14,7 +14,7 @@ from langchain_core.messages import (
 )
 
 from reminix_runtime import (
-    AdapterBase,
+    AgentAdapter,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
@@ -24,8 +24,8 @@ from reminix_runtime import (
 )
 
 
-class LangGraphAdapter(AdapterBase):
-    """Adapter for LangGraph compiled graphs."""
+class LangGraphAgentAdapter(AgentAdapter):
+    """Agent adapter for LangGraph compiled graphs."""
 
     adapter_name = "langgraph"
 
@@ -198,7 +198,7 @@ class LangGraphAdapter(AdapterBase):
                 yield json.dumps({"chunk": str(chunk)})
 
 
-def wrap_agent(graph: Any, name: str = "langgraph-agent") -> LangGraphAdapter:
+def wrap_agent(graph: Any, name: str = "langgraph-agent") -> LangGraphAgentAdapter:
     """Wrap a LangGraph compiled graph for use with Reminix Runtime.
 
     Args:
@@ -206,13 +206,13 @@ def wrap_agent(graph: Any, name: str = "langgraph-agent") -> LangGraphAdapter:
         name: Name for the agent.
 
     Returns:
-        A LangGraphAdapter instance.
+        A LangGraphAgentAdapter instance.
 
     Example:
         ```python
         from langgraph.prebuilt import create_react_agent
         from langchain_openai import ChatOpenAI
-        from reminix_langgraph import wrap
+        from reminix_langgraph import wrap_agent
         from reminix_runtime import serve
 
         llm = ChatOpenAI(model="gpt-4")
@@ -221,7 +221,7 @@ def wrap_agent(graph: Any, name: str = "langgraph-agent") -> LangGraphAdapter:
         serve(agents=[agent], port=8080)
         ```
     """
-    return LangGraphAdapter(graph, name=name)
+    return LangGraphAgentAdapter(graph, name=name)
 
 
 def serve_agent(

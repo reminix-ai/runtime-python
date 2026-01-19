@@ -4,21 +4,21 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from reminix_llamaindex import LlamaIndexAdapter, serve_agent, wrap_agent
-from reminix_runtime import AdapterBase, ChatRequest, InvokeRequest
+from reminix_llamaindex import LlamaIndexAgentAdapter, serve_agent, wrap_agent
+from reminix_runtime import AgentAdapter, ChatRequest, InvokeRequest
 
 
 class TestWrap:
     """Tests for the wrap_agent() function."""
 
     def test_wrap_returns_adapter(self):
-        """wrap_agent() should return a LlamaIndexAdapter."""
+        """wrap_agent() should return a LlamaIndexAgentAdapter."""
         mock_engine = MagicMock()
         mock_engine.achat = AsyncMock()
         adapter = wrap_agent(mock_engine)
 
-        assert isinstance(adapter, LlamaIndexAdapter)
-        assert isinstance(adapter, AdapterBase)
+        assert isinstance(adapter, LlamaIndexAgentAdapter)
+        assert isinstance(adapter, AgentAdapter)
 
     def test_wrap_with_custom_name(self):
         """wrap_agent() should accept a custom name."""
@@ -37,7 +37,7 @@ class TestWrap:
         assert adapter.name == "llamaindex-agent"
 
 
-class TestLlamaIndexAdapterInvoke:
+class TestLlamaIndexAgentAdapterInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
@@ -97,7 +97,7 @@ class TestLlamaIndexAdapterInvoke:
         mock_engine.achat.assert_called_once_with("Hello there")
 
 
-class TestLlamaIndexAdapterChat:
+class TestLlamaIndexAgentAdapterChat:
     """Tests for the chat() method."""
 
     @pytest.mark.asyncio
@@ -159,7 +159,7 @@ class TestWrapAndServe:
         """serve_agent() should be callable."""
         assert callable(serve_agent)
 
-    @patch("reminix_llamaindex.adapter.serve")
+    @patch("reminix_llamaindex.agent_adapter.serve")
     def test_serve_agent_calls_serve(self, mock_serve):
         """serve_agent() should call serve with wrapped adapter."""
         mock_engine = MagicMock()
@@ -171,10 +171,10 @@ class TestWrapAndServe:
         call_args = mock_serve.call_args
         agents = call_args.kwargs["agents"]
         assert len(agents) == 1
-        assert isinstance(agents[0], LlamaIndexAdapter)
+        assert isinstance(agents[0], LlamaIndexAgentAdapter)
         assert agents[0].name == "test-agent"
 
-    @patch("reminix_llamaindex.adapter.serve")
+    @patch("reminix_llamaindex.agent_adapter.serve")
     def test_serve_agent_passes_serve_options(self, mock_serve):
         """serve_agent() should pass port and host to serve."""
         mock_engine = MagicMock()

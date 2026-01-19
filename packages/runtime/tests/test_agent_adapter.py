@@ -1,22 +1,22 @@
-"""Tests for AdapterBase."""
+"""Tests for AgentAdapter."""
 
 import pytest
 
-from reminix_runtime import AdapterBase, ChatRequest, ChatResponse, InvokeRequest, InvokeResponse
+from reminix_runtime import AgentAdapter, ChatRequest, ChatResponse, InvokeRequest, InvokeResponse
 
 
-class TestAdapterBaseContract:
-    """Tests for the AdapterBase contract."""
+class TestAgentAdapterContract:
+    """Tests for the AgentAdapter contract."""
 
     def test_cannot_instantiate_adapter_base(self):
-        """AdapterBase is abstract and cannot be instantiated directly."""
+        """AgentAdapter is abstract and cannot be instantiated directly."""
         with pytest.raises(TypeError):
-            AdapterBase()  # type: ignore
+            AgentAdapter()  # type: ignore
 
     def test_subclass_must_implement_name(self):
         """Subclass must implement the name property."""
 
-        class IncompleteAdapter(AdapterBase):
+        class IncompleteAdapter(AgentAdapter):
             async def invoke(self, request: InvokeRequest) -> InvokeResponse:
                 return InvokeResponse(output="")
 
@@ -29,7 +29,7 @@ class TestAdapterBaseContract:
     def test_subclass_must_implement_invoke(self):
         """Subclass must implement the invoke method."""
 
-        class IncompleteAdapter(AdapterBase):
+        class IncompleteAdapter(AgentAdapter):
             @property
             def name(self) -> str:
                 return "test"
@@ -43,7 +43,7 @@ class TestAdapterBaseContract:
     def test_subclass_must_implement_chat(self):
         """Subclass must implement the chat method."""
 
-        class IncompleteAdapter(AdapterBase):
+        class IncompleteAdapter(AgentAdapter):
             @property
             def name(self) -> str:
                 return "test"
@@ -58,10 +58,10 @@ class TestAdapterBaseContract:
 class TestConcreteAdapter:
     """Tests for a concrete adapter implementation."""
 
-    def _create_adapter(self) -> AdapterBase:
+    def _create_adapter(self) -> AgentAdapter:
         """Create a minimal concrete adapter for testing."""
 
-        class TestAdapter(AdapterBase):
+        class TestAdapter(AgentAdapter):
             @property
             def name(self) -> str:
                 return "test-agent"

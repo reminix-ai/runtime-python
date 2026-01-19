@@ -1,4 +1,4 @@
-"""Base adapter class for framework integrations."""
+"""Base agent adapter class for framework integrations."""
 # ruff: noqa: ARG002  # abstract methods have unused args in interface definitions
 
 from collections.abc import AsyncIterator
@@ -8,10 +8,10 @@ from .agent import AgentBase
 from .types import ChatRequest, InvokeRequest
 
 
-class AdapterBase(AgentBase):
-    """Base class for framework adapters.
+class AgentAdapter(AgentBase):
+    """Base class for framework agent adapters.
 
-    Extend this class when wrapping an existing AI framework
+    Extend this class when wrapping an existing AI framework's agent
     (e.g., LangChain, OpenAI, Anthropic).
     """
 

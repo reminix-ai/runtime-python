@@ -6,20 +6,20 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import Runnable
 
-from reminix_langchain import LangChainAdapter, serve_agent, wrap_agent
-from reminix_runtime import AdapterBase, ChatRequest, InvokeRequest
+from reminix_langchain import LangChainAgentAdapter, serve_agent, wrap_agent
+from reminix_runtime import AgentAdapter, ChatRequest, InvokeRequest
 
 
 class TestWrap:
     """Tests for the wrap_agent() function."""
 
     def test_wrap_returns_adapter(self):
-        """wrap_agent() should return a LangChainAdapter."""
+        """wrap_agent() should return a LangChainAgentAdapter."""
         mock_runnable = MagicMock(spec=Runnable)
         adapter = wrap_agent(mock_runnable)
 
-        assert isinstance(adapter, LangChainAdapter)
-        assert isinstance(adapter, AdapterBase)
+        assert isinstance(adapter, LangChainAgentAdapter)
+        assert isinstance(adapter, AgentAdapter)
 
     def test_wrap_with_custom_name(self):
         """wrap_agent() should accept a custom name."""
@@ -36,7 +36,7 @@ class TestWrap:
         assert adapter.name == "langchain-agent"
 
 
-class TestLangChainAdapterInvoke:
+class TestLangChainAgentAdapterInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
@@ -92,7 +92,7 @@ class TestLangChainAdapterInvoke:
         assert response.output == "Simple string result"
 
 
-class TestLangChainAdapterChat:
+class TestLangChainAgentAdapterChat:
     """Tests for the chat() method."""
 
     @pytest.mark.asyncio
@@ -180,7 +180,7 @@ class TestWrapAndServe:
         """serve_agent() should be callable."""
         assert callable(serve_agent)
 
-    @patch("reminix_langchain.adapter.serve")
+    @patch("reminix_langchain.agent_adapter.serve")
     def test_serve_agent_calls_serve(self, mock_serve):
         """serve_agent() should call serve with wrapped adapter."""
         mock_runnable = MagicMock(spec=Runnable)
@@ -191,10 +191,10 @@ class TestWrapAndServe:
         call_args = mock_serve.call_args
         agents = call_args.kwargs["agents"]
         assert len(agents) == 1
-        assert isinstance(agents[0], LangChainAdapter)
+        assert isinstance(agents[0], LangChainAgentAdapter)
         assert agents[0].name == "test-agent"
 
-    @patch("reminix_langchain.adapter.serve")
+    @patch("reminix_langchain.agent_adapter.serve")
     def test_serve_agent_passes_serve_options(self, mock_serve):
         """serve_agent() should pass port and host to serve."""
         mock_runnable = MagicMock(spec=Runnable)

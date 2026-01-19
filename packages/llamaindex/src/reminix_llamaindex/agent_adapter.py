@@ -1,11 +1,11 @@
-"""LlamaIndex adapter for Reminix Runtime."""
+"""LlamaIndex agent adapter for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
 from typing import Any, Protocol, runtime_checkable
 
 from reminix_runtime import (
-    AdapterBase,
+    AgentAdapter,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
@@ -28,8 +28,8 @@ class ChatEngine(Protocol):
         ...
 
 
-class LlamaIndexAdapter(AdapterBase):
-    """Adapter for LlamaIndex chat engines."""
+class LlamaIndexAgentAdapter(AgentAdapter):
+    """Agent adapter for LlamaIndex chat engines."""
 
     adapter_name = "llamaindex"
 
@@ -154,7 +154,7 @@ class LlamaIndexAdapter(AdapterBase):
             yield json.dumps({"chunk": token})
 
 
-def wrap_agent(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndexAdapter:
+def wrap_agent(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndexAgentAdapter:
     """Wrap a LlamaIndex chat engine for use with Reminix Runtime.
 
     Args:
@@ -162,13 +162,13 @@ def wrap_agent(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndex
         name: Name for the agent.
 
     Returns:
-        A LlamaIndexAdapter instance.
+        A LlamaIndexAgentAdapter instance.
 
     Example:
         ```python
         from llama_index.core.chat_engine import SimpleChatEngine
         from llama_index.llms.openai import OpenAI
-        from reminix_llamaindex import wrap
+        from reminix_llamaindex import wrap_agent
         from reminix_runtime import serve
 
         llm = OpenAI(model="gpt-4")
@@ -177,7 +177,7 @@ def wrap_agent(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndex
         serve(agents=[agent], port=8080)
         ```
     """
-    return LlamaIndexAdapter(engine, name=name)
+    return LlamaIndexAgentAdapter(engine, name=name)
 
 
 def serve_agent(

@@ -1,4 +1,4 @@
-"""Anthropic adapter for Reminix Runtime."""
+"""Anthropic agent adapter for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -7,7 +7,7 @@ from typing import Any
 from anthropic import AsyncAnthropic
 
 from reminix_runtime import (
-    AdapterBase,
+    AgentAdapter,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
@@ -17,8 +17,8 @@ from reminix_runtime import (
 )
 
 
-class AnthropicAdapter(AdapterBase):
-    """Adapter for Anthropic messages API."""
+class AnthropicAgentAdapter(AgentAdapter):
+    """Agent adapter for Anthropic messages API."""
 
     adapter_name = "anthropic"
 
@@ -242,7 +242,7 @@ def wrap_agent(
     name: str = "anthropic-agent",
     model: str = "claude-sonnet-4-20250514",
     max_tokens: int = 4096,
-) -> AnthropicAdapter:
+) -> AnthropicAgentAdapter:
     """Wrap an Anthropic client for use with Reminix Runtime.
 
     Args:
@@ -252,12 +252,12 @@ def wrap_agent(
         max_tokens: Maximum tokens in the response.
 
     Returns:
-        An AnthropicAdapter instance.
+        An AnthropicAgentAdapter instance.
 
     Example:
         ```python
         from anthropic import AsyncAnthropic
-        from reminix_anthropic import wrap
+        from reminix_anthropic import wrap_agent
         from reminix_runtime import serve
 
         client = AsyncAnthropic()
@@ -265,7 +265,7 @@ def wrap_agent(
         serve(agents=[agent], port=8080)
         ```
     """
-    return AnthropicAdapter(client, name=name, model=model, max_tokens=max_tokens)
+    return AnthropicAgentAdapter(client, name=name, model=model, max_tokens=max_tokens)
 
 
 def serve_agent(

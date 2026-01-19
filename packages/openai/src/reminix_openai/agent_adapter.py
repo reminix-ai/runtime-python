@@ -1,4 +1,4 @@
-"""OpenAI adapter for Reminix Runtime."""
+"""OpenAI agent adapter for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -7,7 +7,7 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from reminix_runtime import (
-    AdapterBase,
+    AgentAdapter,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
@@ -17,8 +17,8 @@ from reminix_runtime import (
 )
 
 
-class OpenAIAdapter(AdapterBase):
-    """Adapter for OpenAI chat completions."""
+class OpenAIAgentAdapter(AgentAdapter):
+    """Agent adapter for OpenAI chat completions."""
 
     adapter_name = "openai"
 
@@ -179,7 +179,7 @@ def wrap_agent(
     client: AsyncOpenAI,
     name: str = "openai-agent",
     model: str = "gpt-4o-mini",
-) -> OpenAIAdapter:
+) -> OpenAIAgentAdapter:
     """Wrap an OpenAI client for use with Reminix Runtime.
 
     Args:
@@ -188,12 +188,12 @@ def wrap_agent(
         model: The model to use for completions.
 
     Returns:
-        An OpenAIAdapter instance.
+        An OpenAIAgentAdapter instance.
 
     Example:
         ```python
         from openai import AsyncOpenAI
-        from reminix_openai import wrap
+        from reminix_openai import wrap_agent
         from reminix_runtime import serve
 
         client = AsyncOpenAI()
@@ -201,7 +201,7 @@ def wrap_agent(
         serve(agents=[agent], port=8080)
         ```
     """
-    return OpenAIAdapter(client, name=name, model=model)
+    return OpenAIAgentAdapter(client, name=name, model=model)
 
 
 def serve_agent(

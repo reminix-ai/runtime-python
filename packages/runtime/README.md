@@ -1,6 +1,6 @@
 # reminix-runtime
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `serve()` function, `Agent` class, `@tool` decorator, and `BaseAdapter` for building framework integrations.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `serve()` function, `Agent` class, `@tool` decorator, and `AgentAdapter` for building framework integrations.
 
 Built on [FastAPI](https://fastapi.tiangolo.com) with full async support.
 
@@ -339,18 +339,18 @@ Works with:
 - **GCP Cloud Functions** - Use functions-framework with ASGI
 - **Any ASGI server** - uvicorn, hypercorn, daphne
 
-### `BaseAdapter`
+### `AgentAdapter`
 
 Abstract base class for framework adapters. Use this when wrapping an existing AI framework.
 
 ```python
-from reminix_runtime import BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
+from reminix_runtime import AgentAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
 
-class MyFrameworkAdapter(BaseAdapter):
+class MyFrameworkAdapter(AgentAdapter):
     # Adapter name shown in /info endpoint
     adapter_name = "my-framework"
     
-    # BaseAdapter defaults both to True; override if your adapter doesn't support streaming
+    # AgentAdapter defaults both to True; override if your adapter doesn't support streaming
     # invoke_streaming = False
     # chat_streaming = False
 

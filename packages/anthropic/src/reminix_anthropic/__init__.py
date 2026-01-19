@@ -1,3 +1,3 @@
-from .adapter import AnthropicAdapter, serve_agent, wrap_agent
+from .agent_adapter import AnthropicAgentAdapter, serve_agent, wrap_agent
 
-__all__ = ["AnthropicAdapter", "wrap_agent", "serve_agent"]
+__all__ = ["AnthropicAgentAdapter", "wrap_agent", "serve_agent"]

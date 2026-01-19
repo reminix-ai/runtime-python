@@ -1,23 +1,23 @@
-"""Tests for the OpenAI adapter."""
+"""Tests for the Anthropic adapter."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from reminix_openai import OpenAIAdapter, serve_agent, wrap_agent
-from reminix_runtime import AdapterBase, ChatRequest, InvokeRequest
+from reminix_anthropic import AnthropicAgentAdapter, serve_agent, wrap_agent
+from reminix_runtime import AgentAdapter, ChatRequest, InvokeRequest
 
 
 class TestWrap:
     """Tests for the wrap_agent() function."""
 
     def test_wrap_returns_adapter(self):
-        """wrap_agent() should return an OpenAIAdapter."""
+        """wrap_agent() should return an AnthropicAgentAdapter."""
         mock_client = MagicMock()
         adapter = wrap_agent(mock_client)
 
-        assert isinstance(adapter, OpenAIAdapter)
-        assert isinstance(adapter, AdapterBase)
+        assert isinstance(adapter, AnthropicAgentAdapter)
+        assert isinstance(adapter, AgentAdapter)
 
     def test_wrap_with_custom_name(self):
         """wrap_agent() should accept a custom name."""
@@ -29,95 +29,93 @@ class TestWrap:
     def test_wrap_with_custom_model(self):
         """wrap_agent() should accept a custom model."""
         mock_client = MagicMock()
-        adapter = wrap_agent(mock_client, model="gpt-4o")
+        adapter = wrap_agent(mock_client, model="claude-opus-4-20250514")
 
-        assert adapter.model == "gpt-4o"
+        assert adapter.model == "claude-opus-4-20250514"
 
     def test_wrap_default_values(self):
         """wrap_agent() should use default values if not provided."""
         mock_client = MagicMock()
         adapter = wrap_agent(mock_client)
 
-        assert adapter.name == "openai-agent"
-        assert adapter.model == "gpt-4o-mini"
+        assert adapter.name == "anthropic-agent"
+        assert adapter.model == "claude-sonnet-4-20250514"
 
 
-class TestOpenAIAdapterInvoke:
+class TestAnthropicAgentAdapterInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
     async def test_invoke_calls_client(self):
-        """invoke() should call the OpenAI client."""
+        """invoke() should call the Anthropic client."""
         mock_client = MagicMock()
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Hello!"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_response.content = [MagicMock(type="text", text="Hello!")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
         request = InvokeRequest(input={"prompt": "Hi"})
 
         response = await adapter.invoke(request)
 
-        mock_client.chat.completions.create.assert_called_once()
+        mock_client.messages.create.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_invoke_returns_output(self):
         """invoke() should return the output from the API."""
         mock_client = MagicMock()
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Hello from OpenAI!"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_response.content = [MagicMock(type="text", text="Hello from Anthropic!")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
         request = InvokeRequest(input={"prompt": "Hi"})
 
         response = await adapter.invoke(request)
 
-        assert response.output == "Hello from OpenAI!"
+        assert response.output == "Hello from Anthropic!"
 
     @pytest.mark.asyncio
     async def test_invoke_with_messages_input(self):
         """invoke() should handle input with messages key."""
         mock_client = MagicMock()
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_response.content = [MagicMock(type="text", text="Response")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
         request = InvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
         response = await adapter.invoke(request)
 
-        # Should pass messages directly
-        call_kwargs = mock_client.chat.completions.create.call_args[1]
-        assert call_kwargs["messages"] == [{"role": "user", "content": "Hello"}]
+        assert response.output == "Response"
 
 
-class TestOpenAIAdapterChat:
+class TestAnthropicAgentAdapterChat:
     """Tests for the chat() method."""
 
     @pytest.mark.asyncio
     async def test_chat_calls_client(self):
-        """chat() should call the OpenAI client."""
+        """chat() should call the Anthropic client."""
         mock_client = MagicMock()
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Hello!"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_response.content = [MagicMock(type="text", text="Hello!")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
         request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
 
         response = await adapter.chat(request)
 
-        mock_client.chat.completions.create.assert_called_once()
+        mock_client.messages.create.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_chat_returns_output_and_messages(self):
         """chat() should return output and messages."""
         mock_client = MagicMock()
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Chat response"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_response.content = [MagicMock(type="text", text="Chat response")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
         request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
@@ -130,20 +128,27 @@ class TestOpenAIAdapterChat:
         assert response.messages[-1]["content"] == "Chat response"
 
     @pytest.mark.asyncio
-    async def test_chat_passes_model(self):
-        """chat() should use the configured model."""
+    async def test_chat_extracts_system_message(self):
+        """chat() should extract system message for Anthropic API."""
         mock_client = MagicMock()
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_response.content = [MagicMock(type="text", text="Response")]
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        adapter = wrap_agent(mock_client, model="gpt-4o")
-        request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
+        adapter = wrap_agent(mock_client)
+        request = ChatRequest(
+            messages=[
+                {"role": "system", "content": "You are helpful"},
+                {"role": "user", "content": "Hi"},
+            ]
+        )
 
         await adapter.chat(request)
 
-        call_kwargs = mock_client.chat.completions.create.call_args[1]
-        assert call_kwargs["model"] == "gpt-4o"
+        call_kwargs = mock_client.messages.create.call_args[1]
+        assert call_kwargs["system"] == "You are helpful"
+        # Messages should not include system message
+        assert all(m["role"] != "system" for m in call_kwargs["messages"])
 
 
 class TestWrapAndServe:
@@ -153,7 +158,7 @@ class TestWrapAndServe:
         """serve_agent() should be callable."""
         assert callable(serve_agent)
 
-    @patch("reminix_openai.adapter.serve")
+    @patch("reminix_anthropic.agent_adapter.serve")
     def test_serve_agent_calls_serve(self, mock_serve):
         """serve_agent() should call serve with wrapped adapter."""
         mock_client = MagicMock()
@@ -164,10 +169,10 @@ class TestWrapAndServe:
         call_args = mock_serve.call_args
         agents = call_args.kwargs["agents"]
         assert len(agents) == 1
-        assert isinstance(agents[0], OpenAIAdapter)
+        assert isinstance(agents[0], AnthropicAgentAdapter)
         assert agents[0].name == "test-agent"
 
-    @patch("reminix_openai.adapter.serve")
+    @patch("reminix_anthropic.agent_adapter.serve")
     def test_serve_agent_passes_serve_options(self, mock_serve):
         """serve_agent() should pass port and host to serve."""
         mock_client = MagicMock()

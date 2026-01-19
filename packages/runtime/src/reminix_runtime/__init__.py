@@ -1,7 +1,7 @@
 __version__ = "0.0.6"
 
-from .adapter import AdapterBase
 from .agent import Agent, AgentBase, ASGIApp
+from .agent_adapter import AgentAdapter
 from .server import create_app, serve
 from .tool import Tool, ToolBase, tool
 from .types import (
@@ -29,7 +29,7 @@ __all__ = [
     "ChatResponse",
     "AgentBase",
     "Agent",
-    "AdapterBase",
+    "AgentAdapter",
     "ASGIApp",
     # Tool types
     "ToolBase",

@@ -1,3 +1,3 @@
-from .adapter import LangChainAdapter, serve_agent, wrap_agent
+from .agent_adapter import LangChainAgentAdapter, serve_agent, wrap_agent
 
-__all__ = ["LangChainAdapter", "wrap_agent", "serve_agent"]
+__all__ = ["LangChainAgentAdapter", "wrap_agent", "serve_agent"]

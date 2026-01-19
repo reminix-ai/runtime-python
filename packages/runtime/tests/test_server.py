@@ -4,7 +4,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from reminix_runtime import (
-    AdapterBase,
+    AgentAdapter,
     ChatRequest,
     ChatResponse,
     InvokeRequest,
@@ -15,7 +15,7 @@ from reminix_runtime import (
 from reminix_runtime.server import create_app
 
 
-class MockAdapter(AdapterBase):
+class MockAdapter(AgentAdapter):
     """A mock adapter for testing."""
 
     adapter_name = "mock"
