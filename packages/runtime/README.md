@@ -67,7 +67,7 @@ Returns `{"status": "ok"}` if the server is running.
 curl http://localhost:8080/info
 ```
 
-Returns runtime information and available agents:
+Returns runtime information, available agents, and tools:
 
 ```json
 {
@@ -83,6 +83,15 @@ Returns runtime information and available agents:
       "type": "agent",
       "invoke": { "streaming": false },
       "chat": { "streaming": false }
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_weather",
+      "type": "tool",
+      "description": "Get current weather for a location",
+      "parameters": { ... },
+      "output": { ... }
     }
   ]
 }
