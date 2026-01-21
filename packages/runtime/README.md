@@ -79,6 +79,7 @@ Returns runtime information, available agents, and tools:
         "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
         "required": ["a", "b"]
       },
+      "output": { "type": "number" },
       "invoke": { "streaming": false },
       "chat": { "streaming": false }
     },
@@ -193,6 +194,7 @@ The decorator automatically extracts:
 - **name** from the function name (or use `name=` to override)
 - **description** from the docstring (or use `description=` to override)
 - **parameters** from type hints and defaults
+- **output** from the return type hint
 
 ### Chat Agent
 

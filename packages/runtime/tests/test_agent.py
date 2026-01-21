@@ -370,6 +370,40 @@ class TestAgentDecorator:
         assert "count" not in params["required"]
         assert params["properties"]["count"]["default"] == 5
 
+    def test_agent_decorator_extracts_output(self):
+        """@agent decorator extracts output schema from return type."""
+
+        @agent
+        async def calculator(a: float, b: float) -> float:
+            """Add two numbers."""
+            return a + b
+
+        output = calculator.metadata.get("output")
+        assert output is not None
+        assert output["type"] == "number"
+
+    def test_agent_decorator_output_dict_type(self):
+        """@agent decorator handles dict return type."""
+
+        @agent
+        async def get_data(key: str) -> dict:
+            """Get data."""
+            return {"key": key}
+
+        output = get_data.metadata.get("output")
+        assert output is not None
+        assert output["type"] == "object"
+
+    def test_agent_decorator_no_output_when_no_return_type(self):
+        """@agent decorator omits output when no return type hint."""
+
+        @agent
+        async def processor(x: str):
+            """Process something."""
+            return x
+
+        assert "output" not in processor.metadata
+
     @pytest.mark.asyncio
     async def test_agent_decorator_invoke(self):
         """@agent decorated function can handle invoke requests."""

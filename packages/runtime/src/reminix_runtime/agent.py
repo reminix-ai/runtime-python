@@ -482,14 +482,19 @@ def _python_type_to_json_schema(python_type: type) -> dict[str, Any]:
     return {"type": "string"}
 
 
-def _extract_parameters_from_function(func: Callable[..., Any]) -> dict[str, Any]:
-    """Extract JSON Schema parameters from function signature.
+def _extract_parameters_from_function(
+    func: Callable[..., Any],
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Extract JSON Schema parameters and output from function signature.
 
     Returns:
-        A dict with 'type', 'properties', and 'required' keys.
+        A tuple of (parameters_schema, output_schema).
+        parameters_schema is a dict with 'type', 'properties', and 'required' keys.
+        output_schema is the JSON schema for the return type, or None if not specified.
     """
     hints = get_type_hints(func)
-    hints.pop("return", None)  # Remove return type
+    return_type = hints.pop("return", None)  # Extract return type hint
+    output_schema = _python_type_to_json_schema(return_type) if return_type else None
 
     sig = inspect.signature(func)
 
@@ -513,7 +518,7 @@ def _extract_parameters_from_function(func: Callable[..., Any]) -> dict[str, Any
         else:
             properties[param_name]["default"] = param.default
 
-    return {"type": "object", "properties": properties, "required": required}
+    return {"type": "object", "properties": properties, "required": required}, output_schema
 
 
 def agent(
@@ -561,13 +566,21 @@ def agent(
         # Detect if streaming (async generator function)
         is_streaming = inspect.isasyncgenfunction(f)
 
-        # Extract parameter schema
-        parameters = _extract_parameters_from_function(f)
+        # Extract parameter and output schemas
+        parameters, output = _extract_parameters_from_function(f)
+
+        # Build metadata
+        metadata: dict[str, Any] = {
+            "description": agent_description,
+            "parameters": parameters,
+        }
+        if output is not None:
+            metadata["output"] = output
 
         # Create agent instance
         agent_instance = Agent(
             agent_name,
-            metadata={"description": agent_description, "parameters": parameters},
+            metadata=metadata,
         )
 
         if is_streaming:
