@@ -11,7 +11,7 @@ A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framewor
 
 | Package | Description |
 |---------|-------------|
-| [`reminix-runtime`](./packages/runtime) | Core runtime with `serve()`, invoke/chat handlers, and base adapter |
+| [`reminix-runtime`](./packages/runtime) | Core runtime with `@agent`, `@chat_agent`, and `@tool` decorators |
 | [`reminix-langchain`](./packages/langchain) | LangChain adapter |
 | [`reminix-langgraph`](./packages/langgraph) | LangGraph adapter |
 | [`reminix-openai`](./packages/openai) | OpenAI Agents adapter |
@@ -42,28 +42,26 @@ serve(agents=[wrap_agent(agent, name="my-agent")], port=8080)
 ### With Decorators (No Framework)
 
 ```python
-from reminix_runtime import Agent, serve
+from reminix_runtime import agent, chat_agent, serve, Message
 
-agent = Agent("my-agent")
+@agent
+async def calculator(a: float, b: float) -> float:
+    """Add two numbers."""
+    return a + b
 
-@agent.on_invoke
-async def handle_invoke(request):
-    return {"output": f"Received: {request.input}"}
+@chat_agent
+async def assistant(messages: list[Message]) -> str:
+    """A helpful assistant."""
+    return f"You said: {messages[-1].content}"
 
-@agent.on_chat
-async def handle_chat(request):
-    last_message = request.messages[-1].content if request.messages else ""
-    return {
-        "output": f"You said: {last_message}",
-        "messages": [*request.messages, {"role": "assistant", "content": f"You said: {last_message}"}]
-    }
-
-serve(agents=[agent], port=8080)
+serve(agents=[calculator, assistant], port=8080)
 ```
 
-Your agent is now available at:
-- `POST /agents/my-agent/invoke` - Stateless invocation
-- `POST /agents/my-agent/chat` - Conversational chat
+Your agents are now available at:
+- `POST /agents/calculator/invoke` - Stateless invocation
+- `POST /agents/assistant/chat` - Conversational chat
+
+See the [runtime package docs](./packages/runtime) for tools, streaming, and advanced usage.
 
 ## Development
 
