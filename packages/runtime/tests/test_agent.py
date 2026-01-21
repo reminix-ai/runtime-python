@@ -507,6 +507,31 @@ class TestChatAgentDecorator:
 
         assert assistant.metadata["description"] == "This is a helpful assistant."
 
+    def test_chat_agent_decorator_has_parameters_schema(self):
+        """@chat_agent decorator sets standard parameters schema."""
+
+        @chat_agent
+        async def assistant(messages: list[Message]) -> str:
+            """A helpful assistant."""
+            return "Hello!"
+
+        params = assistant.metadata["parameters"]
+        assert params["type"] == "object"
+        assert "messages" in params["properties"]
+        assert params["properties"]["messages"]["type"] == "array"
+        assert "messages" in params["required"]
+
+    def test_chat_agent_decorator_has_output_schema(self):
+        """@chat_agent decorator sets standard output schema."""
+
+        @chat_agent
+        async def assistant(messages: list[Message]) -> str:
+            """A helpful assistant."""
+            return "Hello!"
+
+        output = assistant.metadata["output"]
+        assert output["type"] == "string"
+
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_chat(self):
         """@chat_agent decorated function can handle chat requests."""

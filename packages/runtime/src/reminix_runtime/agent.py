@@ -683,10 +683,34 @@ def chat_agent(
         sig = inspect.signature(f)
         accepts_context = "context" in sig.parameters
 
+        # Define standard chat agent schemas
+        parameters_schema = {
+            "type": "object",
+            "properties": {
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "role": {"type": "string"},
+                            "content": {"type": "string"},
+                        },
+                        "required": ["role", "content"],
+                    },
+                }
+            },
+            "required": ["messages"],
+        }
+        output_schema = {"type": "string"}
+
         # Create agent instance
         agent_instance = Agent(
             agent_name,
-            metadata={"description": agent_description},
+            metadata={
+                "description": agent_description,
+                "parameters": parameters_schema,
+                "output": output_schema,
+            },
         )
 
         if is_streaming:

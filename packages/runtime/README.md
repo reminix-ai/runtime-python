@@ -87,6 +87,17 @@ Returns runtime information, available agents, and tools:
       "name": "assistant",
       "type": "agent",
       "description": "A helpful assistant.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": { "type": "object", "properties": { "role": { "type": "string" }, "content": { "type": "string" } }, "required": ["role", "content"] }
+          }
+        },
+        "required": ["messages"]
+      },
+      "output": { "type": "string" },
       "invoke": { "streaming": false },
       "chat": { "streaming": false }
     }
