@@ -8,7 +8,10 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, TypeVar, get_type_hints
 
+from docstring_parser import parse as parse_docstring
+
 from . import __version__
+from .tool import _python_type_to_json_schema
 from .types import ExecuteRequest, ExecuteResponse, Message
 
 # Default parameters schema for agents
@@ -356,65 +359,37 @@ class Agent(AgentBase):
             yield chunk
 
 
-# Type mapping from Python types to JSON Schema types (shared with tool.py)
-_TYPE_MAP: dict[type, str] = {
-    str: "string",
-    int: "integer",
-    float: "number",
-    bool: "boolean",
-    list: "array",
-    dict: "object",
-}
-
-
-def _python_type_to_json_schema(python_type: type) -> dict[str, Any]:
-    """Convert a Python type hint to a JSON Schema type."""
-    # Handle None type
-    if python_type is type(None):
-        return {"type": "null"}
-
-    # Handle basic types
-    if python_type in _TYPE_MAP:
-        return {"type": _TYPE_MAP[python_type]}
-
-    # Handle Optional types (Union with None)
-    origin = getattr(python_type, "__origin__", None)
-    if origin is not None:
-        args = getattr(python_type, "__args__", ())
-
-        # Handle Union types (including Optional)
-        if origin is type(None) or str(origin) == "typing.Union":
-            non_none_args = [a for a in args if a is not type(None)]
-            if len(non_none_args) == 1:
-                return _python_type_to_json_schema(non_none_args[0])
-
-        # Handle list[T]
-        if origin is list:
-            if args:
-                return {"type": "array", "items": _python_type_to_json_schema(args[0])}
-            return {"type": "array"}
-
-        # Handle dict[K, V]
-        if origin is dict:
-            return {"type": "object"}
-
-    # Default to string for unknown types
-    return {"type": "string"}
-
-
 def _extract_parameters_from_function(
     func: Callable[..., Any],
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
     """Extract JSON Schema parameters and output from function signature.
+
+    Parses docstrings (Google, NumPy, or Sphinx style) to extract:
+    - Parameter descriptions from Args section
+    - Return description from Returns section
 
     Returns:
         A tuple of (parameters_schema, output_schema).
         parameters_schema is a dict with 'type', 'properties', and 'required' keys.
         output_schema is the JSON schema for the return type, or None if not specified.
     """
+    # Parse docstring for parameter descriptions
+    docstring = func.__doc__ or ""
+    parsed_doc = parse_docstring(docstring)
+
+    # Build parameter descriptions lookup from docstring Args section
+    param_descriptions: dict[str, str] = {}
+    for param in parsed_doc.params:
+        if param.description:
+            param_descriptions[param.arg_name] = param.description
+
     hints = get_type_hints(func)
     return_type = hints.pop("return", None)  # Extract return type hint
     output_schema = _python_type_to_json_schema(return_type) if return_type else None
+
+    # Add return description to output schema if available
+    if output_schema and parsed_doc.returns and parsed_doc.returns.description:
+        output_schema["description"] = parsed_doc.returns.description
 
     sig = inspect.signature(func)
 
@@ -429,6 +404,10 @@ def _extract_parameters_from_function(
         # Get type hint
         param_type = hints.get(param_name, str)
         schema = _python_type_to_json_schema(param_type)
+
+        # Add description from docstring if available
+        if param_name in param_descriptions:
+            schema["description"] = param_descriptions[param_name]
 
         properties[param_name] = schema
 

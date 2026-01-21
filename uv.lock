@@ -2768,6 +2768,7 @@ name = "reminix-runtime"
 version = "0.0.8"
 source = { editable = "packages/runtime" }
 dependencies = [
+    { name = "docstring-parser" },
     { name = "fastapi" },
     { name = "pydantic" },
     { name = "uvicorn" },
@@ -2782,6 +2783,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "docstring-parser", specifier = ">=0.17.0" },
     { name = "fastapi", specifier = ">=0.128.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.0" },
     { name = "pydantic", specifier = ">=2.12.0" },
