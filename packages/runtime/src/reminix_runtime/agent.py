@@ -1,11 +1,12 @@
 """Agent classes for Reminix Runtime."""
 # ruff: noqa: ARG002  # abstract methods have unused args in interface definitions
 
+import inspect
 import json
 import re
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import Any, TypeVar
+from typing import Any, TypeVar, get_type_hints
 
 from . import __version__
 from .types import ChatRequest, ChatResponse, InvokeRequest, InvokeResponse, Message
@@ -433,3 +434,314 @@ class Agent(AgentBase):
             )
         async for chunk in self._chat_stream_handler(request):
             yield chunk
+
+
+# Type mapping from Python types to JSON Schema types (shared with tool.py)
+_TYPE_MAP: dict[type, str] = {
+    str: "string",
+    int: "integer",
+    float: "number",
+    bool: "boolean",
+    list: "array",
+    dict: "object",
+}
+
+
+def _python_type_to_json_schema(python_type: type) -> dict[str, Any]:
+    """Convert a Python type hint to a JSON Schema type."""
+    # Handle None type
+    if python_type is type(None):
+        return {"type": "null"}
+
+    # Handle basic types
+    if python_type in _TYPE_MAP:
+        return {"type": _TYPE_MAP[python_type]}
+
+    # Handle Optional types (Union with None)
+    origin = getattr(python_type, "__origin__", None)
+    if origin is not None:
+        args = getattr(python_type, "__args__", ())
+
+        # Handle Union types (including Optional)
+        if origin is type(None) or str(origin) == "typing.Union":
+            non_none_args = [a for a in args if a is not type(None)]
+            if len(non_none_args) == 1:
+                return _python_type_to_json_schema(non_none_args[0])
+
+        # Handle list[T]
+        if origin is list:
+            if args:
+                return {"type": "array", "items": _python_type_to_json_schema(args[0])}
+            return {"type": "array"}
+
+        # Handle dict[K, V]
+        if origin is dict:
+            return {"type": "object"}
+
+    # Default to string for unknown types
+    return {"type": "string"}
+
+
+def _extract_parameters_from_function(func: Callable[..., Any]) -> dict[str, Any]:
+    """Extract JSON Schema parameters from function signature.
+
+    Returns:
+        A dict with 'type', 'properties', and 'required' keys.
+    """
+    hints = get_type_hints(func)
+    hints.pop("return", None)  # Remove return type
+
+    sig = inspect.signature(func)
+
+    properties: dict[str, Any] = {}
+    required: list[str] = []
+
+    for param_name, param in sig.parameters.items():
+        # Skip special parameters
+        if param_name in ("self", "cls", "messages", "context"):
+            continue
+
+        # Get type hint
+        param_type = hints.get(param_name, str)
+        schema = _python_type_to_json_schema(param_type)
+
+        properties[param_name] = schema
+
+        # Check if required (no default value)
+        if param.default is inspect.Parameter.empty:
+            required.append(param_name)
+        else:
+            properties[param_name]["default"] = param.default
+
+    return {"type": "object", "properties": properties, "required": required}
+
+
+def agent(
+    func: Callable[..., Any] | None = None,
+    *,
+    name: str | None = None,
+    description: str | None = None,
+) -> Agent | Callable[[Callable[..., Any]], Agent]:
+    """Decorator to create an invoke agent from a function.
+
+    The function parameters become the agent's input schema (like @tool).
+    Supports both sync and async functions, and async generators for streaming.
+
+    Examples:
+        @agent
+        async def calculator(a: float, b: float) -> float:
+            '''Add two numbers.'''
+            return a + b
+
+        @agent(name="custom-name")
+        async def echo(message: str) -> str:
+            '''Echo the message.'''
+            return f"Echo: {message}"
+
+        # Streaming agent (yields chunks, collected for non-streaming requests)
+        @agent
+        async def streamer(text: str):
+            '''Stream text word by word.'''
+            for word in text.split():
+                yield word + " "
+
+    Args:
+        func: The function to wrap (when used without parentheses).
+        name: Optional name override. Defaults to function name.
+        description: Optional description override. Defaults to docstring.
+
+    Returns:
+        An Agent instance that handles invoke requests.
+    """
+
+    def decorator(f: Callable[..., Any]) -> Agent:
+        agent_name = name or f.__name__
+        agent_description = description or (f.__doc__ or "").strip().split("\n\n")[0].strip()
+
+        # Detect if streaming (async generator function)
+        is_streaming = inspect.isasyncgenfunction(f)
+
+        # Extract parameter schema
+        parameters = _extract_parameters_from_function(f)
+
+        # Create agent instance
+        agent_instance = Agent(
+            agent_name,
+            metadata={"description": agent_description, "parameters": parameters},
+        )
+
+        if is_streaming:
+            # Register streaming invoke handler
+            async def invoke_stream_handler(request: InvokeRequest) -> AsyncIterator[str]:
+                async for chunk in f(**request.input):
+                    # Convert to JSON string if not already a string
+                    if isinstance(chunk, str):
+                        yield chunk
+                    else:
+                        yield json.dumps(chunk)
+
+            agent_instance.on_invoke_stream(invoke_stream_handler)
+
+            # Also register non-streaming handler that collects chunks
+            async def invoke_handler(request: InvokeRequest) -> InvokeResponse:
+                chunks: list[str] = []
+                async for chunk in f(**request.input):
+                    if isinstance(chunk, str):
+                        chunks.append(chunk)
+                    else:
+                        chunks.append(str(chunk))
+                return InvokeResponse(output="".join(chunks))
+
+            agent_instance.on_invoke(invoke_handler)
+        else:
+            # Register regular invoke handler
+            async def invoke_handler(request: InvokeRequest) -> InvokeResponse:
+                if inspect.iscoroutinefunction(f):
+                    result = await f(**request.input)
+                else:
+                    result = f(**request.input)
+                return InvokeResponse(output=result)
+
+            agent_instance.on_invoke(invoke_handler)
+
+        # Preserve function metadata
+        agent_instance.__doc__ = f.__doc__
+        agent_instance.__name__ = f.__name__  # type: ignore[attr-defined]
+        agent_instance.__module__ = f.__module__
+
+        return agent_instance
+
+    # Handle both @agent and @agent(...) syntax
+    if func is not None:
+        return decorator(func)
+
+    return decorator
+
+
+def chat_agent(
+    func: Callable[..., Any] | None = None,
+    *,
+    name: str | None = None,
+    description: str | None = None,
+) -> Agent | Callable[[Callable[..., Any]], Agent]:
+    """Decorator to create a chat agent from a function.
+
+    The function receives messages and optionally context, returns a response string.
+    Use async generator for streaming support.
+
+    Examples:
+        @chat_agent
+        async def assistant(messages: list[Message]) -> str:
+            '''A helpful assistant.'''
+            last_msg = messages[-1].content
+            return f"You said: {last_msg}"
+
+        # With context
+        @chat_agent
+        async def contextual_bot(messages: list[Message], context: dict | None = None) -> str:
+            '''Bot with context.'''
+            user_id = context.get("user_id") if context else None
+            return f"Hello user {user_id}!"
+
+        # Streaming (yields chunks, collected for non-streaming requests)
+        @chat_agent
+        async def streaming_assistant(messages: list[Message]):
+            '''Streams responses token by token.'''
+            for token in ["Hello", " ", "world", "!"]:
+                yield token
+
+    Args:
+        func: The function to wrap (when used without parentheses).
+        name: Optional name override. Defaults to function name.
+        description: Optional description override. Defaults to docstring.
+
+    Returns:
+        An Agent instance that handles chat requests.
+    """
+
+    def decorator(f: Callable[..., Any]) -> Agent:
+        agent_name = name or f.__name__
+        agent_description = description or (f.__doc__ or "").strip().split("\n\n")[0].strip()
+
+        # Detect if streaming (async generator function)
+        is_streaming = inspect.isasyncgenfunction(f)
+
+        # Check if function accepts context parameter
+        sig = inspect.signature(f)
+        accepts_context = "context" in sig.parameters
+
+        # Create agent instance
+        agent_instance = Agent(
+            agent_name,
+            metadata={"description": agent_description},
+        )
+
+        if is_streaming:
+            # Register streaming chat handler
+            async def chat_stream_handler(request: ChatRequest) -> AsyncIterator[str]:
+                kwargs: dict[str, Any] = {"messages": request.messages}
+                if accepts_context:
+                    kwargs["context"] = request.context
+                async for chunk in f(**kwargs):
+                    if isinstance(chunk, str):
+                        yield chunk
+                    else:
+                        yield json.dumps(chunk)
+
+            agent_instance.on_chat_stream(chat_stream_handler)
+
+            # Also register non-streaming handler that collects chunks
+            async def chat_handler(request: ChatRequest) -> ChatResponse:
+                kwargs: dict[str, Any] = {"messages": request.messages}
+                if accepts_context:
+                    kwargs["context"] = request.context
+                chunks: list[str] = []
+                async for chunk in f(**kwargs):
+                    if isinstance(chunk, str):
+                        chunks.append(chunk)
+                    else:
+                        chunks.append(str(chunk))
+                output = "".join(chunks)
+                return ChatResponse(
+                    output=output,
+                    messages=[
+                        *[{"role": m.role, "content": m.content} for m in request.messages],
+                        {"role": "assistant", "content": output},
+                    ],
+                )
+
+            agent_instance.on_chat(chat_handler)
+        else:
+            # Register regular chat handler
+            async def chat_handler(request: ChatRequest) -> ChatResponse:
+                kwargs: dict[str, Any] = {"messages": request.messages}
+                if accepts_context:
+                    kwargs["context"] = request.context
+
+                if inspect.iscoroutinefunction(f):
+                    output = await f(**kwargs)
+                else:
+                    output = f(**kwargs)
+
+                return ChatResponse(
+                    output=output,
+                    messages=[
+                        *[{"role": m.role, "content": m.content} for m in request.messages],
+                        {"role": "assistant", "content": output},
+                    ],
+                )
+
+            agent_instance.on_chat(chat_handler)
+
+        # Preserve function metadata
+        agent_instance.__doc__ = f.__doc__
+        agent_instance.__name__ = f.__name__  # type: ignore[attr-defined]
+        agent_instance.__module__ = f.__module__
+
+        return agent_instance
+
+    # Handle both @chat_agent and @chat_agent(...) syntax
+    if func is not None:
+        return decorator(func)
+
+    return decorator

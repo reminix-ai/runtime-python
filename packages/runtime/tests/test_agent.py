@@ -1,8 +1,17 @@
-"""Tests for the decorator-based Agent class."""
+"""Tests for the decorator-based Agent class and agent decorators."""
 
 import pytest
 
-from reminix_runtime import Agent, ChatRequest, ChatResponse, InvokeRequest, InvokeResponse
+from reminix_runtime import (
+    Agent,
+    ChatRequest,
+    ChatResponse,
+    InvokeRequest,
+    InvokeResponse,
+    Message,
+    agent,
+    chat_agent,
+)
 
 
 class TestAgentCreation:
@@ -294,3 +303,262 @@ class TestAgentWithContext:
         await agent.chat(request)
 
         assert received_context == {"user_id": "456"}
+
+
+# =============================================================================
+# Tests for @agent decorator
+# =============================================================================
+
+
+class TestAgentDecorator:
+    """Tests for the @agent decorator."""
+
+    def test_agent_decorator_creates_agent(self):
+        """@agent decorator creates an Agent instance."""
+
+        @agent
+        async def calculator(a: float, b: float) -> float:
+            """Add two numbers."""
+            return a + b
+
+        assert isinstance(calculator, Agent)
+        assert calculator.name == "calculator"
+
+    def test_agent_decorator_with_custom_name(self):
+        """@agent decorator accepts custom name."""
+
+        @agent(name="custom-calc")
+        async def calculator(a: float, b: float) -> float:
+            """Add two numbers."""
+            return a + b
+
+        assert calculator.name == "custom-calc"
+
+    def test_agent_decorator_extracts_description(self):
+        """@agent decorator extracts description from docstring."""
+
+        @agent
+        async def my_agent(x: str) -> str:
+            """This is the agent description."""
+            return x
+
+        assert my_agent.metadata["description"] == "This is the agent description."
+
+    def test_agent_decorator_with_custom_description(self):
+        """@agent decorator accepts custom description."""
+
+        @agent(description="Custom description")
+        async def my_agent(x: str) -> str:
+            """Original docstring."""
+            return x
+
+        assert my_agent.metadata["description"] == "Custom description"
+
+    def test_agent_decorator_extracts_parameters(self):
+        """@agent decorator extracts parameters from function signature."""
+
+        @agent
+        async def my_agent(name: str, count: int = 5) -> str:
+            """Test agent."""
+            return name * count
+
+        params = my_agent.metadata["parameters"]
+        assert params["type"] == "object"
+        assert "name" in params["properties"]
+        assert "count" in params["properties"]
+        assert "name" in params["required"]
+        assert "count" not in params["required"]
+        assert params["properties"]["count"]["default"] == 5
+
+    @pytest.mark.asyncio
+    async def test_agent_decorator_invoke(self):
+        """@agent decorated function can handle invoke requests."""
+
+        @agent
+        async def calculator(a: float, b: float) -> float:
+            """Add two numbers."""
+            return a + b
+
+        request = InvokeRequest(input={"a": 3, "b": 4})
+        response = await calculator.invoke(request)
+
+        assert response.output == 7.0
+
+    @pytest.mark.asyncio
+    async def test_agent_decorator_sync_function(self):
+        """@agent decorator works with sync functions."""
+
+        @agent
+        def calculator(a: float, b: float) -> float:
+            """Add two numbers."""
+            return a + b
+
+        request = InvokeRequest(input={"a": 5, "b": 3})
+        response = await calculator.invoke(request)
+
+        assert response.output == 8.0
+
+    @pytest.mark.asyncio
+    async def test_agent_decorator_streaming(self):
+        """@agent decorator works with async generators for streaming."""
+
+        @agent
+        async def streamer(text: str):
+            """Stream text word by word."""
+            for word in text.split():
+                yield word + " "
+
+        # Test streaming
+        assert streamer.invoke_streaming is True
+
+        request = InvokeRequest(input={"text": "hello world"})
+        chunks = []
+        async for chunk in streamer.invoke_stream(request):
+            chunks.append(chunk)
+
+        assert chunks == ["hello ", "world "]
+
+    @pytest.mark.asyncio
+    async def test_agent_decorator_streaming_non_stream_request(self):
+        """@agent streaming decorator collects chunks for non-streaming requests."""
+
+        @agent
+        async def streamer(text: str):
+            """Stream text word by word."""
+            for word in text.split():
+                yield word + " "
+
+        request = InvokeRequest(input={"text": "hello world"})
+        response = await streamer.invoke(request)
+
+        assert response.output == "hello world "
+
+
+# =============================================================================
+# Tests for @chat_agent decorator
+# =============================================================================
+
+
+class TestChatAgentDecorator:
+    """Tests for the @chat_agent decorator."""
+
+    def test_chat_agent_decorator_creates_agent(self):
+        """@chat_agent decorator creates an Agent instance."""
+
+        @chat_agent
+        async def assistant(messages: list[Message]) -> str:
+            """A helpful assistant."""
+            return "Hello!"
+
+        assert isinstance(assistant, Agent)
+        assert assistant.name == "assistant"
+
+    def test_chat_agent_decorator_with_custom_name(self):
+        """@chat_agent decorator accepts custom name."""
+
+        @chat_agent(name="my-bot")
+        async def assistant(messages: list[Message]) -> str:
+            """A helpful assistant."""
+            return "Hello!"
+
+        assert assistant.name == "my-bot"
+
+    def test_chat_agent_decorator_extracts_description(self):
+        """@chat_agent decorator extracts description from docstring."""
+
+        @chat_agent
+        async def assistant(messages: list[Message]) -> str:
+            """This is a helpful assistant."""
+            return "Hello!"
+
+        assert assistant.metadata["description"] == "This is a helpful assistant."
+
+    @pytest.mark.asyncio
+    async def test_chat_agent_decorator_chat(self):
+        """@chat_agent decorated function can handle chat requests."""
+
+        @chat_agent
+        async def echo_bot(messages: list[Message]) -> str:
+            """Echo the last message."""
+            last_msg = messages[-1].content if messages else ""
+            return f"You said: {last_msg}"
+
+        request = ChatRequest(messages=[Message(role="user", content="hello")])
+        response = await echo_bot.chat(request)
+
+        assert response.output == "You said: hello"
+        assert len(response.messages) == 2
+        assert response.messages[-1]["role"] == "assistant"
+        assert response.messages[-1]["content"] == "You said: hello"
+
+    @pytest.mark.asyncio
+    async def test_chat_agent_decorator_with_context(self):
+        """@chat_agent decorated function can receive context."""
+
+        @chat_agent
+        async def contextual_bot(messages: list[Message], context: dict | None = None) -> str:
+            """Bot with context."""
+            user_id = context.get("user_id") if context else "unknown"
+            return f"Hello user {user_id}!"
+
+        request = ChatRequest(
+            messages=[Message(role="user", content="hi")],
+            context={"user_id": "123"},
+        )
+        response = await contextual_bot.chat(request)
+
+        assert response.output == "Hello user 123!"
+
+    @pytest.mark.asyncio
+    async def test_chat_agent_decorator_sync_function(self):
+        """@chat_agent decorator works with sync functions."""
+
+        @chat_agent
+        def simple_bot(messages: list[Message]) -> str:
+            """Simple sync bot."""
+            return "Hello from sync!"
+
+        request = ChatRequest(messages=[Message(role="user", content="hi")])
+        response = await simple_bot.chat(request)
+
+        assert response.output == "Hello from sync!"
+
+    @pytest.mark.asyncio
+    async def test_chat_agent_decorator_streaming(self):
+        """@chat_agent decorator works with async generators for streaming."""
+
+        @chat_agent
+        async def streaming_bot(messages: list[Message]):
+            """Streaming bot."""
+            yield "Hello"
+            yield " "
+            yield "world"
+            yield "!"
+
+        # Test streaming flag
+        assert streaming_bot.chat_streaming is True
+
+        request = ChatRequest(messages=[Message(role="user", content="hi")])
+        chunks = []
+        async for chunk in streaming_bot.chat_stream(request):
+            chunks.append(chunk)
+
+        assert chunks == ["Hello", " ", "world", "!"]
+
+    @pytest.mark.asyncio
+    async def test_chat_agent_decorator_streaming_non_stream_request(self):
+        """@chat_agent streaming decorator collects chunks for non-streaming requests."""
+
+        @chat_agent
+        async def streaming_bot(messages: list[Message]):
+            """Streaming bot."""
+            yield "Hello"
+            yield " "
+            yield "world"
+            yield "!"
+
+        request = ChatRequest(messages=[Message(role="user", content="hi")])
+        response = await streaming_bot.chat(request)
+
+        assert response.output == "Hello world!"
+        assert response.messages[-1]["content"] == "Hello world!"
