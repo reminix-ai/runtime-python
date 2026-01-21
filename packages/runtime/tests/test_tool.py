@@ -1,6 +1,9 @@
 """Tests for the @tool decorator and Tool class."""
 
+from typing import TypedDict
+
 import pytest
+from pydantic import BaseModel, Field
 
 from reminix_runtime import (
     Tool,
@@ -258,6 +261,224 @@ class TestToolMetadata:
 
         assert "output" not in my_tool.metadata
         assert my_tool.output is None
+
+
+class TestPydanticOutputSchema:
+    """Tests for Pydantic model output schema extraction."""
+
+    def test_pydantic_model_output_schema(self):
+        """Pydantic model return type generates full JSON schema."""
+
+        class GreetOutput(BaseModel):
+            message: str
+
+        @tool
+        def greet(name: str) -> GreetOutput:
+            """Greet someone."""
+            return GreetOutput(message=f"Hello, {name}!")
+
+        output = greet.output
+        assert output is not None
+        assert output["type"] == "object"
+        assert "properties" in output
+        assert "message" in output["properties"]
+        assert output["properties"]["message"]["type"] == "string"
+        assert output["required"] == ["message"]
+
+    def test_pydantic_model_with_field_descriptions(self):
+        """Pydantic Field descriptions are included in schema."""
+
+        class WeatherOutput(BaseModel):
+            temp: int = Field(description="Temperature in degrees")
+            condition: str = Field(description="Weather condition")
+
+        @tool
+        def get_weather(location: str) -> WeatherOutput:
+            """Get weather."""
+            return WeatherOutput(temp=72, condition="sunny")
+
+        output = get_weather.output
+        assert output["properties"]["temp"]["description"] == "Temperature in degrees"
+        assert output["properties"]["condition"]["description"] == "Weather condition"
+
+    def test_pydantic_model_with_optional_fields(self):
+        """Pydantic models with optional fields have correct required list."""
+
+        class OutputWithOptional(BaseModel):
+            required_field: str
+            optional_field: str = "default"
+
+        @tool
+        def my_tool(param: str) -> OutputWithOptional:
+            """Test tool."""
+            return OutputWithOptional(required_field=param)
+
+        output = my_tool.output
+        assert "required_field" in output["required"]
+        assert "optional_field" not in output["required"]
+
+    @pytest.mark.asyncio
+    async def test_pydantic_model_execution(self):
+        """Tool with Pydantic return type executes correctly."""
+
+        class GreetOutput(BaseModel):
+            message: str
+
+        @tool
+        def greet(name: str) -> GreetOutput:
+            """Greet someone."""
+            return GreetOutput(message=f"Hello, {name}!")
+
+        request = ToolExecuteRequest(input={"name": "World"})
+        response = await greet.execute(request)
+
+        assert response.output.message == "Hello, World!"
+
+
+class TestTypedDictOutputSchema:
+    """Tests for TypedDict output schema extraction."""
+
+    def test_typeddict_output_schema(self):
+        """TypedDict return type generates JSON schema with properties."""
+
+        class GreetOutput(TypedDict):
+            message: str
+
+        @tool
+        def greet(name: str) -> GreetOutput:
+            """Greet someone."""
+            return {"message": f"Hello, {name}!"}
+
+        output = greet.output
+        assert output is not None
+        assert output["type"] == "object"
+        assert "properties" in output
+        assert "message" in output["properties"]
+        assert output["properties"]["message"]["type"] == "string"
+
+    def test_typeddict_with_multiple_fields(self):
+        """TypedDict with multiple fields extracts all properties."""
+
+        class WeatherOutput(TypedDict):
+            temp: int
+            condition: str
+            location: str
+
+        @tool
+        def get_weather(location: str) -> WeatherOutput:
+            """Get weather."""
+            return {"temp": 72, "condition": "sunny", "location": location}
+
+        output = get_weather.output
+        assert len(output["properties"]) == 3
+        assert output["properties"]["temp"]["type"] == "integer"
+        assert output["properties"]["condition"]["type"] == "string"
+        assert output["properties"]["location"]["type"] == "string"
+
+    @pytest.mark.asyncio
+    async def test_typeddict_execution(self):
+        """Tool with TypedDict return type executes correctly."""
+
+        class GreetOutput(TypedDict):
+            message: str
+
+        @tool
+        def greet(name: str) -> GreetOutput:
+            """Greet someone."""
+            return {"message": f"Hello, {name}!"}
+
+        request = ToolExecuteRequest(input={"name": "World"})
+        response = await greet.execute(request)
+
+        assert response.output == {"message": "Hello, World!"}
+
+
+class TestDocstringParsing:
+    """Tests for docstring parsing for parameter descriptions."""
+
+    def test_google_style_docstring_parameter_descriptions(self):
+        """Parameter descriptions are extracted from Google-style docstrings."""
+
+        @tool
+        def greet(name: str, greeting: str = "Hello") -> str:
+            """Generate a greeting.
+
+            Args:
+                name: The name of the person to greet
+                greeting: The greeting to use
+            """
+            return f"{greeting}, {name}!"
+
+        props = greet.parameters.properties
+        assert props["name"]["description"] == "The name of the person to greet"
+        assert props["greeting"]["description"] == "The greeting to use"
+
+    def test_numpy_style_docstring_parameter_descriptions(self):
+        """Parameter descriptions are extracted from NumPy-style docstrings."""
+
+        @tool
+        def calculate(a: float, b: float) -> float:
+            """Perform calculation.
+
+            Parameters
+            ----------
+            a : float
+                First operand
+            b : float
+                Second operand
+            """
+            return a + b
+
+        props = calculate.parameters.properties
+        assert props["a"]["description"] == "First operand"
+        assert props["b"]["description"] == "Second operand"
+
+    def test_return_description_added_to_output_schema(self):
+        """Return description from docstring is added to output schema."""
+
+        @tool
+        def greet(name: str) -> str:
+            """Generate a greeting.
+
+            Args:
+                name: The person's name
+
+            Returns:
+                A personalized greeting message
+            """
+            return f"Hello, {name}!"
+
+        assert greet.output is not None
+        assert greet.output["description"] == "A personalized greeting message"
+
+    def test_docstring_without_args_section(self):
+        """Tools work fine without Args section in docstring."""
+
+        @tool
+        def simple_tool(param: str) -> str:
+            """A simple tool."""
+            return param
+
+        # Should not have description but should work
+        assert "description" not in simple_tool.parameters.properties["param"]
+
+    def test_partial_docstring_args(self):
+        """Only documented parameters get descriptions."""
+
+        @tool
+        def partial_docs(a: str, b: str, c: str) -> str:
+            """Tool with partial docs.
+
+            Args:
+                a: First parameter
+                c: Third parameter
+            """
+            return a + b + c
+
+        props = partial_docs.parameters.properties
+        assert props["a"]["description"] == "First parameter"
+        assert "description" not in props["b"]
+        assert props["c"]["description"] == "Third parameter"
 
 
 class TestToolExecute:

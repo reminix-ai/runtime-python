@@ -288,27 +288,69 @@ Tools are standalone functions served via `/tools/{name}/execute`. They're usefu
 Use the `@tool` decorator to create tools:
 
 ```python
+from pydantic import BaseModel, Field
 from reminix_runtime import tool, serve
 
+
+class WeatherOutput(BaseModel):
+    """Output schema for weather tool."""
+    temp: int = Field(description="Temperature value")
+    condition: str = Field(description="Weather condition")
+    location: str = Field(description="Location name")
+
+
 @tool
-async def get_weather(location: str, units: str = "celsius") -> dict:
-    """Get current weather for a location."""
+async def get_weather(location: str, units: str = "celsius") -> WeatherOutput:
+    """Get current weather for a location.
+
+    Args:
+        location: City name to look up
+        units: Temperature units (celsius or fahrenheit)
+    """
     # Call weather API...
-    return {"temp": 72, "condition": "sunny", "location": location}
+    return WeatherOutput(temp=72, condition="sunny", location=location)
 
-@tool
-def calculate(expression: str) -> dict:
-    """Evaluate a math expression."""
-    return {"result": eval(expression)}  # Note: use a safe evaluator in production
-
-serve(tools=[get_weather, calculate], port=8080)
+serve(tools=[get_weather], port=8080)
 ```
 
 The decorator automatically extracts:
 - **name** from the function name
-- **description** from the docstring
+- **description** from the docstring (first line/paragraph)
 - **parameters** from type hints and defaults
-- **output** from the return type hint
+- **parameter descriptions** from docstring `Args:` section (Google, NumPy, or Sphinx style)
+- **output** from the return type hint (supports Pydantic models, TypedDict, and basic types)
+
+### Output Schema Options
+
+For rich output schemas, use **Pydantic models** (recommended) or **TypedDict**:
+
+```python
+from typing import TypedDict
+from pydantic import BaseModel, Field
+
+# Option 1: Pydantic (recommended) - includes descriptions and validation
+class GreetOutput(BaseModel):
+    message: str = Field(description="The greeting message")
+
+@tool
+def greet(name: str) -> GreetOutput:
+    return GreetOutput(message=f"Hello, {name}!")
+
+# Option 2: TypedDict - simpler, no validation
+class CalcOutput(TypedDict):
+    result: float
+
+@tool
+def calculate(expression: str) -> CalcOutput:
+    return {"result": eval(expression)}
+
+# Option 3: Basic types - for simple returns
+@tool
+def echo(text: str) -> str:
+    return text
+```
+
+> **Note:** Using `-> dict` loses property information. Use Pydantic or TypedDict for rich schemas.
 
 ### Custom Tool Configuration
 
@@ -316,8 +358,8 @@ You can customize the tool name and description:
 
 ```python
 @tool(name="weather_lookup", description="Look up weather for any city")
-async def get_weather(location: str) -> dict:
-    return {"temp": 72, "condition": "sunny"}
+async def get_weather(location: str) -> WeatherOutput:
+    return WeatherOutput(temp=72, condition="sunny", location=location)
 ```
 
 ### Serving Agents and Tools Together
@@ -432,12 +474,24 @@ async def streaming_chat(messages: list[Message]):
 Decorator to create a tool from a function.
 
 ```python
+from pydantic import BaseModel, Field
 from reminix_runtime import tool
 
+
+class MyOutput(BaseModel):
+    result: str = Field(description="The result")
+    value: int = Field(description="The computed value")
+
+
 @tool
-async def my_tool(param: str, optional_param: int = 10) -> dict:
-    """Tool description from docstring."""
-    return {"result": param, "value": optional_param}
+async def my_tool(param: str, optional_param: int = 10) -> MyOutput:
+    """Tool description from docstring.
+
+    Args:
+        param: The input parameter
+        optional_param: An optional value
+    """
+    return MyOutput(result=param, value=optional_param)
 
 # With custom name/description
 @tool(name="custom_name", description="Custom description")
