@@ -32,7 +32,7 @@ class TestAgentCreation:
         agent = Agent("my-agent")
         assert agent.metadata["type"] == "agent"
         assert agent.metadata["requestKeys"] == ["prompt"]
-        assert agent.metadata["responseKeys"] == ["output"]
+        assert agent.metadata["responseKeys"] == ["content"]
         assert agent.metadata["parameters"]["properties"]["prompt"]["type"] == "string"
 
 
@@ -45,7 +45,7 @@ class TestAgentHandlerRegistration:
 
         @agent.on_execute
         async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
-            return ExecuteResponse(output="test")
+            return ExecuteResponse(content="test")
 
         # Handler should be registered
         assert agent._execute_handler is not None
@@ -67,7 +67,7 @@ class TestAgentHandlerRegistration:
 
         @agent.on_execute
         async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
-            return ExecuteResponse(output="test")
+            return ExecuteResponse(content="test")
 
         # The decorated function should be returned
         assert handle_execute is not None
@@ -104,12 +104,12 @@ class TestAgentExecute:
         @test_agent.on_execute
         async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
             task = request.input.get("task", "unknown")
-            return {"output": f"Completed: {task}"}
+            return {"content": f"Completed: {task}"}
 
         request = ExecuteRequest(input={"task": "summarize"})
         response = await test_agent.execute(request)
 
-        assert response["output"] == "Completed: summarize"
+        assert response["content"] == "Completed: summarize"
 
     @pytest.mark.asyncio
     async def test_execute_without_handler_raises(self):
@@ -171,7 +171,7 @@ class TestAgentWithContext:
         async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
             nonlocal received_context
             received_context = request.context
-            return ExecuteResponse(output="done")
+            return ExecuteResponse(content="done")
 
         request = ExecuteRequest(
             input={"task": "test"}, context={"user_id": "123", "session": "abc"}
@@ -257,9 +257,9 @@ class TestAgentDecorator:
         output = calculator.metadata.get("output")
         assert output is not None
         assert output["type"] == "object"
-        assert "output" in output["properties"]
-        assert output["properties"]["output"]["type"] == "number"
-        assert output["required"] == ["output"]
+        assert "content" in output["properties"]
+        assert output["properties"]["content"]["type"] == "number"
+        assert output["required"] == ["content"]
 
     def test_agent_decorator_output_dict_type(self):
         """@agent decorator handles dict return type and wraps it."""
@@ -272,9 +272,9 @@ class TestAgentDecorator:
         output = get_data.metadata.get("output")
         assert output is not None
         assert output["type"] == "object"
-        assert "output" in output["properties"]
-        assert output["properties"]["output"]["type"] == "object"
-        assert output["required"] == ["output"]
+        assert "content" in output["properties"]
+        assert output["properties"]["content"]["type"] == "object"
+        assert output["required"] == ["content"]
 
     def test_agent_decorator_no_output_when_no_return_type(self):
         """@agent decorator omits output when no return type hint."""
@@ -298,7 +298,7 @@ class TestAgentDecorator:
         request = ExecuteRequest(input={"a": 3, "b": 4})
         response = await calculator.execute(request)
 
-        assert response["output"] == 7.0
+        assert response["content"] == 7.0
 
     @pytest.mark.asyncio
     async def test_agent_decorator_sync_function(self):
@@ -312,7 +312,7 @@ class TestAgentDecorator:
         request = ExecuteRequest(input={"a": 5, "b": 3})
         response = await calculator.execute(request)
 
-        assert response["output"] == 8.0
+        assert response["content"] == 8.0
 
     @pytest.mark.asyncio
     async def test_agent_decorator_streaming(self):
@@ -347,7 +347,7 @@ class TestAgentDecorator:
         request = ExecuteRequest(input={"text": "hello world"})
         response = await streamer.execute(request)
 
-        assert response["output"] == "hello world "
+        assert response["content"] == "hello world "
 
 
 # =============================================================================

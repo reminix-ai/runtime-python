@@ -63,7 +63,7 @@ class AgentBase(ABC):
             "type": "agent",
             "parameters": DEFAULT_AGENT_PARAMETERS,
             "requestKeys": ["prompt"],
-            "responseKeys": ["output"],
+            "responseKeys": ["content"],
         }
 
     @abstractmethod
@@ -304,7 +304,7 @@ class Agent(AgentBase):
             "type": "agent",
             "parameters": DEFAULT_AGENT_PARAMETERS,
             "requestKeys": ["prompt"],
-            "responseKeys": ["output"],
+            "responseKeys": ["content"],
             **self._metadata,
         }
 
@@ -536,9 +536,9 @@ def agent(
 
         # Derive requestKeys from parameters properties
         request_keys = list(parameters.get("properties", {}).keys())
-
+        
         # Default responseKeys (can be overridden via metadata)
-        response_keys = ["output"]
+        response_keys = ["content"]
 
         # Wrap output schema to match responseKeys structure
         wrapped_output = _wrap_output_schema_for_response_keys(output, response_keys)
@@ -559,10 +559,10 @@ def agent(
             metadata=metadata,
         )
 
-        # Helper to get response key from metadata (allows override)
-        def get_response_key() -> str:
-            keys = agent_instance.metadata.get("responseKeys", ["output"])
-            return keys[0] if keys else "output"
+        # Helper to get response keys from metadata (allows override)
+        def get_response_keys() -> list[str]:
+            keys = agent_instance.metadata.get("responseKeys", ["content"])
+            return keys if keys else ["content"]
 
         if is_streaming:
             # Register streaming execute handler
@@ -584,7 +584,12 @@ def agent(
                         chunks.append(chunk)
                     else:
                         chunks.append(str(chunk))
-                return {get_response_key(): "".join(chunks)}
+                result = "".join(chunks)
+                # If result is dict, use as-is; otherwise wrap in first responseKey
+                if isinstance(result, dict):
+                    return result
+                response_keys = get_response_keys()
+                return {response_keys[0]: result}
 
             agent_instance.on_execute(execute_handler)
         else:
@@ -594,7 +599,11 @@ def agent(
                     result = await f(**request.input)
                 else:
                     result = f(**request.input)
-                return {get_response_key(): result}
+                # If result is dict, use as-is; otherwise wrap in first responseKey
+                if isinstance(result, dict):
+                    return result
+                response_keys = get_response_keys()
+                return {response_keys[0]: result}
 
             agent_instance.on_execute(execute_handler)
 
@@ -722,10 +731,10 @@ def chat_agent(
             metadata=metadata,
         )
 
-        # Helper to get response key from metadata (allows override)
-        def get_response_key() -> str:
+        # Helper to get response keys from metadata (allows override)
+        def get_response_keys() -> list[str]:
             keys = agent_instance.metadata.get("responseKeys", ["message"])
-            return keys[0] if keys else "message"
+            return keys if keys else ["message"]
 
         if is_streaming:
             # Register streaming execute handler
@@ -757,7 +766,10 @@ def chat_agent(
                         chunks.append(chunk)
                     else:
                         chunks.append(str(chunk))
-                return {get_response_key(): {"role": "assistant", "content": "".join(chunks)}}
+                result = {"role": "assistant", "content": "".join(chunks)}
+                # For chat agents, always wrap in first responseKey (typically "message")
+                response_keys = get_response_keys()
+                return {response_keys[0]: result}
 
             agent_instance.on_execute(execute_handler)
         else:
@@ -780,7 +792,12 @@ def chat_agent(
                 else:
                     message_dict = result
 
-                return {get_response_key(): message_dict}
+                # Check if result is already a full response dict with all responseKeys
+                response_keys = get_response_keys()
+                if isinstance(message_dict, dict) and all(key in message_dict for key in response_keys):
+                    return message_dict
+                # Otherwise wrap in first responseKey (typically "message" for chat agents)
+                return {response_keys[0]: message_dict}
 
             agent_instance.on_execute(execute_handler)
 

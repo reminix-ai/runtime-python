@@ -80,11 +80,11 @@ Returns runtime information, available agents, and tools:
       },
       "output": {
         "type": "object",
-        "properties": { "output": { "type": "number" } },
-        "required": ["output"]
+        "properties": { "content": { "type": "number" } },
+        "required": ["content"]
       },
       "requestKeys": ["a", "b"],
-      "responseKeys": ["output"],
+      "responseKeys": ["content"],
       "streaming": false
     },
     {
@@ -148,7 +148,7 @@ curl -X POST http://localhost:8080/agents/calculator/execute \
 **Response:**
 ```json
 {
-  "output": 8.0
+  "content": 8.0
 }
 ```
 
@@ -189,7 +189,7 @@ curl -X POST http://localhost:8080/tools/get_weather/execute \
 **Response:**
 ```json
 {
-  "output": { "temp": 72, "condition": "sunny" }
+  "content": { "temp": 72, "condition": "sunny" }
 }
 ```
 
@@ -465,8 +465,8 @@ def another_tool(x: int) -> int:
 # }
 
 # Response: keys based on agent's responseKeys
-# Regular agent (responseKeys: ['output']):
-# { "output": ... }
+# Regular agent (responseKeys: ['content']):
+# { "content": ... }
 
 # Chat agent (responseKeys: ['message']):
 # { "message": { "role": "assistant", "content": "..." } }
