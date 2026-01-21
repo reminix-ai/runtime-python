@@ -73,6 +73,19 @@ Returns runtime information, available agents, and tools:
     {
       "name": "calculator",
       "type": "agent",
+      "description": "Add two numbers.",
+      "parameters": {
+        "type": "object",
+        "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
+        "required": ["a", "b"]
+      },
+      "invoke": { "streaming": false },
+      "chat": { "streaming": false }
+    },
+    {
+      "name": "assistant",
+      "type": "agent",
+      "description": "A helpful assistant.",
       "invoke": { "streaming": false },
       "chat": { "streaming": false }
     }
