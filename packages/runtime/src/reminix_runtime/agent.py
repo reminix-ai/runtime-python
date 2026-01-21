@@ -536,7 +536,7 @@ def agent(
 
         # Derive requestKeys from parameters properties
         request_keys = list(parameters.get("properties", {}).keys())
-        
+
         # Default responseKeys (can be overridden via metadata)
         response_keys = ["content"]
 
@@ -794,7 +794,9 @@ def chat_agent(
 
                 # Check if result is already a full response dict with all responseKeys
                 response_keys = get_response_keys()
-                if isinstance(message_dict, dict) and all(key in message_dict for key in response_keys):
+                if isinstance(message_dict, dict) and all(
+                    key in message_dict for key in response_keys
+                ):
                     return message_dict
                 # Otherwise wrap in first responseKey (typically "message" for chat agents)
                 return {response_keys[0]: message_dict}
