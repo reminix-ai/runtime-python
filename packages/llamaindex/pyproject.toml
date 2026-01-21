@@ -1,6 +1,6 @@
 [project]
 name = "reminix-llamaindex"
-version = "0.0.7"
+version = "0.0.8"
 description = "Reminix adapter for LlamaIndex - serve agents as REST APIs"
 readme = "README.md"
 license = "Apache-2.0"
@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-    "reminix-runtime~=0.0.7",
+    "reminix-runtime~=0.0.8",
     "llama-index>=0.14.0",
 ]
 
