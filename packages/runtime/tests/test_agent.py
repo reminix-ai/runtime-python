@@ -4,10 +4,8 @@ import pytest
 
 from reminix_runtime import (
     Agent,
-    ChatRequest,
-    ChatResponse,
-    InvokeRequest,
-    InvokeResponse,
+    ExecuteRequest,
+    ExecuteResponse,
     Message,
     agent,
     chat_agent,
@@ -30,236 +28,133 @@ class TestAgentCreation:
         assert agent.metadata["author"] == "test"
 
     def test_agent_default_metadata(self):
-        """Agent has default metadata with type."""
+        """Agent has default metadata with type, parameters, and keys."""
         agent = Agent("my-agent")
-        assert agent.metadata == {"type": "agent"}
+        assert agent.metadata["type"] == "agent"
+        assert agent.metadata["requestKeys"] == ["prompt"]
+        assert agent.metadata["responseKeys"] == ["output"]
+        assert agent.metadata["parameters"]["properties"]["prompt"]["type"] == "string"
 
 
 class TestAgentHandlerRegistration:
     """Tests for handler registration with decorators."""
 
-    def test_on_invoke_registers_handler(self):
-        """on_invoke decorator registers the handler."""
+    def test_on_execute_registers_handler(self):
+        """on_execute decorator registers the handler."""
         agent = Agent("test-agent")
 
-        @agent.on_invoke
-        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
-            return InvokeResponse(output="test")
+        @agent.on_execute
+        async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
+            return ExecuteResponse(output="test")
 
         # Handler should be registered
-        assert agent._invoke_handler is not None
+        assert agent._execute_handler is not None
 
-    def test_on_chat_registers_handler(self):
-        """on_chat decorator registers the handler."""
+    def test_on_execute_stream_registers_handler(self):
+        """on_execute_stream decorator registers the handler."""
         agent = Agent("test-agent")
 
-        @agent.on_chat
-        async def handle_chat(request: ChatRequest) -> ChatResponse:
-            return ChatResponse(output="test", messages=[])
-
-        # Handler should be registered
-        assert agent._chat_handler is not None
-
-    def test_on_invoke_stream_registers_handler(self):
-        """on_invoke_stream decorator registers the handler."""
-        agent = Agent("test-agent")
-
-        @agent.on_invoke_stream
-        async def handle_stream(request: InvokeRequest):
+        @agent.on_execute_stream
+        async def handle_stream(request: ExecuteRequest):
             yield '{"chunk": "test"}'
 
         # Handler should be registered
-        assert agent._invoke_stream_handler is not None
-
-    def test_on_chat_stream_registers_handler(self):
-        """on_chat_stream decorator registers the handler."""
-        agent = Agent("test-agent")
-
-        @agent.on_chat_stream
-        async def handle_stream(request: ChatRequest):
-            yield '{"chunk": "test"}'
-
-        # Handler should be registered
-        assert agent._chat_stream_handler is not None
+        assert agent._execute_stream_handler is not None
 
     def test_decorator_returns_original_function(self):
         """Decorator returns the original function for reuse."""
         agent = Agent("test-agent")
 
-        @agent.on_invoke
-        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
-            return InvokeResponse(output="test")
+        @agent.on_execute
+        async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
+            return ExecuteResponse(output="test")
 
         # The decorated function should be returned
-        assert handle_invoke is not None
-        assert callable(handle_invoke)
+        assert handle_execute is not None
+        assert callable(handle_execute)
 
 
 class TestAgentStreamingFlags:
     """Tests for streaming capability detection."""
 
-    def test_invoke_streaming_false_by_default(self):
-        """invoke_streaming is False when no stream handler is registered."""
+    def test_streaming_false_by_default(self):
+        """streaming is False when no stream handler is registered."""
         agent = Agent("test-agent")
-        assert agent.invoke_streaming is False
+        assert agent.streaming is False
 
-    def test_chat_streaming_false_by_default(self):
-        """chat_streaming is False when no stream handler is registered."""
-        agent = Agent("test-agent")
-        assert agent.chat_streaming is False
-
-    def test_invoke_streaming_true_when_handler_registered(self):
-        """invoke_streaming is True when stream handler is registered."""
+    def test_streaming_true_when_handler_registered(self):
+        """streaming is True when stream handler is registered."""
         agent = Agent("test-agent")
 
-        @agent.on_invoke_stream
-        async def handle_stream(request: InvokeRequest):
+        @agent.on_execute_stream
+        async def handle_stream(request: ExecuteRequest):
             yield '{"chunk": "test"}'
 
-        assert agent.invoke_streaming is True
-
-    def test_chat_streaming_true_when_handler_registered(self):
-        """chat_streaming is True when stream handler is registered."""
-        agent = Agent("test-agent")
-
-        @agent.on_chat_stream
-        async def handle_stream(request: ChatRequest):
-            yield '{"chunk": "test"}'
-
-        assert agent.chat_streaming is True
+        assert agent.streaming is True
 
 
-class TestAgentInvoke:
-    """Tests for invoke functionality."""
+class TestAgentExecute:
+    """Tests for execute functionality."""
 
     @pytest.mark.asyncio
-    async def test_invoke_calls_registered_handler(self):
-        """invoke calls the registered handler."""
-        agent = Agent("test-agent")
+    async def test_execute_calls_registered_handler(self):
+        """execute calls the registered handler."""
+        test_agent = Agent("test-agent")
 
-        @agent.on_invoke
-        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
+        @test_agent.on_execute
+        async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
             task = request.input.get("task", "unknown")
-            return InvokeResponse(output=f"Completed: {task}")
+            return {"output": f"Completed: {task}"}
 
-        request = InvokeRequest(input={"task": "summarize"})
-        response = await agent.invoke(request)
+        request = ExecuteRequest(input={"task": "summarize"})
+        response = await test_agent.execute(request)
 
-        assert response.output == "Completed: summarize"
+        assert response["output"] == "Completed: summarize"
 
     @pytest.mark.asyncio
-    async def test_invoke_without_handler_raises(self):
-        """invoke raises NotImplementedError when no handler is registered."""
+    async def test_execute_without_handler_raises(self):
+        """execute raises NotImplementedError when no handler is registered."""
         agent = Agent("test-agent")
-        request = InvokeRequest(input={"task": "test"})
+        request = ExecuteRequest(input={"task": "test"})
 
         with pytest.raises(NotImplementedError) as exc_info:
-            await agent.invoke(request)
+            await agent.execute(request)
 
-        assert "No invoke handler registered" in str(exc_info.value)
+        assert "No execute handler registered" in str(exc_info.value)
         assert "test-agent" in str(exc_info.value)
 
 
-class TestAgentChat:
-    """Tests for chat functionality."""
+class TestAgentExecuteStream:
+    """Tests for streaming execute functionality."""
 
     @pytest.mark.asyncio
-    async def test_chat_calls_registered_handler(self):
-        """chat calls the registered handler."""
+    async def test_execute_stream_calls_registered_handler(self):
+        """execute_stream calls the registered handler."""
         agent = Agent("test-agent")
 
-        @agent.on_chat
-        async def handle_chat(request: ChatRequest) -> ChatResponse:
-            user_msg = request.messages[-1].content
-            return ChatResponse(
-                output=f"Hello: {user_msg}",
-                messages=[{"role": "assistant", "content": f"Hello: {user_msg}"}],
-            )
-
-        request = ChatRequest(messages=[{"role": "user", "content": "hi"}])
-        response = await agent.chat(request)
-
-        assert response.output == "Hello: hi"
-        assert len(response.messages) == 1
-
-    @pytest.mark.asyncio
-    async def test_chat_without_handler_raises(self):
-        """chat raises NotImplementedError when no handler is registered."""
-        agent = Agent("test-agent")
-        request = ChatRequest(messages=[{"role": "user", "content": "hi"}])
-
-        with pytest.raises(NotImplementedError) as exc_info:
-            await agent.chat(request)
-
-        assert "No chat handler registered" in str(exc_info.value)
-        assert "test-agent" in str(exc_info.value)
-
-
-class TestAgentInvokeStream:
-    """Tests for streaming invoke functionality."""
-
-    @pytest.mark.asyncio
-    async def test_invoke_stream_calls_registered_handler(self):
-        """invoke_stream calls the registered handler."""
-        agent = Agent("test-agent")
-
-        @agent.on_invoke_stream
-        async def handle_stream(request: InvokeRequest):
+        @agent.on_execute_stream
+        async def handle_stream(request: ExecuteRequest):
             yield '{"chunk": "Hello"}'
             yield '{"chunk": " world"}'
 
-        request = InvokeRequest(input={"task": "test"})
+        request = ExecuteRequest(input={"task": "test"})
         chunks = []
-        async for chunk in agent.invoke_stream(request):
+        async for chunk in agent.execute_stream(request):
             chunks.append(chunk)
 
         assert chunks == ['{"chunk": "Hello"}', '{"chunk": " world"}']
 
     @pytest.mark.asyncio
-    async def test_invoke_stream_without_handler_raises(self):
-        """invoke_stream raises NotImplementedError when no handler is registered."""
+    async def test_execute_stream_without_handler_raises(self):
+        """execute_stream raises NotImplementedError when no handler is registered."""
         agent = Agent("test-agent")
-        request = InvokeRequest(input={"task": "test"})
+        request = ExecuteRequest(input={"task": "test"})
 
         with pytest.raises(NotImplementedError) as exc_info:
-            async for _ in agent.invoke_stream(request):
+            async for _ in agent.execute_stream(request):
                 pass
 
-        assert "No streaming invoke handler registered" in str(exc_info.value)
-        assert "test-agent" in str(exc_info.value)
-
-
-class TestAgentChatStream:
-    """Tests for streaming chat functionality."""
-
-    @pytest.mark.asyncio
-    async def test_chat_stream_calls_registered_handler(self):
-        """chat_stream calls the registered handler."""
-        agent = Agent("test-agent")
-
-        @agent.on_chat_stream
-        async def handle_stream(request: ChatRequest):
-            yield '{"chunk": "Hi"}'
-            yield '{"chunk": " there"}'
-
-        request = ChatRequest(messages=[{"role": "user", "content": "hello"}])
-        chunks = []
-        async for chunk in agent.chat_stream(request):
-            chunks.append(chunk)
-
-        assert chunks == ['{"chunk": "Hi"}', '{"chunk": " there"}']
-
-    @pytest.mark.asyncio
-    async def test_chat_stream_without_handler_raises(self):
-        """chat_stream raises NotImplementedError when no handler is registered."""
-        agent = Agent("test-agent")
-        request = ChatRequest(messages=[{"role": "user", "content": "hi"}])
-
-        with pytest.raises(NotImplementedError) as exc_info:
-            async for _ in agent.chat_stream(request):
-                pass
-
-        assert "No streaming chat handler registered" in str(exc_info.value)
+        assert "No streaming execute handler registered" in str(exc_info.value)
         assert "test-agent" in str(exc_info.value)
 
 
@@ -267,42 +162,23 @@ class TestAgentWithContext:
     """Tests for context handling."""
 
     @pytest.mark.asyncio
-    async def test_invoke_handler_receives_context(self):
-        """invoke handler receives context from request."""
+    async def test_execute_handler_receives_context(self):
+        """execute handler receives context from request."""
         agent = Agent("test-agent")
         received_context = None
 
-        @agent.on_invoke
-        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
+        @agent.on_execute
+        async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
             nonlocal received_context
             received_context = request.context
-            return InvokeResponse(output="done")
+            return ExecuteResponse(output="done")
 
-        request = InvokeRequest(
+        request = ExecuteRequest(
             input={"task": "test"}, context={"user_id": "123", "session": "abc"}
         )
-        await agent.invoke(request)
+        await agent.execute(request)
 
         assert received_context == {"user_id": "123", "session": "abc"}
-
-    @pytest.mark.asyncio
-    async def test_chat_handler_receives_context(self):
-        """chat handler receives context from request."""
-        agent = Agent("test-agent")
-        received_context = None
-
-        @agent.on_chat
-        async def handle_chat(request: ChatRequest) -> ChatResponse:
-            nonlocal received_context
-            received_context = request.context
-            return ChatResponse(output="done", messages=[])
-
-        request = ChatRequest(
-            messages=[{"role": "user", "content": "hi"}], context={"user_id": "456"}
-        )
-        await agent.chat(request)
-
-        assert received_context == {"user_id": "456"}
 
 
 # =============================================================================
@@ -405,18 +281,18 @@ class TestAgentDecorator:
         assert "output" not in processor.metadata
 
     @pytest.mark.asyncio
-    async def test_agent_decorator_invoke(self):
-        """@agent decorated function can handle invoke requests."""
+    async def test_agent_decorator_execute(self):
+        """@agent decorated function can handle execute requests."""
 
         @agent
         async def calculator(a: float, b: float) -> float:
             """Add two numbers."""
             return a + b
 
-        request = InvokeRequest(input={"a": 3, "b": 4})
-        response = await calculator.invoke(request)
+        request = ExecuteRequest(input={"a": 3, "b": 4})
+        response = await calculator.execute(request)
 
-        assert response.output == 7.0
+        assert response["output"] == 7.0
 
     @pytest.mark.asyncio
     async def test_agent_decorator_sync_function(self):
@@ -427,10 +303,10 @@ class TestAgentDecorator:
             """Add two numbers."""
             return a + b
 
-        request = InvokeRequest(input={"a": 5, "b": 3})
-        response = await calculator.invoke(request)
+        request = ExecuteRequest(input={"a": 5, "b": 3})
+        response = await calculator.execute(request)
 
-        assert response.output == 8.0
+        assert response["output"] == 8.0
 
     @pytest.mark.asyncio
     async def test_agent_decorator_streaming(self):
@@ -443,11 +319,11 @@ class TestAgentDecorator:
                 yield word + " "
 
         # Test streaming
-        assert streamer.invoke_streaming is True
+        assert streamer.streaming is True
 
-        request = InvokeRequest(input={"text": "hello world"})
+        request = ExecuteRequest(input={"text": "hello world"})
         chunks = []
-        async for chunk in streamer.invoke_stream(request):
+        async for chunk in streamer.execute_stream(request):
             chunks.append(chunk)
 
         assert chunks == ["hello ", "world "]
@@ -462,10 +338,10 @@ class TestAgentDecorator:
             for word in text.split():
                 yield word + " "
 
-        request = InvokeRequest(input={"text": "hello world"})
-        response = await streamer.invoke(request)
+        request = ExecuteRequest(input={"text": "hello world"})
+        response = await streamer.execute(request)
 
-        assert response.output == "hello world "
+        assert response["output"] == "hello world "
 
 
 # =============================================================================
@@ -522,65 +398,65 @@ class TestChatAgentDecorator:
         assert "messages" in params["required"]
 
     def test_chat_agent_decorator_has_output_schema(self):
-        """@chat_agent decorator sets standard output schema."""
+        """@chat_agent decorator sets standard output schema (Message object)."""
 
         @chat_agent
-        async def assistant(messages: list[Message]) -> str:
+        async def assistant(messages: list[Message]) -> Message:
             """A helpful assistant."""
-            return "Hello!"
+            return Message(role="assistant", content="Hello!")
 
         output = assistant.metadata["output"]
-        assert output["type"] == "string"
+        assert output["type"] == "object"
+        assert "role" in output["properties"]
+        assert "content" in output["properties"]
 
     @pytest.mark.asyncio
-    async def test_chat_agent_decorator_chat(self):
-        """@chat_agent decorated function can handle chat requests."""
+    async def test_chat_agent_decorator_execute(self):
+        """@chat_agent decorated function can handle execute requests."""
 
         @chat_agent
-        async def echo_bot(messages: list[Message]) -> str:
+        async def echo_bot(messages: list[Message]) -> Message:
             """Echo the last message."""
             last_msg = messages[-1].content if messages else ""
-            return f"You said: {last_msg}"
+            return Message(role="assistant", content=f"You said: {last_msg}")
 
-        request = ChatRequest(messages=[Message(role="user", content="hello")])
-        response = await echo_bot.chat(request)
+        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hello"}]})
+        response = await echo_bot.execute(request)
 
-        assert response.output == "You said: hello"
-        assert len(response.messages) == 2
-        assert response.messages[-1]["role"] == "assistant"
-        assert response.messages[-1]["content"] == "You said: hello"
+        assert response["message"]["role"] == "assistant"
+        assert response["message"]["content"] == "You said: hello"
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_with_context(self):
         """@chat_agent decorated function can receive context."""
 
         @chat_agent
-        async def contextual_bot(messages: list[Message], context: dict | None = None) -> str:
+        async def contextual_bot(messages: list[Message], context: dict | None = None) -> Message:
             """Bot with context."""
             user_id = context.get("user_id") if context else "unknown"
-            return f"Hello user {user_id}!"
+            return Message(role="assistant", content=f"Hello user {user_id}!")
 
-        request = ChatRequest(
-            messages=[Message(role="user", content="hi")],
+        request = ExecuteRequest(
+            input={"messages": [{"role": "user", "content": "hi"}]},
             context={"user_id": "123"},
         )
-        response = await contextual_bot.chat(request)
+        response = await contextual_bot.execute(request)
 
-        assert response.output == "Hello user 123!"
+        assert response["message"]["content"] == "Hello user 123!"
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_sync_function(self):
         """@chat_agent decorator works with sync functions."""
 
         @chat_agent
-        def simple_bot(messages: list[Message]) -> str:
+        def simple_bot(messages: list[Message]) -> Message:
             """Simple sync bot."""
-            return "Hello from sync!"
+            return Message(role="assistant", content="Hello from sync!")
 
-        request = ChatRequest(messages=[Message(role="user", content="hi")])
-        response = await simple_bot.chat(request)
+        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hi"}]})
+        response = await simple_bot.execute(request)
 
-        assert response.output == "Hello from sync!"
+        assert response["message"]["content"] == "Hello from sync!"
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_streaming(self):
@@ -595,11 +471,11 @@ class TestChatAgentDecorator:
             yield "!"
 
         # Test streaming flag
-        assert streaming_bot.chat_streaming is True
+        assert streaming_bot.streaming is True
 
-        request = ChatRequest(messages=[Message(role="user", content="hi")])
+        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hi"}]})
         chunks = []
-        async for chunk in streaming_bot.chat_stream(request):
+        async for chunk in streaming_bot.execute_stream(request):
             chunks.append(chunk)
 
         assert chunks == ["Hello", " ", "world", "!"]
@@ -616,8 +492,8 @@ class TestChatAgentDecorator:
             yield "world"
             yield "!"
 
-        request = ChatRequest(messages=[Message(role="user", content="hi")])
-        response = await streaming_bot.chat(request)
+        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hi"}]})
+        response = await streaming_bot.execute(request)
 
-        assert response.output == "Hello world!"
-        assert response.messages[-1]["content"] == "Hello world!"
+        assert response["message"]["role"] == "assistant"
+        assert response["message"]["content"] == "Hello world!"

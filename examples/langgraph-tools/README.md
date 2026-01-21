@@ -34,8 +34,8 @@ Once running, the following endpoints are available:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
-| `/agents/langgraph-tools/invoke` | POST | Stateless invocation |
-| `/agents/langgraph-tools/chat` | POST | Conversational chat |
+| `/agents/langgraph-tools/execute` | POST | Execute agent |
+| `/agents/langgraph-tools/execute` | POST | Execute agent |
 
 ## Available Tools
 
@@ -51,12 +51,12 @@ curl http://localhost:8080/health
 curl http://localhost:8080/info
 
 # Invoke (with tool use)
-curl -X POST http://localhost:8080/agents/langgraph-tools/invoke \
+curl -X POST http://localhost:8080/agents/langgraph-tools/execute \
   -H "Content-Type: application/json" \
   -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Paris?"}]}}'
 
 # Chat
-curl -X POST http://localhost:8080/agents/langgraph-tools/chat \
+curl -X POST http://localhost:8080/agents/langgraph-tools/execute \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
 ```

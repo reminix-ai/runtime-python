@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from reminix_openai import OpenAIAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, ChatRequest, InvokeRequest
+from reminix_runtime import AgentAdapter, ExecuteRequest
 
 
 class TestWrap:
@@ -42,105 +42,69 @@ class TestWrap:
         assert adapter.model == "gpt-4o-mini"
 
 
-class TestOpenAIAgentAdapterInvoke:
-    """Tests for the invoke() method."""
+class TestOpenAIAgentAdapterExecute:
+    """Tests for the execute() method."""
 
     @pytest.mark.asyncio
-    async def test_invoke_calls_client(self):
-        """invoke() should call the OpenAI client."""
+    async def test_execute_calls_client(self):
+        """execute() should call the OpenAI client."""
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.choices = [MagicMock(message=MagicMock(content="Hello!"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = InvokeRequest(input={"prompt": "Hi"})
+        request = ExecuteRequest(input={"prompt": "Hi"})
 
-        response = await adapter.invoke(request)
+        response = await adapter.execute(request)
 
         mock_client.chat.completions.create.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_invoke_returns_output(self):
-        """invoke() should return the output from the API."""
+    async def test_execute_returns_output(self):
+        """execute() should return the output from the API."""
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.choices = [MagicMock(message=MagicMock(content="Hello from OpenAI!"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = InvokeRequest(input={"prompt": "Hi"})
+        request = ExecuteRequest(input={"prompt": "Hi"})
 
-        response = await adapter.invoke(request)
+        response = await adapter.execute(request)
 
-        assert response.output == "Hello from OpenAI!"
+        assert response["output"] == "Hello from OpenAI!"
 
     @pytest.mark.asyncio
-    async def test_invoke_with_messages_input(self):
-        """invoke() should handle input with messages key."""
+    async def test_execute_with_messages_input(self):
+        """execute() should handle input with messages key."""
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = InvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
+        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
-        response = await adapter.invoke(request)
+        response = await adapter.execute(request)
 
         # Should pass messages directly
         call_kwargs = mock_client.chat.completions.create.call_args[1]
-        assert call_kwargs["messages"] == [{"role": "user", "content": "Hello"}]
-
-
-class TestOpenAIAgentAdapterChat:
-    """Tests for the chat() method."""
+        assert call_kwargs["messages"][0]["role"] == "user"
+        assert call_kwargs["messages"][0]["content"] == "Hello"
 
     @pytest.mark.asyncio
-    async def test_chat_calls_client(self):
-        """chat() should call the OpenAI client."""
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Hello!"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
-
-        adapter = wrap_agent(mock_client)
-        request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
-
-        response = await adapter.chat(request)
-
-        mock_client.chat.completions.create.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_chat_returns_output_and_messages(self):
-        """chat() should return output and messages."""
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Chat response"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
-
-        adapter = wrap_agent(mock_client)
-        request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
-
-        response = await adapter.chat(request)
-
-        assert response.output == "Chat response"
-        assert len(response.messages) == 2
-        assert response.messages[-1]["role"] == "assistant"
-        assert response.messages[-1]["content"] == "Chat response"
-
-    @pytest.mark.asyncio
-    async def test_chat_passes_model(self):
-        """chat() should use the configured model."""
+    async def test_execute_passes_model(self):
+        """execute() should use the configured model."""
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client, model="gpt-4o")
-        request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
+        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
-        await adapter.chat(request)
+        await adapter.execute(request)
 
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         assert call_kwargs["model"] == "gpt-4o"

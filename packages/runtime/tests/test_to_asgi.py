@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from reminix_runtime import Agent, ChatRequest, ChatResponse, InvokeRequest, InvokeResponse
+from reminix_runtime import Agent, ExecuteRequest, ExecuteResponse
 
 
 async def call_asgi(app, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
@@ -80,65 +80,65 @@ class TestToAsgi:
         assert body["agents"][0]["version"] == "1.0"
 
     @pytest.mark.asyncio
-    async def test_invoke_endpoint(self):
-        """ASGI app handles /agents/{name}/invoke endpoint."""
-        agent = Agent("test-agent")
+    async def test_execute_endpoint(self):
+        """ASGI app handles /agents/{name}/execute endpoint with default prompt key."""
+        test_agent = Agent("test-agent")
 
-        @agent.on_invoke
-        async def handle(request: InvokeRequest) -> InvokeResponse:
-            message = request.input.get("message", "")
-            return InvokeResponse(output=f"Received: {message}")
+        @test_agent.on_execute
+        async def handle(request: ExecuteRequest) -> ExecuteResponse:
+            # Default requestKeys is ['prompt']
+            prompt = request.input.get("prompt", "")
+            return {"output": f"Received: {prompt}"}
 
-        app = agent.to_asgi()
+        app = test_agent.to_asgi()
 
+        # Request body has top-level prompt key (matching default requestKeys)
         status, body = await call_asgi(
-            app, "POST", "/agents/test-agent/invoke", {"input": {"message": "hello"}}
+            app, "POST", "/agents/test-agent/execute", {"prompt": "hello"}
         )
 
         assert status == 200
         assert body["output"] == "Received: hello"
 
     @pytest.mark.asyncio
-    async def test_chat_endpoint(self):
-        """ASGI app handles /agents/{name}/chat endpoint."""
+    async def test_execute_with_custom_request_keys(self):
+        """ASGI app handles /agents/{name}/execute with custom requestKeys."""
+        # Create agent with custom requestKeys
+        test_agent = Agent("test-agent", metadata={"requestKeys": ["messages"]})
 
-        agent = Agent("test-agent")
+        @test_agent.on_execute
+        async def handle(request: ExecuteRequest) -> ExecuteResponse:
+            messages = request.input.get("messages", [])
+            if messages:
+                content = messages[0].get("content", "")
+                return {"output": f"Reply to: {content}"}
+            return {"output": "No messages"}
 
-        @agent.on_chat
-        async def handle(request: ChatRequest) -> ChatResponse:
-            content = request.messages[0].content
-            return ChatResponse(
-                output=f"Reply to: {content}",
-                messages=[{"role": m.role, "content": m.content} for m in request.messages]
-                + [{"role": "assistant", "content": "hi!"}],
-            )
-
-        app = agent.to_asgi()
+        app = test_agent.to_asgi()
 
         status, body = await call_asgi(
             app,
             "POST",
-            "/agents/test-agent/chat",
+            "/agents/test-agent/execute",
             {"messages": [{"role": "user", "content": "hello"}]},
         )
 
         assert status == 200
         assert body["output"] == "Reply to: hello"
-        assert len(body["messages"]) == 2
 
     @pytest.mark.asyncio
     async def test_wrong_agent_name_returns_404(self):
         """ASGI app returns 404 for wrong agent name."""
-        agent = Agent("test-agent")
+        test_agent = Agent("test-agent")
 
-        @agent.on_invoke
-        async def handle(request: InvokeRequest) -> InvokeResponse:
-            return InvokeResponse(output="ok")
+        @test_agent.on_execute
+        async def handle(request: ExecuteRequest) -> ExecuteResponse:
+            return {"output": "ok"}
 
-        app = agent.to_asgi()
+        app = test_agent.to_asgi()
 
         status, body = await call_asgi(
-            app, "POST", "/agents/wrong-agent/invoke", {"input": {"task": "test"}}
+            app, "POST", "/agents/wrong-agent/execute", {"prompt": "test"}
         )
 
         assert status == 404

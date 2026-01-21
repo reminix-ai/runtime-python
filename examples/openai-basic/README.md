@@ -34,8 +34,8 @@ Once running, the following endpoints are available:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
-| `/agents/openai-basic/invoke` | POST | Stateless invocation |
-| `/agents/openai-basic/chat` | POST | Conversational chat |
+| `/agents/openai-basic/execute` | POST | Execute agent |
+| `/agents/openai-basic/execute` | POST | Execute agent |
 
 ## Testing
 
@@ -47,12 +47,12 @@ curl http://localhost:8080/health
 curl http://localhost:8080/info
 
 # Invoke
-curl -X POST http://localhost:8080/agents/openai-basic/invoke \
+curl -X POST http://localhost:8080/agents/openai-basic/execute \
   -H "Content-Type: application/json" \
   -d '{"input": {"prompt": "What is the capital of France?"}}'
 
 # Chat
-curl -X POST http://localhost:8080/agents/openai-basic/chat \
+curl -X POST http://localhost:8080/agents/openai-basic/execute \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
 ```

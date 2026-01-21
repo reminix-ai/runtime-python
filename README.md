@@ -1,9 +1,9 @@
 # Reminix Runtime (Python)
 
-A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framework and get invoke/chat endpoints with built-in streaming.
+A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framework and get an execute endpoint with built-in streaming.
 
 **Features:**
-- **REST API Server**: Invoke and chat endpoints powered by [FastAPI](https://fastapi.tiangolo.com)
+- **REST API Server**: Execute endpoint powered by [FastAPI](https://fastapi.tiangolo.com)
 - **Streaming Support**: Server-Sent Events (SSE) out of the box
 - **Framework Adapters**: Pre-built integrations for LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex
 
@@ -58,8 +58,8 @@ serve(agents=[calculator, assistant], port=8080)
 ```
 
 Your agents are now available at:
-- `POST /agents/calculator/invoke` - Stateless invocation
-- `POST /agents/assistant/chat` - Conversational chat
+- `POST /agents/calculator/execute` - Execute the calculator agent
+- `POST /agents/assistant/execute` - Execute the assistant agent
 
 See the [runtime package docs](./packages/runtime) for tools, streaming, and advanced usage.
 

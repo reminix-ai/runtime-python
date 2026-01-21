@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from .agent import AgentBase
-from .types import ChatRequest, InvokeRequest
+from .types import ExecuteRequest
 
 
 class AgentAdapter(AgentBase):
@@ -19,13 +19,8 @@ class AgentAdapter(AgentBase):
     adapter_name: str = "unknown"
 
     @property
-    def invoke_streaming(self) -> bool:
-        """Whether this adapter supports streaming invoke requests."""
-        return True
-
-    @property
-    def chat_streaming(self) -> bool:
-        """Whether this adapter supports streaming chat requests."""
+    def streaming(self) -> bool:
+        """Whether this adapter supports streaming execute requests."""
         return True
 
     @property
@@ -33,14 +28,8 @@ class AgentAdapter(AgentBase):
         """Return adapter metadata for discovery."""
         return {"type": "adapter", "adapter": self.adapter_name}
 
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request."""
-        raise NotImplementedError("Streaming not implemented for this adapter")
-        # Unreachable, but required to make this an async generator
-        yield  # type: ignore[misc]
-
-    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
-        """Handle a streaming chat request."""
+    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
+        """Handle a streaming execute request."""
         raise NotImplementedError("Streaming not implemented for this adapter")
         # Unreachable, but required to make this an async generator
         yield  # type: ignore[misc]

@@ -17,14 +17,14 @@ Usage:
 Then test the endpoints:
 
     # Invoke endpoint (task-oriented)
-    curl -X POST http://localhost:8080/agents/llamaindex-rag/invoke \
+    curl -X POST http://localhost:8080/agents/llamaindex-rag/execute \
       -H "Content-Type: application/json" \
       -d '{"input": {"query": "What is the weather in Paris?"}}'
 
     # Response: {"output": "The weather in Paris is sunny with a temperature of 22°C."}
 
     # Chat endpoint (conversational)
-    curl -X POST http://localhost:8080/agents/llamaindex-rag/chat \
+    curl -X POST http://localhost:8080/agents/llamaindex-rag/execute \
       -H "Content-Type: application/json" \
       -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
 
@@ -88,8 +88,7 @@ if __name__ == "__main__":
     print("\nEndpoints:")
     print("  GET  /health")
     print("  GET  /info")
-    print("  POST /agents/llamaindex-rag/invoke")
-    print("  POST /agents/llamaindex-rag/chat")
+    print("  POST /agents/llamaindex-rag/execute")
     print("\nAvailable tools:")
     print("  - get_weather(city): Get weather for Paris, London, Tokyo, or New York")
     serve(agents=[agent], port=8080)

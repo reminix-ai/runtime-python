@@ -16,19 +16,19 @@ Usage:
 
 Then test the endpoints:
 
-    # Invoke endpoint (task-oriented)
-    curl -X POST http://localhost:8080/agents/openai-basic/invoke \
+    # With a simple prompt
+    curl -X POST http://localhost:8080/agents/openai-basic/execute \
       -H "Content-Type: application/json" \
       -d '{"input": {"prompt": "What is the capital of France?"}}'
 
     # Response: {"output": "The capital of France is Paris."}
 
-    # Chat endpoint (conversational)
-    curl -X POST http://localhost:8080/agents/openai-basic/chat \
+    # With messages (chat-style)
+    curl -X POST http://localhost:8080/agents/openai-basic/execute \
       -H "Content-Type: application/json" \
-      -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
+      -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
 
-    # Response: {"output": "Hello! How can I help you today?", "messages": [...]}
+    # Response: {"output": "Hello! How can I help you today?"}
 """
 
 from pathlib import Path
@@ -54,6 +54,5 @@ if __name__ == "__main__":
     print("\nEndpoints:")
     print("  GET  /health")
     print("  GET  /info")
-    print("  POST /agents/openai-basic/invoke")
-    print("  POST /agents/openai-basic/chat")
+    print("  POST /agents/openai-basic/execute")
     serve(agents=[agent], port=8080)

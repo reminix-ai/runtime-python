@@ -17,14 +17,14 @@ Usage:
 Then test the endpoints:
 
     # Invoke endpoint (task-oriented)
-    curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
+    curl -X POST http://localhost:8080/agents/langchain-basic/execute \
       -H "Content-Type: application/json" \
       -d '{"input": {"prompt": "What is AI?"}}'
 
     # Response: {"output": "AI (Artificial Intelligence) is..."}
 
     # Chat endpoint (conversational)
-    curl -X POST http://localhost:8080/agents/langchain-basic/chat \
+    curl -X POST http://localhost:8080/agents/langchain-basic/execute \
       -H "Content-Type: application/json" \
       -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
 
@@ -54,6 +54,5 @@ if __name__ == "__main__":
     print("\nEndpoints:")
     print("  GET  /health")
     print("  GET  /info")
-    print("  POST /agents/langchain-basic/invoke")
-    print("  POST /agents/langchain-basic/chat")
+    print("  POST /agents/langchain-basic/execute")
     serve(agents=[agent], port=8080)

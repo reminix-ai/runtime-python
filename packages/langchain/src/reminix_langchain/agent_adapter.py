@@ -16,10 +16,8 @@ from langchain_core.runnables import Runnable
 
 from reminix_runtime import (
     AgentAdapter,
-    ChatRequest,
-    ChatResponse,
-    InvokeRequest,
-    InvokeResponse,
+    ExecuteRequest,
+    ExecuteResponse,
     Message,
     serve,
 )
@@ -79,31 +77,35 @@ class LangChainAgentAdapter(AgentAdapter):
         content = message.content if isinstance(message.content, str) else str(message.content)
         return {"role": role, "content": content}
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        """Handle an invoke request.
-
-        For task-oriented operations. Expects input with 'messages' key
-        or a 'prompt' key for simple text generation.
-
-        Args:
-            request: The invoke request with input data.
-
-        Returns:
-            The invoke response with the output.
-        """
-        # Build input for the runnable
+    def _build_langchain_input(self, request: ExecuteRequest) -> Any:
+        """Build LangChain input from execute request."""
+        # Check if input contains messages (chat-style)
         if "messages" in request.input:
             # Convert message dicts to LangChain messages
             lc_messages = []
             for m in request.input["messages"]:
                 msg = Message(role=m.get("role", "user"), content=m.get("content", ""))
                 lc_messages.append(self._to_langchain_message(msg))
-            invoke_input = lc_messages
+            return lc_messages
         elif "prompt" in request.input:
-            invoke_input = request.input["prompt"]
+            return request.input["prompt"]
         else:
             # Pass input directly to the runnable
-            invoke_input = request.input
+            return request.input
+
+    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+        """Handle an execute request.
+
+        For both task-oriented and chat-style operations. Expects input with 'messages' key
+        or a 'prompt' key for simple text generation.
+
+        Args:
+            request: The execute request with input data.
+
+        Returns:
+            The execute response with the output.
+        """
+        invoke_input = self._build_langchain_input(request)
 
         response = await self._agent.ainvoke(invoke_input)
 
@@ -117,92 +119,22 @@ class LangChainAgentAdapter(AgentAdapter):
         else:
             output = str(response)
 
-        return InvokeResponse(output=output)
+        return {"output": output}
 
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Handle a chat request.
-
-        For conversational interactions. Converts messages to LangChain format.
-
-        Args:
-            request: The chat request with messages.
-
-        Returns:
-            The chat response with output and messages.
-        """
-        # Convert messages to LangChain format
-        lc_messages = [self._to_langchain_message(m) for m in request.messages]
-
-        # Call the runnable
-        response = await self._agent.ainvoke(lc_messages)
-
-        # Extract content from response
-        if isinstance(response, BaseMessage):
-            content = (
-                response.content if isinstance(response.content, str) else str(response.content)
-            )
-            response_message = self._to_reminix_message(response)
-        else:
-            content = str(response)
-            response_message = {"role": "assistant", "content": content}
-
-        # Build response messages (original + assistant response)
-        response_messages: list[dict[str, Any]] = [
-            {"role": m.role, "content": m.content} for m in request.messages
-        ]
-        response_messages.append(response_message)
-
-        return ChatResponse(output=content, messages=response_messages)
-
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request.
+    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
+        """Handle a streaming execute request.
 
         Streams chunks from the LangChain runnable.
 
         Args:
-            request: The invoke request with input data.
+            request: The execute request with input data.
 
         Yields:
             JSON-encoded chunks from the stream.
         """
-        # Build input for the runnable
-        if "messages" in request.input:
-            # Convert message dicts to LangChain messages
-            lc_messages = []
-            for m in request.input["messages"]:
-                msg = Message(role=m.get("role", "user"), content=m.get("content", ""))
-                lc_messages.append(self._to_langchain_message(msg))
-            stream_input = lc_messages
-        elif "prompt" in request.input:
-            stream_input = request.input["prompt"]
-        else:
-            stream_input = request.input
+        stream_input = self._build_langchain_input(request)
 
         async for chunk in self._agent.astream(stream_input):
-            if isinstance(chunk, BaseMessage):
-                content = chunk.content if isinstance(chunk.content, str) else str(chunk.content)
-            elif isinstance(chunk, dict):
-                content = json.dumps(chunk)
-            else:
-                content = str(chunk)
-            yield json.dumps({"chunk": content})
-
-    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
-        """Handle a streaming chat request.
-
-        Streams chunks from the LangChain runnable.
-
-        Args:
-            request: The chat request with messages.
-
-        Yields:
-            JSON-encoded chunks from the stream.
-        """
-        # Convert messages to LangChain format
-        lc_messages = [self._to_langchain_message(m) for m in request.messages]
-
-        # Stream from the runnable
-        async for chunk in self._agent.astream(lc_messages):
             if isinstance(chunk, (BaseMessage, AIMessageChunk)):
                 content = chunk.content if isinstance(chunk.content, str) else str(chunk.content)
             elif isinstance(chunk, dict):

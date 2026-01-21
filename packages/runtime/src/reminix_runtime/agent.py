@@ -9,7 +9,17 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, TypeVar, get_type_hints
 
 from . import __version__
-from .types import ChatRequest, ChatResponse, InvokeRequest, InvokeResponse, Message
+from .types import ExecuteRequest, ExecuteResponse, Message
+
+# Default parameters schema for agents
+# Request: { "prompt": "..." }
+DEFAULT_AGENT_PARAMETERS: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "prompt": {"type": "string", "description": "The prompt or task for the agent"},
+    },
+    "required": ["prompt"],
+}
 
 # ASGI type aliases
 Scope = dict[str, Any]
@@ -18,10 +28,8 @@ Send = Callable[[dict[str, Any]], Awaitable[None]]
 ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
 
 # Type aliases for handlers
-InvokeHandler = Callable[[InvokeRequest], Awaitable[InvokeResponse]]
-ChatHandler = Callable[[ChatRequest], Awaitable[ChatResponse]]
-InvokeStreamHandler = Callable[[InvokeRequest], AsyncIterator[str]]
-ChatStreamHandler = Callable[[ChatRequest], AsyncIterator[str]]
+ExecuteHandler = Callable[[ExecuteRequest], Awaitable[ExecuteResponse]]
+ExecuteStreamHandler = Callable[[ExecuteRequest], AsyncIterator[str]]
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -31,17 +39,12 @@ class AgentBase(ABC):
 
     This is the core contract that all agents must fulfill.
     Use `Agent` for decorator-based registration or extend
-    `BaseAdapter` for framework adapters.
+    `AgentAdapter` for framework adapters.
     """
 
     @property
-    def invoke_streaming(self) -> bool:
-        """Whether this agent supports streaming invoke requests."""
-        return False
-
-    @property
-    def chat_streaming(self) -> bool:
-        """Whether this agent supports streaming chat requests."""
+    def streaming(self) -> bool:
+        """Whether this agent supports streaming requests."""
         return False
 
     @property
@@ -56,26 +59,20 @@ class AgentBase(ABC):
 
         Override this to provide custom metadata.
         """
-        return {"type": "agent"}
+        return {
+            "type": "agent",
+            "parameters": DEFAULT_AGENT_PARAMETERS,
+            "requestKeys": ["prompt"],
+            "responseKeys": ["output"],
+        }
 
     @abstractmethod
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        """Handle an invoke request."""
+    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+        """Handle an execute request."""
         ...
 
-    @abstractmethod
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Handle a chat request."""
-        ...
-
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request."""
-        raise NotImplementedError("Streaming not implemented for this agent")
-        # Unreachable, but required to make this an async generator
-        yield  # type: ignore[misc]
-
-    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
-        """Handle a streaming chat request."""
+    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
+        """Handle a streaming execute request."""
         raise NotImplementedError("Streaming not implemented for this agent")
         # Unreachable, but required to make this an async generator
         yield  # type: ignore[misc]
@@ -92,9 +89,9 @@ class AgentBase(ABC):
 
             agent = Agent("my-agent")
 
-            @agent.on_invoke
+            @agent.on_execute
             async def handle(request):
-                return {"output": "Hello!"}
+                return ExecuteResponse(output="Hello!")
 
             # AWS Lambda handler
             handler = Mangum(agent.to_asgi())
@@ -216,18 +213,17 @@ class AgentBase(ABC):
                                 {
                                     "name": agent.name,
                                     **agent.metadata,
-                                    "invoke": {"streaming": agent.invoke_streaming},
-                                    "chat": {"streaming": agent.chat_streaming},
+                                    "streaming": agent.streaming,
                                 }
                             ],
                         }
                     )
                     return
 
-                # POST /agents/{name}/invoke
-                invoke_match = re.match(r"^/agents/([^/]+)/invoke$", path)
-                if method == "POST" and invoke_match:
-                    agent_name = invoke_match.group(1)
+                # POST /agents/{name}/execute
+                execute_match = re.match(r"^/agents/([^/]+)/execute$", path)
+                if method == "POST" and execute_match:
+                    agent_name = execute_match.group(1)
                     if agent_name != agent.name:
                         await json_response({"error": f"Agent '{agent_name}' not found"}, 404)
                         return
@@ -235,61 +231,27 @@ class AgentBase(ABC):
                     body_bytes = await read_body()
                     body = json.loads(body_bytes)
 
-                    if not body.get("input"):
-                        await json_response(
-                            {"error": "input is required and must not be empty"}, 400
-                        )
-                        return
+                    # Get requestKeys from agent metadata
+                    request_keys = agent.metadata.get("requestKeys", [])
 
-                    request = InvokeRequest(
-                        input=body["input"],
+                    # Extract declared keys from body into input
+                    input_data: dict[str, Any] = {}
+                    for key in request_keys:
+                        if key in body:
+                            input_data[key] = body[key]
+
+                    request = ExecuteRequest(
+                        input=input_data,
                         context=body.get("context"),
                         stream=body.get("stream", False),
                     )
 
                     if request.stream:
-                        await sse_response(agent.invoke_stream(request))
+                        await sse_response(agent.execute_stream(request))
                         return
 
-                    response = await agent.invoke(request)
-                    await json_response({"output": response.output})
-                    return
-
-                # POST /agents/{name}/chat
-                chat_match = re.match(r"^/agents/([^/]+)/chat$", path)
-                if method == "POST" and chat_match:
-                    agent_name = chat_match.group(1)
-                    if agent_name != agent.name:
-                        await json_response({"error": f"Agent '{agent_name}' not found"}, 404)
-                        return
-
-                    body_bytes = await read_body()
-                    body = json.loads(body_bytes)
-
-                    if not body.get("messages"):
-                        await json_response(
-                            {"error": "messages is required and must not be empty"}, 400
-                        )
-                        return
-
-                    messages = [Message(**m) for m in body["messages"]]
-                    request = ChatRequest(
-                        messages=messages,
-                        context=body.get("context"),
-                        stream=body.get("stream", False),
-                    )
-
-                    if request.stream:
-                        await sse_response(agent.chat_stream(request))
-                        return
-
-                    response = await agent.chat(request)
-                    await json_response(
-                        {
-                            "output": response.output,
-                            "messages": response.messages,  # Already list[dict]
-                        }
-                    )
+                    response = await agent.execute(request)
+                    await json_response(response)
                     return
 
                 # Not found
@@ -309,13 +271,9 @@ class Agent(AgentBase):
 
         agent = Agent("my-agent")
 
-        @agent.on_invoke
-        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
-            return InvokeResponse(output="Hello!")
-
-        @agent.on_chat
-        async def handle_chat(request: ChatRequest) -> ChatResponse:
-            return ChatResponse(output="Hi!", messages=[...])
+        @agent.on_execute
+        async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
+            return ExecuteResponse(output="Hello!")
 
         serve(agents=[agent], port=8080)
     """
@@ -324,17 +282,15 @@ class Agent(AgentBase):
         """Create a new agent.
 
         Args:
-            name: The agent name (used in URLs like /agents/{name}/invoke)
+            name: The agent name (used in URLs like /agents/{name}/execute)
             metadata: Optional metadata for discovery
         """
         self._name = name
         self._metadata = metadata or {}
 
         # Handler storage
-        self._invoke_handler: InvokeHandler | None = None
-        self._chat_handler: ChatHandler | None = None
-        self._invoke_stream_handler: InvokeStreamHandler | None = None
-        self._chat_stream_handler: ChatStreamHandler | None = None
+        self._execute_handler: ExecuteHandler | None = None
+        self._execute_stream_handler: ExecuteStreamHandler | None = None
 
     @property
     def name(self) -> str:
@@ -344,95 +300,59 @@ class Agent(AgentBase):
     @property
     def metadata(self) -> dict[str, Any]:
         """Return agent metadata for discovery."""
-        return {"type": "agent", **self._metadata}
+        return {
+            "type": "agent",
+            "parameters": DEFAULT_AGENT_PARAMETERS,
+            "requestKeys": ["prompt"],
+            "responseKeys": ["output"],
+            **self._metadata,
+        }
 
     @property
-    def invoke_streaming(self) -> bool:
-        """Whether invoke supports streaming."""
-        return self._invoke_stream_handler is not None
-
-    @property
-    def chat_streaming(self) -> bool:
-        """Whether chat supports streaming."""
-        return self._chat_stream_handler is not None
+    def streaming(self) -> bool:
+        """Whether execute supports streaming."""
+        return self._execute_stream_handler is not None
 
     # Decorator methods for handler registration
 
-    def on_invoke(self, fn: InvokeHandler) -> InvokeHandler:
-        """Register an invoke handler.
+    def on_execute(self, fn: ExecuteHandler) -> ExecuteHandler:
+        """Register an execute handler.
 
         Example:
-            @agent.on_invoke
-            async def handle(request: InvokeRequest) -> InvokeResponse:
-                return InvokeResponse(output="Hello!")
+            @agent.on_execute
+            async def handle(request: ExecuteRequest) -> ExecuteResponse:
+                return ExecuteResponse(output="Hello!")
         """
-        self._invoke_handler = fn
+        self._execute_handler = fn
         return fn
 
-    def on_chat(self, fn: ChatHandler) -> ChatHandler:
-        """Register a chat handler.
+    def on_execute_stream(self, fn: ExecuteStreamHandler) -> ExecuteStreamHandler:
+        """Register a streaming execute handler.
 
         Example:
-            @agent.on_chat
-            async def handle(request: ChatRequest) -> ChatResponse:
-                return ChatResponse(output="Hi!", messages=[...])
-        """
-        self._chat_handler = fn
-        return fn
-
-    def on_invoke_stream(self, fn: InvokeStreamHandler) -> InvokeStreamHandler:
-        """Register a streaming invoke handler.
-
-        Example:
-            @agent.on_invoke_stream
-            async def handle(request: InvokeRequest):
+            @agent.on_execute_stream
+            async def handle(request: ExecuteRequest):
                 yield '{"chunk": "Hello"}'
                 yield '{"chunk": " world!"}'
         """
-        self._invoke_stream_handler = fn
-        return fn
-
-    def on_chat_stream(self, fn: ChatStreamHandler) -> ChatStreamHandler:
-        """Register a streaming chat handler.
-
-        Example:
-            @agent.on_chat_stream
-            async def handle(request: ChatRequest):
-                yield '{"chunk": "Hi"}'
-        """
-        self._chat_stream_handler = fn
+        self._execute_stream_handler = fn
         return fn
 
     # Implementation of abstract methods
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        """Handle an invoke request."""
-        if self._invoke_handler is None:
-            raise NotImplementedError(f"No invoke handler registered for agent '{self._name}'")
-        return await self._invoke_handler(request)
+    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+        """Handle an execute request."""
+        if self._execute_handler is None:
+            raise NotImplementedError(f"No execute handler registered for agent '{self._name}'")
+        return await self._execute_handler(request)
 
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Handle a chat request."""
-        if self._chat_handler is None:
-            raise NotImplementedError(f"No chat handler registered for agent '{self._name}'")
-        return await self._chat_handler(request)
-
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request."""
-        if self._invoke_stream_handler is None:
+    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
+        """Handle a streaming execute request."""
+        if self._execute_stream_handler is None:
             raise NotImplementedError(
-                f"No streaming invoke handler registered for agent '{self._name}'"
+                f"No streaming execute handler registered for agent '{self._name}'"
             )
-        async for chunk in self._invoke_stream_handler(request):
-            yield chunk
-
-    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
-        """Handle a streaming chat request."""
-        if self._chat_stream_handler is None:
-            raise NotImplementedError(
-                f"No streaming chat handler registered for agent '{self._name}'"
-            )
-        async for chunk in self._chat_stream_handler(request):
+        async for chunk in self._execute_stream_handler(request):
             yield chunk
 
 
@@ -527,7 +447,7 @@ def agent(
     name: str | None = None,
     description: str | None = None,
 ) -> Agent | Callable[[Callable[..., Any]], Agent]:
-    """Decorator to create an invoke agent from a function.
+    """Decorator to create an agent from a function.
 
     The function parameters become the agent's input schema (like @tool).
     Supports both sync and async functions, and async generators for streaming.
@@ -556,7 +476,7 @@ def agent(
         description: Optional description override. Defaults to docstring.
 
     Returns:
-        An Agent instance that handles invoke requests.
+        An Agent instance that handles execute requests.
     """
 
     def decorator(f: Callable[..., Any]) -> Agent:
@@ -569,10 +489,16 @@ def agent(
         # Extract parameter and output schemas
         parameters, output = _extract_parameters_from_function(f)
 
+        # Derive requestKeys from parameters properties
+        request_keys = list(parameters.get("properties", {}).keys())
+        response_keys = ["output"]
+
         # Build metadata
         metadata: dict[str, Any] = {
             "description": agent_description,
             "parameters": parameters,
+            "requestKeys": request_keys,
+            "responseKeys": response_keys,
         }
         if output is not None:
             metadata["output"] = output
@@ -583,9 +509,14 @@ def agent(
             metadata=metadata,
         )
 
+        # Helper to get response key from metadata (allows override)
+        def get_response_key() -> str:
+            keys = agent_instance.metadata.get("responseKeys", ["output"])
+            return keys[0] if keys else "output"
+
         if is_streaming:
-            # Register streaming invoke handler
-            async def invoke_stream_handler(request: InvokeRequest) -> AsyncIterator[str]:
+            # Register streaming execute handler
+            async def execute_stream_handler(request: ExecuteRequest) -> AsyncIterator[str]:
                 async for chunk in f(**request.input):
                     # Convert to JSON string if not already a string
                     if isinstance(chunk, str):
@@ -593,29 +524,29 @@ def agent(
                     else:
                         yield json.dumps(chunk)
 
-            agent_instance.on_invoke_stream(invoke_stream_handler)
+            agent_instance.on_execute_stream(execute_stream_handler)
 
             # Also register non-streaming handler that collects chunks
-            async def invoke_handler(request: InvokeRequest) -> InvokeResponse:
+            async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
                 chunks: list[str] = []
                 async for chunk in f(**request.input):
                     if isinstance(chunk, str):
                         chunks.append(chunk)
                     else:
                         chunks.append(str(chunk))
-                return InvokeResponse(output="".join(chunks))
+                return {get_response_key(): "".join(chunks)}
 
-            agent_instance.on_invoke(invoke_handler)
+            agent_instance.on_execute(execute_handler)
         else:
-            # Register regular invoke handler
-            async def invoke_handler(request: InvokeRequest) -> InvokeResponse:
+            # Register regular execute handler
+            async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
                 if inspect.iscoroutinefunction(f):
                     result = await f(**request.input)
                 else:
                     result = f(**request.input)
-                return InvokeResponse(output=result)
+                return {get_response_key(): result}
 
-            agent_instance.on_invoke(invoke_handler)
+            agent_instance.on_execute(execute_handler)
 
         # Preserve function metadata
         agent_instance.__doc__ = f.__doc__
@@ -639,22 +570,28 @@ def chat_agent(
 ) -> Agent | Callable[[Callable[..., Any]], Agent]:
     """Decorator to create a chat agent from a function.
 
-    The function receives messages and optionally context, returns a response string.
+    The function receives messages and optionally context, returns a Message object.
     Use async generator for streaming support.
+
+    This is a convenience decorator that creates an agent with a standard chat
+    interface (messages in, message out).
+
+    Request: { "messages": [...] }
+    Response: { "message": { "role": "assistant", "content": "..." } }
 
     Examples:
         @chat_agent
-        async def assistant(messages: list[Message]) -> str:
+        async def assistant(messages: list[Message]) -> Message:
             '''A helpful assistant.'''
             last_msg = messages[-1].content
-            return f"You said: {last_msg}"
+            return Message(role="assistant", content=f"You said: {last_msg}")
 
         # With context
         @chat_agent
-        async def contextual_bot(messages: list[Message], context: dict | None = None) -> str:
+        async def contextual_bot(messages: list[Message], context: dict | None = None) -> Message:
             '''Bot with context.'''
             user_id = context.get("user_id") if context else None
-            return f"Hello user {user_id}!"
+            return Message(role="assistant", content=f"Hello user {user_id}!")
 
         # Streaming (yields chunks, collected for non-streaming requests)
         @chat_agent
@@ -669,7 +606,7 @@ def chat_agent(
         description: Optional description override. Defaults to docstring.
 
     Returns:
-        An Agent instance that handles chat requests.
+        An Agent instance that handles execute requests with chat semantics.
     """
 
     def decorator(f: Callable[..., Any]) -> Agent:
@@ -682,6 +619,10 @@ def chat_agent(
         # Check if function accepts context parameter
         sig = inspect.signature(f)
         accepts_context = "context" in sig.parameters
+
+        # Chat agents have fixed request/response keys
+        request_keys = ["messages"]
+        response_keys = ["message"]
 
         # Define standard chat agent schemas
         parameters_schema = {
@@ -701,22 +642,40 @@ def chat_agent(
             },
             "required": ["messages"],
         }
-        output_schema = {"type": "string"}
+        output_schema = {
+            "type": "object",
+            "properties": {
+                "role": {"type": "string"},
+                "content": {"type": "string"},
+            },
+            "required": ["role", "content"],
+        }
 
         # Create agent instance
         agent_instance = Agent(
             agent_name,
             metadata={
+                "type": "chat_agent",
                 "description": agent_description,
                 "parameters": parameters_schema,
                 "output": output_schema,
+                "requestKeys": request_keys,
+                "responseKeys": response_keys,
             },
         )
 
+        # Helper to get response key from metadata (allows override)
+        def get_response_key() -> str:
+            keys = agent_instance.metadata.get("responseKeys", ["message"])
+            return keys[0] if keys else "message"
+
         if is_streaming:
-            # Register streaming chat handler
-            async def chat_stream_handler(request: ChatRequest) -> AsyncIterator[str]:
-                kwargs: dict[str, Any] = {"messages": request.messages}
+            # Register streaming execute handler
+            async def execute_stream_handler(request: ExecuteRequest) -> AsyncIterator[str]:
+                # Extract messages from input
+                raw_messages = request.input.get("messages", [])
+                messages = [Message(**m) for m in raw_messages]
+                kwargs: dict[str, Any] = {"messages": messages}
                 if accepts_context:
                     kwargs["context"] = request.context
                 async for chunk in f(**kwargs):
@@ -725,11 +684,13 @@ def chat_agent(
                     else:
                         yield json.dumps(chunk)
 
-            agent_instance.on_chat_stream(chat_stream_handler)
+            agent_instance.on_execute_stream(execute_stream_handler)
 
             # Also register non-streaming handler that collects chunks
-            async def chat_handler(request: ChatRequest) -> ChatResponse:
-                kwargs: dict[str, Any] = {"messages": request.messages}
+            async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
+                raw_messages = request.input.get("messages", [])
+                messages = [Message(**m) for m in raw_messages]
+                kwargs: dict[str, Any] = {"messages": messages}
                 if accepts_context:
                     kwargs["context"] = request.context
                 chunks: list[str] = []
@@ -738,37 +699,32 @@ def chat_agent(
                         chunks.append(chunk)
                     else:
                         chunks.append(str(chunk))
-                output = "".join(chunks)
-                return ChatResponse(
-                    output=output,
-                    messages=[
-                        *[{"role": m.role, "content": m.content} for m in request.messages],
-                        {"role": "assistant", "content": output},
-                    ],
-                )
+                return {get_response_key(): {"role": "assistant", "content": "".join(chunks)}}
 
-            agent_instance.on_chat(chat_handler)
+            agent_instance.on_execute(execute_handler)
         else:
-            # Register regular chat handler
-            async def chat_handler(request: ChatRequest) -> ChatResponse:
-                kwargs: dict[str, Any] = {"messages": request.messages}
+            # Register regular execute handler
+            async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
+                raw_messages = request.input.get("messages", [])
+                messages = [Message(**m) for m in raw_messages]
+                kwargs: dict[str, Any] = {"messages": messages}
                 if accepts_context:
                     kwargs["context"] = request.context
 
                 if inspect.iscoroutinefunction(f):
-                    output = await f(**kwargs)
+                    result = await f(**kwargs)
                 else:
-                    output = f(**kwargs)
+                    result = f(**kwargs)
 
-                return ChatResponse(
-                    output=output,
-                    messages=[
-                        *[{"role": m.role, "content": m.content} for m in request.messages],
-                        {"role": "assistant", "content": output},
-                    ],
-                )
+                # Convert Message to dict if needed
+                if isinstance(result, Message):
+                    message_dict = {"role": result.role, "content": result.content}
+                else:
+                    message_dict = result
 
-            agent_instance.on_chat(chat_handler)
+                return {get_response_key(): message_dict}
+
+            agent_instance.on_execute(execute_handler)
 
         # Preserve function metadata
         agent_instance.__doc__ = f.__doc__

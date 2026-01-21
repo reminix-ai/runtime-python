@@ -38,7 +38,7 @@ class TestAnthropicAdapter:
     async def test_invoke(self, client):
         """Test invoke endpoint."""
         response = await client.post(
-            "/agents/test-anthropic/invoke",
+            "/agents/test-anthropic/execute",
             json={"input": {"prompt": "Say 'hello' and nothing else."}},
         )
 
@@ -50,7 +50,7 @@ class TestAnthropicAdapter:
     async def test_invoke_with_messages(self, client):
         """Test invoke with messages array."""
         response = await client.post(
-            "/agents/test-anthropic/invoke",
+            "/agents/test-anthropic/execute",
             json={
                 "input": {"messages": [{"role": "user", "content": "Say 'test' and nothing else."}]}
             },
@@ -64,7 +64,7 @@ class TestAnthropicAdapter:
     async def test_invoke_with_system_message(self, client):
         """Test invoke with system message."""
         response = await client.post(
-            "/agents/test-anthropic/invoke",
+            "/agents/test-anthropic/execute",
             json={
                 "input": {
                     "messages": [
@@ -83,7 +83,7 @@ class TestAnthropicAdapter:
     async def test_chat(self, client):
         """Test chat endpoint."""
         response = await client.post(
-            "/agents/test-anthropic/chat",
+            "/agents/test-anthropic/execute",
             json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
         )
 
@@ -99,7 +99,7 @@ class TestAnthropicAdapter:
         """Test streaming invoke endpoint."""
         async with client.stream(
             "POST",
-            "/agents/test-anthropic/invoke/stream",
+            "/agents/test-anthropic/execute/stream",
             json={"input": {"prompt": "Say 'stream' and nothing else."}},
         ) as response:
             assert response.status_code == 200
@@ -114,7 +114,7 @@ class TestAnthropicAdapter:
         """Test streaming chat endpoint."""
         async with client.stream(
             "POST",
-            "/agents/test-anthropic/chat/stream",
+            "/agents/test-anthropic/execute/stream",
             json={"messages": [{"role": "user", "content": "Say 'ok' and nothing else."}]},
         ) as response:
             assert response.status_code == 200

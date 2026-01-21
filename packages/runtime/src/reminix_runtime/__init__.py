@@ -5,10 +5,8 @@ from .agent_adapter import AgentAdapter
 from .server import create_app, serve
 from .tool import Tool, ToolBase, tool
 from .types import (
-    ChatRequest,
-    ChatResponse,
-    InvokeRequest,
-    InvokeResponse,
+    ExecuteRequest,
+    ExecuteResponse,
     Message,
     Role,
     ToolExecuteRequest,
@@ -23,10 +21,8 @@ __all__ = [
     # Agent types
     "Role",
     "Message",
-    "InvokeRequest",
-    "InvokeResponse",
-    "ChatRequest",
-    "ChatResponse",
+    "ExecuteRequest",
+    "ExecuteResponse",
     "AgentBase",
     "Agent",
     "AgentAdapter",

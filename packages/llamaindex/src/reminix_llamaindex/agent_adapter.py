@@ -6,10 +6,8 @@ from typing import Any, Protocol, runtime_checkable
 
 from reminix_runtime import (
     AgentAdapter,
-    ChatRequest,
-    ChatResponse,
-    InvokeRequest,
-    InvokeResponse,
+    ExecuteRequest,
+    ExecuteResponse,
     Message,
     serve,
 )
@@ -55,26 +53,35 @@ class LlamaIndexAgentAdapter(AgentAdapter):
         # Fallback to last message if no user message found
         return messages[-1].content or "" if messages else ""
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        """Handle an invoke request.
+    def _extract_query(self, request: ExecuteRequest) -> str:
+        """Extract query string from execute request."""
+        # Check if input contains messages (chat-style)
+        if "messages" in request.input:
+            messages_data = request.input["messages"]
+            messages = [Message(**m) if isinstance(m, dict) else m for m in messages_data]
+            return self._get_last_user_message(messages)
+        elif "query" in request.input:
+            return request.input["query"]
+        elif "prompt" in request.input:
+            return request.input["prompt"]
+        elif "message" in request.input:
+            return request.input["message"]
+        else:
+            return str(request.input)
 
-        For task-oriented operations. Expects input with 'query' or 'prompt' key.
+    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+        """Handle an execute request.
+
+        For both task-oriented and chat-style operations. Expects input with 'messages',
+        'query', 'prompt', or 'message' key.
 
         Args:
-            request: The invoke request with input data.
+            request: The execute request with input data.
 
         Returns:
-            The invoke response with the output.
+            The execute response with the output.
         """
-        # Extract query from input
-        if "query" in request.input:
-            query = request.input["query"]
-        elif "prompt" in request.input:
-            query = request.input["prompt"]
-        elif "message" in request.input:
-            query = request.input["message"]
-        else:
-            query = str(request.input)
+        query = self._extract_query(request)
 
         # Call the chat engine
         response = await self._engine.achat(query)
@@ -82,74 +89,21 @@ class LlamaIndexAgentAdapter(AgentAdapter):
         # Extract content from response
         output = str(response.response) if hasattr(response, "response") else str(response)
 
-        return InvokeResponse(output=output)
+        return {"output": output}
 
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Handle a chat request.
-
-        For conversational interactions. Sends the last user message to the engine.
+    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
+        """Handle a streaming execute request.
 
         Args:
-            request: The chat request with messages.
-
-        Returns:
-            The chat response with output and messages.
-        """
-        # Get the last user message to send to the engine
-        message = self._get_last_user_message(request.messages)
-
-        # Call the chat engine
-        response = await self._engine.achat(message)
-
-        # Extract content from response
-        output = str(response.response) if hasattr(response, "response") else str(response)
-
-        # Build response messages (original + assistant response)
-        response_messages: list[dict[str, Any]] = [
-            {"role": m.role, "content": m.content} for m in request.messages
-        ]
-        response_messages.append({"role": "assistant", "content": output})
-
-        return ChatResponse(output=output, messages=response_messages)
-
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request.
-
-        Args:
-            request: The invoke request with input data.
+            request: The execute request with input data.
 
         Yields:
             JSON-encoded chunks from the stream.
         """
-        # Extract query from input
-        if "query" in request.input:
-            query = request.input["query"]
-        elif "prompt" in request.input:
-            query = request.input["prompt"]
-        elif "message" in request.input:
-            query = request.input["message"]
-        else:
-            query = str(request.input)
+        query = self._extract_query(request)
 
         # Stream from the chat engine
         response = await self._engine.astream_chat(query)
-        async for token in response.async_response_gen():
-            yield json.dumps({"chunk": token})
-
-    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
-        """Handle a streaming chat request.
-
-        Args:
-            request: The chat request with messages.
-
-        Yields:
-            JSON-encoded chunks from the stream.
-        """
-        # Get the last user message to send to the engine
-        message = self._get_last_user_message(request.messages)
-
-        # Stream from the chat engine
-        response = await self._engine.astream_chat(message)
         async for token in response.async_response_gen():
             yield json.dumps({"chunk": token})
 

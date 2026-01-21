@@ -33,7 +33,7 @@ class TestOpenAIAdapter:
     async def test_invoke(self, client):
         """Test invoke endpoint."""
         response = await client.post(
-            "/agents/test-openai/invoke",
+            "/agents/test-openai/execute",
             json={"input": {"prompt": "Say 'hello' and nothing else."}},
         )
 
@@ -45,7 +45,7 @@ class TestOpenAIAdapter:
     async def test_invoke_with_messages(self, client):
         """Test invoke with messages array."""
         response = await client.post(
-            "/agents/test-openai/invoke",
+            "/agents/test-openai/execute",
             json={
                 "input": {"messages": [{"role": "user", "content": "Say 'test' and nothing else."}]}
             },
@@ -59,7 +59,7 @@ class TestOpenAIAdapter:
     async def test_chat(self, client):
         """Test chat endpoint."""
         response = await client.post(
-            "/agents/test-openai/chat",
+            "/agents/test-openai/execute",
             json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
         )
 
@@ -75,7 +75,7 @@ class TestOpenAIAdapter:
         """Test streaming invoke endpoint."""
         async with client.stream(
             "POST",
-            "/agents/test-openai/invoke/stream",
+            "/agents/test-openai/execute/stream",
             json={"input": {"prompt": "Say 'stream' and nothing else."}},
         ) as response:
             assert response.status_code == 200
@@ -90,7 +90,7 @@ class TestOpenAIAdapter:
         """Test streaming chat endpoint."""
         async with client.stream(
             "POST",
-            "/agents/test-openai/chat/stream",
+            "/agents/test-openai/execute/stream",
             json={"messages": [{"role": "user", "content": "Say 'ok' and nothing else."}]},
         ) as response:
             assert response.status_code == 200

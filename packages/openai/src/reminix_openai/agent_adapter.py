@@ -8,10 +8,8 @@ from openai import AsyncOpenAI
 
 from reminix_runtime import (
     AgentAdapter,
-    ChatRequest,
-    ChatResponse,
-    InvokeRequest,
-    InvokeResponse,
+    ExecuteRequest,
+    ExecuteResponse,
     Message,
     serve,
 )
@@ -58,26 +56,33 @@ class OpenAIAgentAdapter(AgentAdapter):
             result["name"] = message.name
         return result
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        """Handle an invoke request.
+    def _build_openai_messages(self, request: ExecuteRequest) -> list[dict[str, Any]]:
+        """Build OpenAI messages from execute request input."""
+        # Check if input contains messages (chat-style)
+        if "messages" in request.input:
+            messages_data = request.input["messages"]
+            # Convert to Message objects if needed, then to OpenAI format
+            messages = [Message(**m) if isinstance(m, dict) else m for m in messages_data]
+            return [self._to_openai_message(m) for m in messages]
+        elif "prompt" in request.input:
+            return [{"role": "user", "content": request.input["prompt"]}]
+        else:
+            # Use input as a single user message
+            return [{"role": "user", "content": str(request.input)}]
 
-        For task-oriented operations. Expects input with 'messages' key
+    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+        """Handle an execute request.
+
+        For both task-oriented and chat-style operations. Expects input with 'messages' key
         or a 'prompt' key for simple text generation.
 
         Args:
-            request: The invoke request with input data.
+            request: The execute request with input data.
 
         Returns:
-            The invoke response with the output.
+            The execute response with the output.
         """
-        # Check if input contains messages
-        if "messages" in request.input:
-            messages = request.input["messages"]
-        elif "prompt" in request.input:
-            messages = [{"role": "user", "content": request.input["prompt"]}]
-        else:
-            # Use input as a single user message
-            messages = [{"role": "user", "content": str(request.input)}]
+        messages = self._build_openai_messages(request)
 
         # Call OpenAI API
         response = await self._client.chat.completions.create(
@@ -88,84 +93,23 @@ class OpenAIAgentAdapter(AgentAdapter):
         # Extract content from response
         output = response.choices[0].message.content or ""
 
-        return InvokeResponse(output=output)
+        return {"output": output}
 
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Handle a chat request.
-
-        For conversational interactions.
+    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
+        """Handle a streaming execute request.
 
         Args:
-            request: The chat request with messages.
-
-        Returns:
-            The chat response with output and messages.
-        """
-        # Convert messages to OpenAI format
-        openai_messages = [self._to_openai_message(m) for m in request.messages]
-
-        # Call OpenAI API
-        response = await self._client.chat.completions.create(
-            model=self._model,
-            messages=openai_messages,  # type: ignore
-        )
-
-        # Extract content from response
-        output = response.choices[0].message.content or ""
-
-        # Build response messages (original + assistant response)
-        response_messages: list[dict[str, Any]] = [
-            {"role": m.role, "content": m.content} for m in request.messages
-        ]
-        response_messages.append({"role": "assistant", "content": output})
-
-        return ChatResponse(output=output, messages=response_messages)
-
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request.
-
-        Args:
-            request: The invoke request with input data.
+            request: The execute request with input data.
 
         Yields:
             JSON-encoded chunks from the stream.
         """
-        # Build messages from input
-        if "messages" in request.input:
-            messages = request.input["messages"]
-        elif "prompt" in request.input:
-            messages = [{"role": "user", "content": request.input["prompt"]}]
-        else:
-            messages = [{"role": "user", "content": str(request.input)}]
+        messages = self._build_openai_messages(request)
 
         # Stream from OpenAI API
         stream = await self._client.chat.completions.create(
             model=self._model,
             messages=messages,  # type: ignore
-            stream=True,
-        )
-
-        async for chunk in stream:
-            if chunk.choices and chunk.choices[0].delta.content:
-                content = chunk.choices[0].delta.content
-                yield json.dumps({"chunk": content})
-
-    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
-        """Handle a streaming chat request.
-
-        Args:
-            request: The chat request with messages.
-
-        Yields:
-            JSON-encoded chunks from the stream.
-        """
-        # Convert messages to OpenAI format
-        openai_messages = [self._to_openai_message(m) for m in request.messages]
-
-        # Stream from OpenAI API
-        stream = await self._client.chat.completions.create(
-            model=self._model,
-            messages=openai_messages,  # type: ignore
             stream=True,
         )
 

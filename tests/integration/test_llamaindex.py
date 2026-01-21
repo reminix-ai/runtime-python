@@ -66,7 +66,7 @@ class TestLlamaIndexAdapter:
     async def test_invoke(self, client):
         """Test invoke endpoint."""
         response = await client.post(
-            "/agents/test-llamaindex/invoke",
+            "/agents/test-llamaindex/execute",
             json={"input": {"query": "Say 'hello' and nothing else."}},
         )
 
@@ -77,7 +77,7 @@ class TestLlamaIndexAdapter:
     async def test_chat(self, client):
         """Test chat endpoint."""
         response = await client.post(
-            "/agents/test-llamaindex/chat",
+            "/agents/test-llamaindex/execute",
             json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
         )
 
@@ -89,7 +89,7 @@ class TestLlamaIndexAdapter:
     async def test_tool_calling(self, client):
         """Test that the agent calls tools and returns results."""
         response = await client.post(
-            "/agents/test-llamaindex/chat",
+            "/agents/test-llamaindex/execute",
             json={"messages": [{"role": "user", "content": "What's the weather in Paris?"}]},
         )
 

@@ -10,10 +10,8 @@ from . import __version__
 from .agent import AgentBase
 from .tool import ToolBase
 from .types import (
-    ChatRequest,
-    ChatResponse,
-    InvokeRequest,
-    InvokeResponse,
+    ExecuteRequest,
+    ExecuteResponse,
     ToolExecuteRequest,
     ToolExecuteResponse,
 )
@@ -77,8 +75,7 @@ def create_app(
                 {
                     "name": agent.name,
                     **agent.metadata,
-                    "invoke": {"streaming": agent.invoke_streaming},
-                    "chat": {"streaming": agent.chat_streaming},
+                    "streaming": agent.streaming,
                 }
                 for agent in agents
             ],
@@ -91,35 +88,35 @@ def create_app(
             ],
         }
 
-    @app.post("/agents/{agent_name}/invoke", response_model=None)
-    async def invoke(agent_name: str, request: InvokeRequest) -> InvokeResponse | StreamingResponse:
-        """Invoke an agent."""
+    @app.post("/agents/{agent_name}/execute", response_model=None)
+    async def execute(agent_name: str, body: dict[str, Any]) -> ExecuteResponse | StreamingResponse:
+        """Execute an agent."""
         agent = agent_map.get(agent_name)
         if agent is None:
             raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
 
+        # Get requestKeys from agent metadata
+        request_keys = agent.metadata.get("requestKeys", [])
+
+        # Extract declared keys from body into input
+        input_data: dict[str, Any] = {}
+        for key in request_keys:
+            if key in body:
+                input_data[key] = body[key]
+
+        request = ExecuteRequest(
+            input=input_data,
+            context=body.get("context"),
+            stream=body.get("stream", False),
+        )
+
         if request.stream:
             return StreamingResponse(
-                _sse_generator(agent.invoke_stream(request)),
+                _sse_generator(agent.execute_stream(request)),
                 media_type="text/event-stream",
             )
 
-        return await agent.invoke(request)
-
-    @app.post("/agents/{agent_name}/chat", response_model=None)
-    async def chat(agent_name: str, request: ChatRequest) -> ChatResponse | StreamingResponse:
-        """Chat with an agent."""
-        agent = agent_map.get(agent_name)
-        if agent is None:
-            raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
-
-        if request.stream:
-            return StreamingResponse(
-                _sse_generator(agent.chat_stream(request)),
-                media_type="text/event-stream",
-            )
-
-        return await agent.chat(request)
+        return await agent.execute(request)
 
     @app.post("/tools/{tool_name}/execute", response_model=None)
     async def execute_tool(tool_name: str, request: ToolExecuteRequest) -> ToolExecuteResponse:

@@ -15,22 +15,22 @@ Then test the endpoints:
     # Discovery
     curl http://localhost:8080/info
 
-    # Invoke endpoint (task-oriented)
-    curl -X POST http://localhost:8080/agents/echo/invoke \
+    # Execute endpoint
+    curl -X POST http://localhost:8080/agents/echo/execute \
       -H "Content-Type: application/json" \
       -d '{"input": {"message": "Hello!"}}'
 
     # Response: {"output": "Echo: Hello!"}
 
-    # Chat endpoint (conversational)
-    curl -X POST http://localhost:8080/agents/echo/chat \
+    # Execute with messages (chat-style)
+    curl -X POST http://localhost:8080/agents/echo/execute \
       -H "Content-Type: application/json" \
-      -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
+      -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
 
-    # Response: {"output": "You said: Hello!", "messages": [...]}
+    # Response: {"output": "You said: Hello!"}
 
-    # Streaming invoke
-    curl -X POST http://localhost:8080/agents/echo/invoke \
+    # Streaming execute
+    curl -X POST http://localhost:8080/agents/echo/execute \
       -H "Content-Type: application/json" \
       -d '{"input": {"message": "Hello!"}, "stream": true}'
 """
@@ -39,10 +39,8 @@ import json
 
 from reminix_runtime import (
     Agent,
-    ChatRequest,
-    ChatResponse,
-    InvokeRequest,
-    InvokeResponse,
+    ExecuteRequest,
+    ExecuteResponse,
     serve,
 )
 
@@ -56,9 +54,16 @@ agent = Agent(
 )
 
 
-@agent.on_invoke
-async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
-    """Handle invoke requests - task-oriented operations."""
+@agent.on_execute
+async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
+    """Handle execute requests."""
+    # Check if this is a chat-style request (has messages)
+    if "messages" in request.input and isinstance(request.input["messages"], list):
+        messages = request.input["messages"]
+        user_message = messages[-1]["content"] if messages else ""
+        return ExecuteResponse(output=f"You said: {user_message}")
+
+    # Otherwise treat as task-style request
     message = request.input.get("message", "")
 
     # Access optional context
@@ -70,45 +75,23 @@ async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
     if user_id:
         output += f" (from user {user_id})"
 
-    return InvokeResponse(output=output)
+    return ExecuteResponse(output=output)
 
 
-@agent.on_chat
-async def handle_chat(request: ChatRequest) -> ChatResponse:
-    """Handle chat requests - conversational interactions."""
-    # Get the last user message
-    user_message = request.messages[-1].content if request.messages else ""
-
-    response = f"You said: {user_message}"
-
-    return ChatResponse(
-        output=response,
-        messages=[
-            *[{"role": m.role, "content": m.content} for m in request.messages],
-            {"role": "assistant", "content": response},
-        ],
-    )
-
-
-@agent.on_invoke_stream
-async def handle_invoke_stream(request: InvokeRequest):
-    """Handle streaming invoke requests."""
-    message = request.input.get("message", "")
+@agent.on_execute_stream
+async def handle_execute_stream(request: ExecuteRequest):
+    """Handle streaming execute requests."""
+    # Check if this is a chat-style request (has messages)
+    if "messages" in request.input and isinstance(request.input["messages"], list):
+        messages = request.input["messages"]
+        user_message = messages[-1]["content"] if messages else ""
+        response = f"You said: {user_message}"
+    else:
+        message = request.input.get("message", "")
+        response = f"Echo: {message}"
 
     # Stream the response word by word
-    words = f"Echo: {message}".split()
-    for i, word in enumerate(words):
-        chunk = word if i == 0 else f" {word}"
-        yield json.dumps({"chunk": chunk})
-
-
-@agent.on_chat_stream
-async def handle_chat_stream(request: ChatRequest):
-    """Handle streaming chat requests."""
-    user_message = request.messages[-1].content if request.messages else ""
-
-    # Stream the response word by word
-    words = f"You said: {user_message}".split()
+    words = response.split()
     for i, word in enumerate(words):
         chunk = word if i == 0 else f" {word}"
         yield json.dumps({"chunk": chunk})
@@ -118,16 +101,14 @@ if __name__ == "__main__":
     print("Custom Agent Example")
     print("=" * 40)
     print(f"Agent: {agent.name}")
-    print(f"Invoke streaming: {agent.invoke_streaming}")
-    print(f"Chat streaming: {agent.chat_streaming}")
+    print(f"Streaming: {agent.streaming}")
     print()
     print("Server running on http://localhost:8080")
     print()
     print("Endpoints:")
     print("  GET  /health")
     print("  GET  /info")
-    print("  POST /agents/echo/invoke")
-    print("  POST /agents/echo/chat")
+    print("  POST /agents/echo/execute")
     print()
 
     serve(agents=[agent], port=8080)

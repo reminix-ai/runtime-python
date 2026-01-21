@@ -35,8 +35,7 @@ serve(agents=[agent], port=8080)
 ```
 
 Your agent is now available at:
-- `POST /agents/my-chatbot/invoke` - Stateless invocation
-- `POST /agents/my-chatbot/chat` - Conversational chat
+- `POST /agents/my-chatbot/execute` - Execute the agent
 
 ## API Reference
 
@@ -87,28 +86,24 @@ serve(agents=[agent], port=8080)
 
 ## Endpoint Input/Output Formats
 
-### POST /agents/{name}/invoke
+### POST /agents/{name}/execute
 
-Stateless invocation for task-oriented operations.
+Execute the agent with a prompt or messages.
 
-**Request:**
+**Request with prompt:**
 ```json
 {
-  "input": {
-    "prompt": "Summarize this text: ..."
-  }
+  "prompt": "Summarize this text: ..."
 }
 ```
 
-Or with messages:
+**Request with messages:**
 ```json
 {
-  "input": {
-    "messages": [
-      {"role": "system", "content": "You are a helpful assistant."},
-      {"role": "user", "content": "Hello!"}
-    ]
-  }
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Hello!"}
+  ]
 }
 ```
 
@@ -119,29 +114,18 @@ Or with messages:
 }
 ```
 
-### POST /agents/{name}/chat
+### Streaming
 
-Conversational chat with message history.
+For streaming responses, set `stream: true` in the request:
 
-**Request:**
 ```json
 {
-  "messages": [
-    {"role": "user", "content": "What is the capital of France?"}
-  ]
+  "prompt": "Tell me a story",
+  "stream": true
 }
 ```
 
-**Response:**
-```json
-{
-  "output": "The capital of France is Paris.",
-  "messages": [
-    {"role": "user", "content": "What is the capital of France?"},
-    {"role": "assistant", "content": "The capital of France is Paris."}
-  ]
-}
-```
+The response will be sent as Server-Sent Events (SSE).
 
 ## Runtime Documentation
 

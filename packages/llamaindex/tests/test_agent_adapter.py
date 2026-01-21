@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from reminix_llamaindex import LlamaIndexAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, ChatRequest, InvokeRequest
+from reminix_runtime import AgentAdapter, ExecuteRequest
 
 
 class TestWrap:
@@ -37,117 +37,84 @@ class TestWrap:
         assert adapter.name == "llamaindex-agent"
 
 
-class TestLlamaIndexAgentAdapterInvoke:
-    """Tests for the invoke() method."""
+class TestLlamaIndexAgentAdapterExecute:
+    """Tests for the execute() method."""
 
     @pytest.mark.asyncio
-    async def test_invoke_calls_engine(self):
-        """invoke() should call the engine with query from input."""
+    async def test_execute_calls_engine(self):
+        """execute() should call the engine with query from input."""
         mock_engine = MagicMock()
         mock_response = MagicMock(response="Hello from LlamaIndex!")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_engine)
-        request = InvokeRequest(input={"query": "What is AI?"})
+        request = ExecuteRequest(input={"query": "What is AI?"})
 
-        response = await adapter.invoke(request)
+        response = await adapter.execute(request)
 
         mock_engine.achat.assert_called_once_with("What is AI?")
 
     @pytest.mark.asyncio
-    async def test_invoke_returns_output(self):
-        """invoke() should return the output from the engine."""
+    async def test_execute_returns_output(self):
+        """execute() should return the output from the engine."""
         mock_engine = MagicMock()
         mock_response = MagicMock(response="Hello from LlamaIndex!")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_engine)
-        request = InvokeRequest(input={"query": "Hi"})
+        request = ExecuteRequest(input={"query": "Hi"})
 
-        response = await adapter.invoke(request)
+        response = await adapter.execute(request)
 
-        assert response.output == "Hello from LlamaIndex!"
+        assert response["output"] == "Hello from LlamaIndex!"
 
     @pytest.mark.asyncio
-    async def test_invoke_with_prompt_input(self):
-        """invoke() should handle input with prompt key."""
+    async def test_execute_with_prompt_input(self):
+        """execute() should handle input with prompt key."""
         mock_engine = MagicMock()
         mock_response = MagicMock(response="Response")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_engine)
-        request = InvokeRequest(input={"prompt": "Tell me about AI"})
+        request = ExecuteRequest(input={"prompt": "Tell me about AI"})
 
-        response = await adapter.invoke(request)
+        response = await adapter.execute(request)
 
         mock_engine.achat.assert_called_once_with("Tell me about AI")
 
     @pytest.mark.asyncio
-    async def test_invoke_with_message_input(self):
-        """invoke() should handle input with message key."""
+    async def test_execute_with_message_input(self):
+        """execute() should handle input with message key."""
         mock_engine = MagicMock()
         mock_response = MagicMock(response="Response")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_engine)
-        request = InvokeRequest(input={"message": "Hello there"})
+        request = ExecuteRequest(input={"message": "Hello there"})
 
-        response = await adapter.invoke(request)
+        response = await adapter.execute(request)
 
         mock_engine.achat.assert_called_once_with("Hello there")
 
-
-class TestLlamaIndexAgentAdapterChat:
-    """Tests for the chat() method."""
-
     @pytest.mark.asyncio
-    async def test_chat_calls_engine(self):
-        """chat() should call the engine with the last user message."""
-        mock_engine = MagicMock()
-        mock_response = MagicMock(response="Hello!")
-        mock_engine.achat = AsyncMock(return_value=mock_response)
-
-        adapter = wrap_agent(mock_engine)
-        request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
-
-        response = await adapter.chat(request)
-
-        mock_engine.achat.assert_called_once_with("Hi")
-
-    @pytest.mark.asyncio
-    async def test_chat_returns_output_and_messages(self):
-        """chat() should return output and messages."""
-        mock_engine = MagicMock()
-        mock_response = MagicMock(response="Chat response")
-        mock_engine.achat = AsyncMock(return_value=mock_response)
-
-        adapter = wrap_agent(mock_engine)
-        request = ChatRequest(messages=[{"role": "user", "content": "Hi"}])
-
-        response = await adapter.chat(request)
-
-        assert response.output == "Chat response"
-        assert len(response.messages) == 2
-        assert response.messages[-1]["role"] == "assistant"
-        assert response.messages[-1]["content"] == "Chat response"
-
-    @pytest.mark.asyncio
-    async def test_chat_uses_last_user_message(self):
-        """chat() should use the last user message in the conversation."""
+    async def test_execute_with_messages_input(self):
+        """execute() should use last user message from messages input."""
         mock_engine = MagicMock()
         mock_response = MagicMock(response="Response")
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_engine)
-        request = ChatRequest(
-            messages=[
-                {"role": "user", "content": "First message"},
-                {"role": "assistant", "content": "Response 1"},
-                {"role": "user", "content": "Second message"},
-            ]
+        request = ExecuteRequest(
+            input={
+                "messages": [
+                    {"role": "user", "content": "First message"},
+                    {"role": "assistant", "content": "Response 1"},
+                    {"role": "user", "content": "Second message"},
+                ]
+            }
         )
 
-        await adapter.chat(request)
+        await adapter.execute(request)
 
         mock_engine.achat.assert_called_once_with("Second message")
 

@@ -5,18 +5,16 @@ from httpx import ASGITransport, AsyncClient
 
 from reminix_runtime import (
     AgentAdapter,
-    ChatRequest,
-    ChatResponse,
-    InvokeRequest,
-    InvokeResponse,
+    ExecuteRequest,
+    ExecuteResponse,
     __version__,
     tool,
 )
 from reminix_runtime.server import create_app
 
 
-class MockAdapter(AgentAdapter):
-    """A mock adapter for testing."""
+class MockTaskAdapter(AgentAdapter):
+    """A mock adapter for testing task-style requests."""
 
     adapter_name = "mock"
 
@@ -27,20 +25,43 @@ class MockAdapter(AgentAdapter):
     def name(self) -> str:
         return self._name
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        task = request.input.get("task", "unknown")
-        return InvokeResponse(output=f"Completed task: {task}")
+    @property
+    def metadata(self) -> dict:
+        return {
+            **super().metadata,
+            "requestKeys": ["task"],
+            "responseKeys": ["output"],
+        }
 
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        user_message = request.messages[-1].content
-        response_content = f"Chat response to: {user_message}"
-        return ChatResponse(
-            output=response_content,
-            messages=[
-                *[{"role": m.role, "content": m.content} for m in request.messages],
-                {"role": "assistant", "content": response_content},
-            ],
-        )
+    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+        task = request.input.get("task", "unknown")
+        return {"output": f"Completed task: {task}"}
+
+
+class MockChatAdapter(AgentAdapter):
+    """A mock adapter for testing chat-style requests."""
+
+    adapter_name = "mock"
+
+    def __init__(self, name: str = "mock-agent"):
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def metadata(self) -> dict:
+        return {
+            **super().metadata,
+            "requestKeys": ["messages"],
+            "responseKeys": ["message"],
+        }
+
+    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+        messages = request.input.get("messages", [])
+        user_message = messages[-1]["content"] if messages else ""
+        return {"message": {"role": "assistant", "content": f"Chat response to: {user_message}"}}
 
 
 class TestCreateApp:
@@ -48,7 +69,7 @@ class TestCreateApp:
 
     def test_create_app_returns_fastapi_app(self):
         """create_app should return a FastAPI application."""
-        app = create_app(agents=[MockAdapter()])
+        app = create_app(agents=[MockTaskAdapter()])
         # FastAPI apps have a 'routes' attribute
         assert hasattr(app, "routes")
 
@@ -75,7 +96,7 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_health_endpoint(self):
         """GET /health should return 200 OK."""
-        app = create_app(agents=[MockAdapter()])
+        app = create_app(agents=[MockTaskAdapter()])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/health")
 
@@ -89,7 +110,7 @@ class TestInfoEndpoint:
     @pytest.mark.asyncio
     async def test_info_endpoint(self):
         """GET /info should return runtime info and agents."""
-        app = create_app(agents=[MockAdapter("agent-one"), MockAdapter("agent-two")])
+        app = create_app(agents=[MockTaskAdapter("agent-one"), MockTaskAdapter("agent-two")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/info")
 
@@ -107,21 +128,21 @@ class TestInfoEndpoint:
         assert data["agents"][0]["name"] == "agent-one"
         assert data["agents"][0]["type"] == "adapter"
         assert data["agents"][0]["adapter"] == "mock"
-        assert data["agents"][0]["invoke"]["streaming"] is True
-        assert data["agents"][0]["chat"]["streaming"] is True
+        assert data["agents"][0]["streaming"] is True
 
 
-class TestInvokeEndpoint:
-    """Tests for the invoke endpoint."""
+class TestExecuteEndpoint:
+    """Tests for the execute endpoint."""
 
     @pytest.mark.asyncio
-    async def test_invoke_success(self):
-        """POST /agents/{agent}/invoke should return invoke response."""
-        app = create_app(agents=[MockAdapter("my-agent")])
+    async def test_execute_success(self):
+        """POST /agents/{agent}/execute should return execute response."""
+        app = create_app(agents=[MockTaskAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            # Request body has top-level keys matching requestKeys: ['task']
             response = await client.post(
-                "/agents/my-agent/invoke",
-                json={"input": {"task": "summarize"}},
+                "/agents/my-agent/execute",
+                json={"task": "summarize"},
             )
 
         assert response.status_code == 200
@@ -129,14 +150,14 @@ class TestInvokeEndpoint:
         assert data["output"] == "Completed task: summarize"
 
     @pytest.mark.asyncio
-    async def test_invoke_with_context(self):
-        """POST /agents/{agent}/invoke should accept context."""
-        app = create_app(agents=[MockAdapter("my-agent")])
+    async def test_execute_with_context(self):
+        """POST /agents/{agent}/execute should accept context."""
+        app = create_app(agents=[MockTaskAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/agents/my-agent/invoke",
+                "/agents/my-agent/execute",
                 json={
-                    "input": {"task": "test"},
+                    "task": "test",
                     "context": {"user_id": "123"},
                 },
             )
@@ -144,60 +165,33 @@ class TestInvokeEndpoint:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_invoke_unknown_agent_returns_404(self):
-        """POST /agents/{agent}/invoke should return 404 for unknown agent."""
-        app = create_app(agents=[MockAdapter("my-agent")])
+    async def test_execute_unknown_agent_returns_404(self):
+        """POST /agents/{agent}/execute should return 404 for unknown agent."""
+        app = create_app(agents=[MockTaskAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/agents/unknown-agent/invoke",
-                json={"input": {"task": "test"}},
+                "/agents/unknown-agent/execute",
+                json={"task": "test"},
             )
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
-    async def test_invoke_invalid_request_returns_422(self):
-        """POST /agents/{agent}/invoke should return 422 for invalid request."""
-        app = create_app(agents=[MockAdapter("my-agent")])
+    async def test_execute_with_messages_input(self):
+        """POST /agents/{agent}/execute should handle chat-style input."""
+        app = create_app(agents=[MockChatAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            # Request body has top-level keys matching requestKeys: ['messages']
             response = await client.post(
-                "/agents/my-agent/invoke",
-                json={"input": {}},  # Empty input not allowed
-            )
-
-        assert response.status_code == 422
-
-
-class TestChatEndpoint:
-    """Tests for the chat endpoint."""
-
-    @pytest.mark.asyncio
-    async def test_chat_success(self):
-        """POST /agents/{agent}/chat should return chat response."""
-        app = create_app(agents=[MockAdapter("my-agent")])
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.post(
-                "/agents/my-agent/chat",
+                "/agents/my-agent/execute",
                 json={"messages": [{"role": "user", "content": "hi there"}]},
             )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["output"] == "Chat response to: hi there"
-        assert len(data["messages"]) == 2  # user message + assistant response
-
-    @pytest.mark.asyncio
-    async def test_chat_unknown_agent_returns_404(self):
-        """POST /agents/{agent}/chat should return 404 for unknown agent."""
-        app = create_app(agents=[MockAdapter("my-agent")])
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.post(
-                "/agents/unknown-agent/chat",
-                json={"messages": [{"role": "user", "content": "hello"}]},
-            )
-
-        assert response.status_code == 404
+        assert data["message"]["role"] == "assistant"
+        assert data["message"]["content"] == "Chat response to: hi there"
 
 
 class TestToolExecuteEndpoint:
@@ -277,7 +271,7 @@ class TestToolExecuteEndpoint:
                 json={"input": {"param": "test"}},
             )
 
-        assert response.status_code == 200  # Tool errors are returned in response, not HTTP errors
+        assert response.status_code == 200  # Tool errors are returned in response
         data = response.json()
         assert data["output"] is None
         assert data["error"] == "Something went wrong"
@@ -338,7 +332,7 @@ class TestInfoEndpointWithTools:
             """A test tool."""
             return {"param": param}
 
-        app = create_app(agents=[MockAdapter("my-agent")], tools=[my_tool])
+        app = create_app(agents=[MockTaskAdapter("my-agent")], tools=[my_tool])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/info")
 

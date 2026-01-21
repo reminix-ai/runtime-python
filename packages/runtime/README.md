@@ -17,13 +17,13 @@ pip install reminix-runtime
 ```python
 from reminix_runtime import agent, chat_agent, serve, Message
 
-# Create an invoke agent
+# Create an agent for task-oriented operations
 @agent
 async def calculator(a: float, b: float) -> float:
     """Add two numbers."""
     return a + b
 
-# Create a chat agent
+# Create a chat agent for conversational interactions
 @chat_agent
 async def assistant(messages: list[Message]) -> str:
     """A helpful assistant."""
@@ -41,8 +41,7 @@ The runtime creates a REST server with the following endpoints:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Runtime discovery (version, agents, tools) |
-| `/agents/{name}/invoke` | POST | Stateless invocation |
-| `/agents/{name}/chat` | POST | Conversational chat |
+| `/agents/{name}/execute` | POST | Execute an agent |
 | `/tools/{name}/execute` | POST | Execute a tool |
 
 ### Health Endpoint
@@ -80,12 +79,13 @@ Returns runtime information, available agents, and tools:
         "required": ["a", "b"]
       },
       "output": { "type": "number" },
-      "invoke": { "streaming": false },
-      "chat": { "streaming": false }
+      "requestKeys": ["a", "b"],
+      "responseKeys": ["output"],
+      "streaming": false
     },
     {
       "name": "assistant",
-      "type": "agent",
+      "type": "chat_agent",
       "description": "A helpful assistant.",
       "parameters": {
         "type": "object",
@@ -97,9 +97,10 @@ Returns runtime information, available agents, and tools:
         },
         "required": ["messages"]
       },
-      "output": { "type": "string" },
-      "invoke": { "streaming": false },
-      "chat": { "streaming": false }
+      "output": { "type": "object" },
+      "requestKeys": ["messages"],
+      "responseKeys": ["message"],
+      "streaming": false
     }
   ],
   "tools": [
@@ -114,14 +115,17 @@ Returns runtime information, available agents, and tools:
 }
 ```
 
-### Invoke Endpoint
+### Agent Execute Endpoint
 
-`POST /agents/{name}/invoke` - For stateless operations.
+`POST /agents/{name}/execute` - Execute an agent.
 
+Request keys are defined by the agent's `parameters` schema. For example, a calculator agent with `parameters: { properties: { a, b } }` expects `a` and `b` at the top level:
+
+**Task-oriented agent:**
 ```bash
-curl -X POST http://localhost:8080/agents/calculator/invoke \
+curl -X POST http://localhost:8080/agents/calculator/execute \
   -H "Content-Type: application/json" \
-  -d '{"input": {"a": 5, "b": 3}}'
+  -d '{"a": 5, "b": 3}'
 ```
 
 **Response:**
@@ -131,12 +135,12 @@ curl -X POST http://localhost:8080/agents/calculator/invoke \
 }
 ```
 
-### Chat Endpoint
+**Chat agent:**
 
-`POST /agents/{name}/chat` - For conversational interactions.
+Chat agents expect `messages` at the top level and return `message`:
 
 ```bash
-curl -X POST http://localhost:8080/agents/assistant/chat \
+curl -X POST http://localhost:8080/agents/assistant/execute \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [
@@ -148,11 +152,10 @@ curl -X POST http://localhost:8080/agents/assistant/chat \
 **Response:**
 ```json
 {
-  "output": "You said: Hello!",
-  "messages": [
-    {"role": "user", "content": "Hello!"},
-    {"role": "assistant", "content": "You said: Hello!"}
-  ]
+  "message": {
+    "role": "assistant",
+    "content": "You said: Hello!"
+  }
 }
 ```
 
@@ -163,7 +166,7 @@ curl -X POST http://localhost:8080/agents/assistant/chat \
 ```bash
 curl -X POST http://localhost:8080/tools/get_weather/execute \
   -H "Content-Type: application/json" \
-  -d '{"input": {"location": "San Francisco"}}'
+  -d '{"location": "San Francisco"}'
 ```
 
 **Response:**
@@ -175,11 +178,11 @@ curl -X POST http://localhost:8080/tools/get_weather/execute \
 
 ## Agents
 
-Agents handle requests via the `/agents/{name}/invoke` or `/agents/{name}/chat` endpoints.
+Agents handle requests via the `/agents/{name}/execute` endpoint.
 
-### Invoke Agent
+### Task-Oriented Agent
 
-Use `@agent` for task-oriented agents that take input and return output:
+Use `@agent` for task-oriented agents that take structured input and return output:
 
 ```python
 from reminix_runtime import agent, serve
@@ -237,7 +240,7 @@ Both decorators support streaming via async generators. When you use `yield` ins
 ```python
 from reminix_runtime import agent, chat_agent, serve, Message
 
-# Streaming invoke agent
+# Streaming task agent
 @agent
 async def streamer(text: str):
     """Stream text word by word."""
@@ -360,7 +363,7 @@ app = create_app(agents=[my_agent], tools=[my_tool])
 
 ### `@agent`
 
-Decorator to create an invoke agent from a function.
+Decorator to create a task-oriented agent from a function.
 
 ```python
 from reminix_runtime import agent
@@ -428,48 +431,50 @@ def another_tool(x: int) -> int:
 ### Request/Response Types
 
 ```python
-class InvokeRequest:
-    input: dict[str, Any]      # Arbitrary input for task execution
-    stream: bool = False       # Whether to stream the response
-    context: dict[str, Any] | None  # Optional metadata
+# Request: top-level keys based on agent's requestKeys (derived from parameters)
+# For a calculator agent with parameters { a: float, b: float }:
+# {
+#   "a": 5,                         # Top-level key from parameters
+#   "b": 3,                         # Top-level key from parameters  
+#   "stream": false,                # Whether to stream the response
+#   "context": { ... }              # Optional metadata
+# }
 
-class InvokeResponse:
-    output: Any                # The result (can be any type)
+# For a chat agent:
+# {
+#   "messages": [...],              # Top-level key (requestKeys: ['messages'])
+#   "stream": false,
+#   "context": { ... }
+# }
 
-class ChatRequest:
-    messages: list[Message]    # Conversation history
-    stream: bool = False       # Whether to stream the response
-    context: dict[str, Any] | None  # Optional metadata
+# Response: keys based on agent's responseKeys
+# Regular agent (responseKeys: ['output']):
+# { "output": ... }
 
-class ChatResponse:
-    output: str                # The final answer
-    messages: list[dict]       # Full execution history
+# Chat agent (responseKeys: ['message']):
+# { "message": { "role": "assistant", "content": "..." } }
 ```
 
 ## Advanced
 
 ### Agent Class
 
-For more control, you can use the `Agent` class directly. This is useful when you need both invoke and chat handlers on the same agent, or want more programmatic control.
+For more control, you can use the `Agent` class directly:
 
 ```python
-from reminix_runtime import Agent, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse, serve
+from reminix_runtime import Agent, ExecuteRequest, ExecuteResponse, serve
 
 agent = Agent("my-agent", metadata={"version": "1.0"})
 
-@agent.on_invoke
-async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
-    return InvokeResponse(output="Hello!")
+@agent.on_execute
+async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
+    return ExecuteResponse(output="Hello!")
 
-@agent.on_chat
-async def handle_chat(request: ChatRequest) -> ChatResponse:
-    return ChatResponse(output="Hi!", messages=[...])
-
-# Optional: separate streaming handlers
-@agent.on_invoke_stream
-async def handle_invoke_stream(request: InvokeRequest):
-    yield '{"chunk": "Hello"}'
-    yield '{"chunk": " world!"}'
+# Optional: streaming handler
+@agent.on_execute_stream
+async def handle_execute_stream(request: ExecuteRequest):
+    yield "Hello"
+    yield " world!"
 
 serve(agents=[agent], port=8080)
 ```
@@ -499,7 +504,7 @@ serve(tools=[my_tool], port=8080)
 For building framework integrations. See the [framework adapter packages](#framework-adapters) for examples.
 
 ```python
-from reminix_runtime import AgentAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse
+from reminix_runtime import AgentAdapter, ExecuteRequest, ExecuteResponse
 
 class MyFrameworkAdapter(AgentAdapter):
     adapter_name = "my-framework"
@@ -512,19 +517,9 @@ class MyFrameworkAdapter(AgentAdapter):
     def name(self) -> str:
         return self._name
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
+    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
         result = await self._client.run(request.input)
-        return InvokeResponse(output=result)
-
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        result = await self._client.chat(request.messages)
-        return ChatResponse(
-            output=result,
-            messages=[
-                *[{"role": m.role, "content": m.content} for m in request.messages],
-                {"role": "assistant", "content": result}
-            ]
-        )
+        return ExecuteResponse(output=result)
 ```
 
 ### Serverless Deployment
@@ -534,7 +529,7 @@ Use `to_asgi()` for serverless deployments:
 ```python
 # AWS Lambda with Mangum
 from mangum import Mangum
-from reminix_runtime import agent, InvokeResponse
+from reminix_runtime import agent, ExecuteResponse
 
 @agent
 async def my_agent(task: str) -> str:

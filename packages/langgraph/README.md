@@ -39,8 +39,7 @@ serve(agents=[agent], port=8080)
 ```
 
 Your agent is now available at:
-- `POST /agents/my-agent/invoke` - Stateless invocation
-- `POST /agents/my-agent/chat` - Conversational chat
+- `POST /agents/my-agent/execute` - Execute the agent
 
 ## API Reference
 
@@ -76,18 +75,16 @@ LangGraph uses a state-based approach. The adapter:
 
 ## Endpoint Input/Output Formats
 
-### POST /agents/{name}/invoke
+### POST /agents/{name}/execute
 
-Stateless invocation. Input is passed directly to the graph.
+Execute the graph. Input keys are passed directly to the graph.
 
 **Request:**
 ```json
 {
-  "input": {
-    "messages": [
-      {"role": "user", "content": "Hello!"}
-    ]
-  }
+  "messages": [
+    {"role": "user", "content": "Hello!"}
+  ]
 }
 ```
 
@@ -98,29 +95,18 @@ Stateless invocation. Input is passed directly to the graph.
 }
 ```
 
-### POST /agents/{name}/chat
+### Streaming
 
-Conversational chat with message history.
+For streaming responses, set `stream: true` in the request:
 
-**Request:**
 ```json
 {
-  "messages": [
-    {"role": "user", "content": "What is the capital of France?"}
-  ]
+  "messages": [{"role": "user", "content": "Hello!"}],
+  "stream": true
 }
 ```
 
-**Response:**
-```json
-{
-  "output": "The capital of France is Paris.",
-  "messages": [
-    {"role": "user", "content": "What is the capital of France?"},
-    {"role": "assistant", "content": "The capital of France is Paris."}
-  ]
-}
-```
+The response will be sent as Server-Sent Events (SSE).
 
 ## Runtime Documentation
 

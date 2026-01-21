@@ -8,10 +8,8 @@ from anthropic import AsyncAnthropic
 
 from reminix_runtime import (
     AgentAdapter,
-    ChatRequest,
-    ChatResponse,
-    InvokeRequest,
-    InvokeResponse,
+    ExecuteRequest,
+    ExecuteResponse,
     Message,
     serve,
 )
@@ -84,33 +82,30 @@ class AnthropicAgentAdapter(AgentAdapter):
                 return block.text
         return ""
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        """Handle an invoke request.
+    def _build_messages_from_input(self, request: ExecuteRequest) -> list[Message]:
+        """Build Message list from execute request input."""
+        # Check if input contains messages (chat-style)
+        if "messages" in request.input:
+            messages_data = request.input["messages"]
+            return [Message(**m) if isinstance(m, dict) else m for m in messages_data]
+        elif "prompt" in request.input:
+            return [Message(role="user", content=request.input["prompt"])]
+        else:
+            return [Message(role="user", content=str(request.input))]
 
-        For task-oriented operations. Expects input with 'messages' key
+    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+        """Handle an execute request.
+
+        For both task-oriented and chat-style operations. Expects input with 'messages' key
         or a 'prompt' key for simple text generation.
 
         Args:
-            request: The invoke request with input data.
+            request: The execute request with input data.
 
         Returns:
-            The invoke response with the output.
+            The execute response with the output.
         """
-        # Check if input contains messages
-        if "messages" in request.input:
-            messages_data = request.input["messages"]
-            # Convert to Message objects for processing
-            from reminix_runtime.types import Message
-
-            messages = [Message(**m) if isinstance(m, dict) else m for m in messages_data]
-        elif "prompt" in request.input:
-            from reminix_runtime.types import Message
-
-            messages = [Message(role="user", content=request.input["prompt"])]
-        else:
-            from reminix_runtime.types import Message
-
-            messages = [Message(role="user", content=str(request.input))]
+        messages = self._build_messages_from_input(request)
 
         # Extract system message and convert messages
         system_message, anthropic_messages = self._extract_system_and_messages(messages)
@@ -130,97 +125,21 @@ class AnthropicAgentAdapter(AgentAdapter):
         # Extract content from response
         output = self._extract_content(response)
 
-        return InvokeResponse(output=output)
+        return {"output": output}
 
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Handle a chat request.
-
-        For conversational interactions.
+    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
+        """Handle a streaming execute request.
 
         Args:
-            request: The chat request with messages.
-
-        Returns:
-            The chat response with output and messages.
-        """
-        # Extract system message and convert messages
-        system_message, anthropic_messages = self._extract_system_and_messages(request.messages)
-
-        # Build API call kwargs
-        kwargs: dict[str, Any] = {
-            "model": self._model,
-            "max_tokens": self._max_tokens,
-            "messages": anthropic_messages,
-        }
-        if system_message:
-            kwargs["system"] = system_message
-
-        # Call Anthropic API
-        response = await self._client.messages.create(**kwargs)
-
-        # Extract content from response
-        output = self._extract_content(response)
-
-        # Build response messages (original + assistant response)
-        response_messages: list[dict[str, Any]] = [
-            {"role": m.role, "content": m.content} for m in request.messages
-        ]
-        response_messages.append({"role": "assistant", "content": output})
-
-        return ChatResponse(output=output, messages=response_messages)
-
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request.
-
-        Args:
-            request: The invoke request with input data.
+            request: The execute request with input data.
 
         Yields:
             JSON-encoded chunks from the stream.
         """
-        # Build messages from input
-        if "messages" in request.input:
-            messages_data = request.input["messages"]
-            from reminix_runtime.types import Message
-
-            messages = [Message(**m) if isinstance(m, dict) else m for m in messages_data]
-        elif "prompt" in request.input:
-            from reminix_runtime.types import Message
-
-            messages = [Message(role="user", content=request.input["prompt"])]
-        else:
-            from reminix_runtime.types import Message
-
-            messages = [Message(role="user", content=str(request.input))]
+        messages = self._build_messages_from_input(request)
 
         # Extract system message and convert messages
         system_message, anthropic_messages = self._extract_system_and_messages(messages)
-
-        # Build API call kwargs
-        kwargs: dict[str, Any] = {
-            "model": self._model,
-            "max_tokens": self._max_tokens,
-            "messages": anthropic_messages,
-        }
-        if system_message:
-            kwargs["system"] = system_message
-
-        # Stream from Anthropic API
-        async with self._client.messages.stream(**kwargs) as stream:
-            async for text in stream.text_stream:
-                yield json.dumps({"chunk": text})
-
-    async def chat_stream(self, request: ChatRequest) -> AsyncIterator[str]:
-        """Handle a streaming chat request.
-
-        Args:
-            request: The chat request with messages.
-
-        Yields:
-            JSON-encoded chunks from the stream.
-        """
-        # Extract system message and convert messages
-        system_message, anthropic_messages = self._extract_system_and_messages(request.messages)
 
         # Build API call kwargs
         kwargs: dict[str, Any] = {

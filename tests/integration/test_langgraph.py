@@ -48,7 +48,7 @@ class TestLangGraphAdapter:
     async def test_invoke(self, client):
         """Test invoke endpoint."""
         response = await client.post(
-            "/agents/test-langgraph/invoke",
+            "/agents/test-langgraph/execute",
             json={
                 "input": {
                     "messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]
@@ -63,7 +63,7 @@ class TestLangGraphAdapter:
     async def test_chat(self, client):
         """Test chat endpoint."""
         response = await client.post(
-            "/agents/test-langgraph/chat",
+            "/agents/test-langgraph/execute",
             json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
         )
 
@@ -75,7 +75,7 @@ class TestLangGraphAdapter:
     async def test_tool_calling(self, client):
         """Test that the agent calls tools and returns results."""
         response = await client.post(
-            "/agents/test-langgraph/chat",
+            "/agents/test-langgraph/execute",
             json={"messages": [{"role": "user", "content": "What's the weather in Paris?"}]},
         )
 

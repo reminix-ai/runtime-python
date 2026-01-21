@@ -18,33 +18,18 @@ class Message(BaseModel):
     name: str | None = None
 
 
-class InvokeRequest(BaseModel):
-    """Request for invoke endpoint."""
+class ExecuteRequest(BaseModel):
+    """Request for agent execute endpoint."""
 
-    input: dict[str, Any] = Field(..., min_length=1)
+    input: dict[str, Any] = Field(default_factory=dict)
     stream: bool = False
     context: dict[str, Any] | None = None
 
 
-class InvokeResponse(BaseModel):
-    """Response from invoke endpoint."""
-
-    output: Any
-
-
-class ChatRequest(BaseModel):
-    """Request for chat endpoint."""
-
-    messages: list[Message] = Field(..., min_length=1)
-    stream: bool = False
-    context: dict[str, Any] | None = None
-
-
-class ChatResponse(BaseModel):
-    """Response from chat endpoint."""
-
-    output: str
-    messages: list[dict[str, Any]]
+# ExecuteResponse is now a dict with dynamic keys based on agent's responseKeys
+# - Regular agents: { "output": ... }
+# - Chat agents: { "message": { "role": "assistant", "content": "..." } }
+ExecuteResponse = dict[str, Any]
 
 
 # Tool types
