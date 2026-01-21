@@ -441,6 +441,51 @@ def _extract_parameters_from_function(
     return {"type": "object", "properties": properties, "required": required}, output_schema
 
 
+def _wrap_output_schema_for_response_keys(
+    output_schema: dict[str, Any] | None, response_keys: list[str]
+) -> dict[str, Any] | None:
+    """Wrap output schema to match the full response structure based on responseKeys.
+
+    If responseKeys = ["output"], wraps the schema as { output: <schema> }
+    If responseKeys = ["message"], wraps the schema as { message: <schema> }
+    If responseKeys = ["message", "output"], wraps as { message: <schema>, output: <schema> }
+
+    Args:
+        output_schema: The schema for the return value (or None)
+        response_keys: List of top-level response keys
+
+    Returns:
+        Wrapped schema describing the full response object, or None if output_schema is None
+    """
+    if output_schema is None or not response_keys:
+        return None
+
+    # If single response key, wrap the output schema
+    if len(response_keys) == 1:
+        return {
+            "type": "object",
+            "properties": {response_keys[0]: output_schema},
+            "required": response_keys,
+        }
+
+    # Multiple response keys - need to split the output schema
+    # For now, assume the output schema describes the first key's value
+    # and other keys are optional/unknown
+    properties: dict[str, Any] = {response_keys[0]: output_schema}
+    required = [response_keys[0]]
+
+    # For additional keys, we don't know their schema, so mark as optional
+    # Users can override via metadata if they need full schema
+    for key in response_keys[1:]:
+        properties[key] = {"type": "object"}  # Placeholder - should be overridden
+
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": required,
+    }
+
+
 def agent(
     func: Callable[..., Any] | None = None,
     *,
@@ -491,7 +536,12 @@ def agent(
 
         # Derive requestKeys from parameters properties
         request_keys = list(parameters.get("properties", {}).keys())
+        
+        # Default responseKeys (can be overridden via metadata)
         response_keys = ["output"]
+
+        # Wrap output schema to match responseKeys structure
+        wrapped_output = _wrap_output_schema_for_response_keys(output, response_keys)
 
         # Build metadata
         metadata: dict[str, Any] = {
@@ -500,8 +550,8 @@ def agent(
             "requestKeys": request_keys,
             "responseKeys": response_keys,
         }
-        if output is not None:
-            metadata["output"] = output
+        if wrapped_output is not None:
+            metadata["output"] = wrapped_output
 
         # Create agent instance
         agent_instance = Agent(
@@ -620,7 +670,7 @@ def chat_agent(
         sig = inspect.signature(f)
         accepts_context = "context" in sig.parameters
 
-        # Chat agents have fixed request/response keys
+        # Chat agents have default request/response keys (can be overridden via metadata)
         request_keys = ["messages"]
         response_keys = ["message"]
 
@@ -642,7 +692,8 @@ def chat_agent(
             },
             "required": ["messages"],
         }
-        output_schema = {
+        # Message schema (the value, not the full response)
+        message_schema = {
             "type": "object",
             "properties": {
                 "role": {"type": "string"},
@@ -651,17 +702,24 @@ def chat_agent(
             "required": ["role", "content"],
         }
 
+        # Wrap message schema to match responseKeys structure
+        wrapped_output = _wrap_output_schema_for_response_keys(message_schema, response_keys)
+
+        # Build metadata
+        metadata: dict[str, Any] = {
+            "type": "chat_agent",
+            "description": agent_description,
+            "parameters": parameters_schema,
+            "requestKeys": request_keys,
+            "responseKeys": response_keys,
+        }
+        if wrapped_output is not None:
+            metadata["output"] = wrapped_output
+
         # Create agent instance
         agent_instance = Agent(
             agent_name,
-            metadata={
-                "type": "chat_agent",
-                "description": agent_description,
-                "parameters": parameters_schema,
-                "output": output_schema,
-                "requestKeys": request_keys,
-                "responseKeys": response_keys,
-            },
+            metadata=metadata,
         )
 
         # Helper to get response key from metadata (allows override)
