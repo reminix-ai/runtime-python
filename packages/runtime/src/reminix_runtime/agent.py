@@ -536,7 +536,7 @@ def agent(
 
         # Derive requestKeys from parameters properties
         request_keys = list(parameters.get("properties", {}).keys())
-        
+
         # Default responseKeys (can be overridden via metadata)
         response_keys = ["output"]
 

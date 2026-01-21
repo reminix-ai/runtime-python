@@ -247,7 +247,7 @@ class TestAgentDecorator:
         assert params["properties"]["count"]["default"] == 5
 
     def test_agent_decorator_extracts_output(self):
-        """@agent decorator extracts output schema from return type."""
+        """@agent decorator extracts output schema from return type and wraps it."""
 
         @agent
         async def calculator(a: float, b: float) -> float:
@@ -256,10 +256,13 @@ class TestAgentDecorator:
 
         output = calculator.metadata.get("output")
         assert output is not None
-        assert output["type"] == "number"
+        assert output["type"] == "object"
+        assert "output" in output["properties"]
+        assert output["properties"]["output"]["type"] == "number"
+        assert output["required"] == ["output"]
 
     def test_agent_decorator_output_dict_type(self):
-        """@agent decorator handles dict return type."""
+        """@agent decorator handles dict return type and wraps it."""
 
         @agent
         async def get_data(key: str) -> dict:
@@ -269,6 +272,9 @@ class TestAgentDecorator:
         output = get_data.metadata.get("output")
         assert output is not None
         assert output["type"] == "object"
+        assert "output" in output["properties"]
+        assert output["properties"]["output"]["type"] == "object"
+        assert output["required"] == ["output"]
 
     def test_agent_decorator_no_output_when_no_return_type(self):
         """@agent decorator omits output when no return type hint."""
@@ -398,7 +404,7 @@ class TestChatAgentDecorator:
         assert "messages" in params["required"]
 
     def test_chat_agent_decorator_has_output_schema(self):
-        """@chat_agent decorator sets standard output schema (Message object)."""
+        """@chat_agent decorator sets standard output schema wrapped for response structure."""
 
         @chat_agent
         async def assistant(messages: list[Message]) -> Message:
@@ -407,8 +413,11 @@ class TestChatAgentDecorator:
 
         output = assistant.metadata["output"]
         assert output["type"] == "object"
-        assert "role" in output["properties"]
-        assert "content" in output["properties"]
+        assert "message" in output["properties"]
+        assert output["properties"]["message"]["type"] == "object"
+        assert "role" in output["properties"]["message"]["properties"]
+        assert "content" in output["properties"]["message"]["properties"]
+        assert output["required"] == ["message"]
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_execute(self):

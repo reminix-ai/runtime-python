@@ -78,7 +78,11 @@ Returns runtime information, available agents, and tools:
         "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
         "required": ["a", "b"]
       },
-      "output": { "type": "number" },
+      "output": {
+        "type": "object",
+        "properties": { "output": { "type": "number" } },
+        "required": ["output"]
+      },
       "requestKeys": ["a", "b"],
       "responseKeys": ["output"],
       "streaming": false
@@ -97,7 +101,20 @@ Returns runtime information, available agents, and tools:
         },
         "required": ["messages"]
       },
-      "output": { "type": "object" },
+      "output": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string" },
+              "content": { "type": "string" }
+            },
+            "required": ["role", "content"]
+          }
+        },
+        "required": ["message"]
+      },
       "requestKeys": ["messages"],
       "responseKeys": ["message"],
       "streaming": false
