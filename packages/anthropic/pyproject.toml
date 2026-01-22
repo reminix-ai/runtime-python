@@ -1,6 +1,6 @@
 [project]
 name = "reminix-anthropic"
-version = "0.0.10"
+version = "0.0.11"
 description = "Reminix adapter for Anthropic - serve agents as REST APIs"
 readme = "README.md"
 license = "Apache-2.0"
@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-    "reminix-runtime~=0.0.10",
+    "reminix-runtime~=0.0.11",
     "anthropic>=0.75.0",
 ]
 
