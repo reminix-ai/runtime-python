@@ -662,20 +662,53 @@ def chat_agent(
         request_keys = ["messages"]
         response_keys = ["messages"]
 
+        # Message item schema (shared between parameters and output)
+        message_item_schema = {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "type": "string",
+                    "enum": ["system", "user", "assistant", "tool"],
+                },
+                "content": {
+                    "type": ["string", "null"],
+                },
+                "name": {
+                    "type": "string",
+                },
+                "tool_call_id": {
+                    "type": "string",
+                },
+                "tool_calls": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string"},
+                            "type": {"type": "string", "enum": ["function"]},
+                            "function": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                    "arguments": {"type": "string"},
+                                },
+                                "required": ["name", "arguments"],
+                            },
+                        },
+                        "required": ["id", "type", "function"],
+                    },
+                },
+            },
+            "required": ["role"],
+        }
+
         # Define standard chat agent schemas
         parameters_schema = {
             "type": "object",
             "properties": {
                 "messages": {
                     "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "role": {"type": "string"},
-                            "content": {"type": "string"},
-                        },
-                        "required": ["role", "content"],
-                    },
+                    "items": message_item_schema,
                 }
             },
             "required": ["messages"],
@@ -683,14 +716,7 @@ def chat_agent(
         # Messages schema (array of messages, the value, not the full response)
         messages_schema = {
             "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "role": {"type": "string"},
-                    "content": {"type": "string"},
-                },
-                "required": ["role", "content"],
-            },
+            "items": message_item_schema,
         }
 
         # Wrap messages schema to match responseKeys structure
