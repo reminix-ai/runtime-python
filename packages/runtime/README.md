@@ -389,7 +389,7 @@ serve(agents=[summarizer], tools=[calculate], port=8080)
 
 ## Framework Adapters
 
-Instead of creating custom agents, use our pre-built adapters for popular frameworks:
+Already using a framework? Use our pre-built adapters:
 
 | Package | Framework |
 |---------|-----------|
