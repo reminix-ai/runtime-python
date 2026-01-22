@@ -608,28 +608,28 @@ def chat_agent(
 ) -> Agent | Callable[[Callable[..., Any]], Agent]:
     """Decorator to create a chat agent from a function.
 
-    The function receives messages and optionally context, returns a Message object.
+    The function receives messages and optionally context, returns a list of Message objects.
     Use async generator for streaming support.
 
     This is a convenience decorator that creates an agent with a standard chat
-    interface (messages in, message out).
+    interface (messages in, messages out).
 
     Request: { "messages": [...] }
-    Response: { "message": { "role": "assistant", "content": "..." } }
+    Response: { "messages": [{ "role": "assistant", "content": "..." }, ...] }
 
     Examples:
         @chat_agent
-        async def assistant(messages: list[Message]) -> Message:
+        async def assistant(messages: list[Message]) -> list[Message]:
             '''A helpful assistant.'''
             last_msg = messages[-1].content
-            return Message(role="assistant", content=f"You said: {last_msg}")
+            return [Message(role="assistant", content=f"You said: {last_msg}")]
 
         # With context
         @chat_agent
-        async def contextual_bot(messages: list[Message], context: dict | None = None) -> Message:
+        async def contextual_bot(messages: list[Message], context: dict | None = None) -> list[Message]:
             '''Bot with context.'''
             user_id = context.get("user_id") if context else None
-            return Message(role="assistant", content=f"Hello user {user_id}!")
+            return [Message(role="assistant", content=f"Hello user {user_id}!")]
 
         # Streaming (yields chunks, collected for non-streaming requests)
         @chat_agent
@@ -660,7 +660,7 @@ def chat_agent(
 
         # Chat agents have default request/response keys (can be overridden via metadata)
         request_keys = ["messages"]
-        response_keys = ["message"]
+        response_keys = ["messages"]
 
         # Define standard chat agent schemas
         parameters_schema = {
@@ -680,18 +680,21 @@ def chat_agent(
             },
             "required": ["messages"],
         }
-        # Message schema (the value, not the full response)
-        message_schema = {
-            "type": "object",
-            "properties": {
-                "role": {"type": "string"},
-                "content": {"type": "string"},
+        # Messages schema (array of messages, the value, not the full response)
+        messages_schema = {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "role": {"type": "string"},
+                    "content": {"type": "string"},
+                },
+                "required": ["role", "content"],
             },
-            "required": ["role", "content"],
         }
 
-        # Wrap message schema to match responseKeys structure
-        wrapped_output = _wrap_output_schema_for_response_keys(message_schema, response_keys)
+        # Wrap messages schema to match responseKeys structure
+        wrapped_output = _wrap_output_schema_for_response_keys(messages_schema, response_keys)
 
         # Build metadata
         metadata: dict[str, Any] = {
@@ -712,8 +715,8 @@ def chat_agent(
 
         # Helper to get response keys from metadata (allows override)
         def get_response_keys() -> list[str]:
-            keys = agent_instance.metadata.get("responseKeys", ["message"])
-            return keys if keys else ["message"]
+            keys = agent_instance.metadata.get("responseKeys", ["messages"])
+            return keys if keys else ["messages"]
 
         if is_streaming:
             # Register streaming execute handler
@@ -745,8 +748,8 @@ def chat_agent(
                         chunks.append(chunk)
                     else:
                         chunks.append(str(chunk))
-                result = {"role": "assistant", "content": "".join(chunks)}
-                # For chat agents, always wrap in first responseKey (typically "message")
+                result = [{"role": "assistant", "content": "".join(chunks)}]
+                # For chat agents, always wrap in first responseKey (typically "messages")
                 response_keys = get_response_keys()
                 return {response_keys[0]: result}
 
@@ -765,20 +768,26 @@ def chat_agent(
                 else:
                     result = f(**kwargs)
 
-                # Convert Message to dict if needed
-                if isinstance(result, Message):
-                    message_dict = {"role": result.role, "content": result.content}
+                # Convert list of Message objects to list of dicts
+                if isinstance(result, list):
+                    messages_list = [
+                        {"role": m.role, "content": m.content} if isinstance(m, Message) else m
+                        for m in result
+                    ]
+                elif isinstance(result, Message):
+                    # Single Message returned, wrap in list
+                    messages_list = [{"role": result.role, "content": result.content}]
                 else:
-                    message_dict = result
+                    messages_list = result
 
                 # Check if result is already a full response dict with all responseKeys
                 response_keys = get_response_keys()
-                if isinstance(message_dict, dict) and all(
-                    key in message_dict for key in response_keys
+                if isinstance(messages_list, dict) and all(
+                    key in messages_list for key in response_keys
                 ):
-                    return message_dict
-                # Otherwise wrap in first responseKey (typically "message" for chat agents)
-                return {response_keys[0]: message_dict}
+                    return messages_list
+                # Otherwise wrap in first responseKey (typically "messages" for chat agents)
+                return {response_keys[0]: messages_list}
 
             agent_instance.on_execute(execute_handler)
 

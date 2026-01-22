@@ -407,43 +407,45 @@ class TestChatAgentDecorator:
         """@chat_agent decorator sets standard output schema wrapped for response structure."""
 
         @chat_agent
-        async def assistant(messages: list[Message]) -> Message:
+        async def assistant(messages: list[Message]) -> list[Message]:
             """A helpful assistant."""
-            return Message(role="assistant", content="Hello!")
+            return [Message(role="assistant", content="Hello!")]
 
         output = assistant.metadata["output"]
         assert output["type"] == "object"
-        assert "message" in output["properties"]
-        assert output["properties"]["message"]["type"] == "object"
-        assert "role" in output["properties"]["message"]["properties"]
-        assert "content" in output["properties"]["message"]["properties"]
-        assert output["required"] == ["message"]
+        assert "messages" in output["properties"]
+        assert output["properties"]["messages"]["type"] == "array"
+        assert "role" in output["properties"]["messages"]["items"]["properties"]
+        assert "content" in output["properties"]["messages"]["items"]["properties"]
+        assert output["required"] == ["messages"]
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_execute(self):
         """@chat_agent decorated function can handle execute requests."""
 
         @chat_agent
-        async def echo_bot(messages: list[Message]) -> Message:
+        async def echo_bot(messages: list[Message]) -> list[Message]:
             """Echo the last message."""
             last_msg = messages[-1].content if messages else ""
-            return Message(role="assistant", content=f"You said: {last_msg}")
+            return [Message(role="assistant", content=f"You said: {last_msg}")]
 
         request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hello"}]})
         response = await echo_bot.execute(request)
 
-        assert response["message"]["role"] == "assistant"
-        assert response["message"]["content"] == "You said: hello"
+        assert response["messages"][0]["role"] == "assistant"
+        assert response["messages"][0]["content"] == "You said: hello"
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_with_context(self):
         """@chat_agent decorated function can receive context."""
 
         @chat_agent
-        async def contextual_bot(messages: list[Message], context: dict | None = None) -> Message:
+        async def contextual_bot(
+            messages: list[Message], context: dict | None = None
+        ) -> list[Message]:
             """Bot with context."""
             user_id = context.get("user_id") if context else "unknown"
-            return Message(role="assistant", content=f"Hello user {user_id}!")
+            return [Message(role="assistant", content=f"Hello user {user_id}!")]
 
         request = ExecuteRequest(
             input={"messages": [{"role": "user", "content": "hi"}]},
@@ -451,21 +453,21 @@ class TestChatAgentDecorator:
         )
         response = await contextual_bot.execute(request)
 
-        assert response["message"]["content"] == "Hello user 123!"
+        assert response["messages"][0]["content"] == "Hello user 123!"
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_sync_function(self):
         """@chat_agent decorator works with sync functions."""
 
         @chat_agent
-        def simple_bot(messages: list[Message]) -> Message:
+        def simple_bot(messages: list[Message]) -> list[Message]:
             """Simple sync bot."""
-            return Message(role="assistant", content="Hello from sync!")
+            return [Message(role="assistant", content="Hello from sync!")]
 
         request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hi"}]})
         response = await simple_bot.execute(request)
 
-        assert response["message"]["content"] == "Hello from sync!"
+        assert response["messages"][0]["content"] == "Hello from sync!"
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_streaming(self):
@@ -504,5 +506,5 @@ class TestChatAgentDecorator:
         request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hi"}]})
         response = await streaming_bot.execute(request)
 
-        assert response["message"]["role"] == "assistant"
-        assert response["message"]["content"] == "Hello world!"
+        assert response["messages"][0]["role"] == "assistant"
+        assert response["messages"][0]["content"] == "Hello world!"
