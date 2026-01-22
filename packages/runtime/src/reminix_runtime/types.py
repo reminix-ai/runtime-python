@@ -28,7 +28,7 @@ class ExecuteRequest(BaseModel):
 
 # ExecuteResponse is now a dict with dynamic keys based on agent's responseKeys
 # - Regular agents: { "output": ... }
-# - Chat agents: { "message": { "role": "assistant", "content": "..." } }
+# - Chat agents: { "messages": [{ "role": "assistant", "content": "..." }, ...] }
 ExecuteResponse = dict[str, Any]
 
 

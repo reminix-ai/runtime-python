@@ -55,13 +55,13 @@ class MockChatAdapter(AgentAdapter):
         return {
             **super().metadata,
             "requestKeys": ["messages"],
-            "responseKeys": ["message"],
+            "responseKeys": ["messages"],
         }
 
     async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
         messages = request.input.get("messages", [])
         user_message = messages[-1]["content"] if messages else ""
-        return {"message": {"role": "assistant", "content": f"Chat response to: {user_message}"}}
+        return {"messages": [{"role": "assistant", "content": f"Chat response to: {user_message}"}]}
 
 
 class TestCreateApp:
@@ -190,8 +190,8 @@ class TestExecuteEndpoint:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["message"]["role"] == "assistant"
-        assert data["message"]["content"] == "Chat response to: hi there"
+        assert data["messages"][0]["role"] == "assistant"
+        assert data["messages"][0]["content"] == "Chat response to: hi there"
 
 
 class TestToolExecuteEndpoint:

@@ -100,7 +100,7 @@ class TestExecuteResponse:
 
     ExecuteResponse is now a dict with dynamic keys based on agent's responseKeys.
     - Regular agents: { "output": ... }
-    - Chat agents: { "message": { "role": "assistant", "content": "..." } }
+    - Chat agents: { "messages": [{ "role": "assistant", "content": "..." }, ...] }
     """
 
     def test_execute_response_is_dict(self):
@@ -124,7 +124,7 @@ class TestExecuteResponse:
         assert resp["output"] == [1, 2, 3]
 
     def test_execute_response_chat_agent_format(self):
-        """Chat agents return { message: { role, content } }."""
-        resp: ExecuteResponse = {"message": {"role": "assistant", "content": "Hello!"}}
-        assert resp["message"]["role"] == "assistant"
-        assert resp["message"]["content"] == "Hello!"
+        """Chat agents return { messages: [{ role, content }, ...] }."""
+        resp: ExecuteResponse = {"messages": [{"role": "assistant", "content": "Hello!"}]}
+        assert resp["messages"][0]["role"] == "assistant"
+        assert resp["messages"][0]["content"] == "Hello!"

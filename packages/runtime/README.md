@@ -104,19 +104,22 @@ Returns runtime information, available agents, and tools:
       "output": {
         "type": "object",
         "properties": {
-          "message": {
-            "type": "object",
-            "properties": {
-              "role": { "type": "string" },
-              "content": { "type": "string" }
-            },
-            "required": ["role", "content"]
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": { "type": "string" },
+                "content": { "type": "string" }
+              },
+              "required": ["role", "content"]
+            }
           }
         },
-        "required": ["message"]
+        "required": ["messages"]
       },
       "requestKeys": ["messages"],
-      "responseKeys": ["message"],
+      "responseKeys": ["messages"],
       "streaming": false
     }
   ],
@@ -154,7 +157,7 @@ curl -X POST http://localhost:8080/agents/calculator/execute \
 
 **Chat agent:**
 
-Chat agents expect `messages` at the top level and return `message`:
+Chat agents expect `messages` at the top level and return `messages` (array):
 
 ```bash
 curl -X POST http://localhost:8080/agents/assistant/execute \
@@ -169,10 +172,12 @@ curl -X POST http://localhost:8080/agents/assistant/execute \
 **Response:**
 ```json
 {
-  "message": {
-    "role": "assistant",
-    "content": "You said: Hello!"
-  }
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "You said: Hello!"
+    }
+  ]
 }
 ```
 
@@ -522,8 +527,8 @@ def another_tool(x: int) -> int:
 # Regular agent (responseKeys: ['content']):
 # { "content": ... }
 
-# Chat agent (responseKeys: ['message']):
-# { "message": { "role": "assistant", "content": "..." } }
+# Chat agent (responseKeys: ['messages']):
+# { "messages": [{ "role": "assistant", "content": "..." }, ...] }
 ```
 
 ## Advanced
