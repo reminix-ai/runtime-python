@@ -1,5 +1,11 @@
 # Reminix Runtime (Python)
 
+The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
+
+Deploy to [Reminix Cloud](https://reminix.com) for zero-config hosting, or self-host anywhere.
+
+---
+
 A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framework and get an execute endpoint with built-in streaming.
 
 **Features:**

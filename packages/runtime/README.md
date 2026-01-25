@@ -1,5 +1,7 @@
 # reminix-runtime
 
+The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
+
 Core runtime package for serving AI agents and tools via REST APIs. Provides the `@agent`, `@chat_agent`, and `@tool` decorators for building and serving AI agents.
 
 Built on [FastAPI](https://fastapi.tiangolo.com) with full async support.
