@@ -71,3 +71,21 @@ jobs:
               fi
             fi
           done
+
+      - name: Add Package Links to Summary
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "## 📦 Published to PyPI" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for pkg in packages/*/pyproject.toml; do
+            if [ -f "$pkg" ]; then
+              NAME=$(python -c "import tomllib; f=open('$pkg','rb'); data=tomllib.load(f); print(data['project']['name']); f.close()")
+              if [ "$NAME" != "reminix-runtime-monorepo" ]; then
+                echo "- [\`$NAME==$VERSION\`](https://pypi.org/project/$NAME/$VERSION/)" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          done
