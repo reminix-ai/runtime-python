@@ -7,7 +7,7 @@ from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.workflow import Context
 from llama_index.llms.openai import OpenAI
 
-from reminix_llamaindex import wrap
+from reminix_llamaindex import wrap_agent
 from reminix_runtime import create_app
 
 
@@ -49,11 +49,11 @@ class TestLlamaIndexAdapter:
         llm = OpenAI(model="gpt-4.1-nano", api_key=openai_api_key)
         react_agent = ReActAgent(tools=[get_weather], llm=llm)
         wrapped_engine = ChatEngineWrapper(react_agent)
-        return wrap(wrapped_engine, name="test-llamaindex")
+        return wrap_agent(wrapped_engine, name="test-llamaindex")
 
     @pytest.fixture
     def app(self, agent):
-        return create_app([agent])
+        return create_app(agents=[agent])
 
     @pytest.fixture
     async def client(self, app):
@@ -67,7 +67,7 @@ class TestLlamaIndexAdapter:
         """Test invoke endpoint."""
         response = await client.post(
             "/agents/test-llamaindex/execute",
-            json={"input": {"query": "Say 'hello' and nothing else."}},
+            json={"query": "Say 'hello' and nothing else."},
         )
 
         assert response.status_code == 200
@@ -84,7 +84,6 @@ class TestLlamaIndexAdapter:
         assert response.status_code == 200
         data = response.json()
         assert "output" in data
-        assert "messages" in data
 
     async def test_tool_calling(self, client):
         """Test that the agent calls tools and returns results."""

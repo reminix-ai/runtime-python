@@ -6,7 +6,7 @@ from httpx import ASGITransport
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 
-from reminix_langchain import wrap
+from reminix_langchain import wrap_agent
 from reminix_runtime import create_app
 
 
@@ -30,11 +30,11 @@ class TestLangChainAdapter:
     def agent(self, openai_api_key):
         llm = ChatOpenAI(model="gpt-4.1-nano", api_key=openai_api_key)
         llm_with_tools = llm.bind_tools([get_weather])
-        return wrap(llm_with_tools, name="test-langchain")
+        return wrap_agent(llm_with_tools, name="test-langchain")
 
     @pytest.fixture
     def app(self, agent):
-        return create_app([agent])
+        return create_app(agents=[agent])
 
     @pytest.fixture
     async def client(self, app):
@@ -48,11 +48,7 @@ class TestLangChainAdapter:
         """Test invoke endpoint."""
         response = await client.post(
             "/agents/test-langchain/execute",
-            json={
-                "input": {
-                    "messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]
-                }
-            },
+            json={"messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]},
         )
 
         assert response.status_code == 200
@@ -69,7 +65,6 @@ class TestLangChainAdapter:
         assert response.status_code == 200
         data = response.json()
         assert "output" in data
-        assert "messages" in data
 
     async def test_tool_calling(self, client):
         """Test that the model can call tools."""

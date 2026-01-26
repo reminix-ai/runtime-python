@@ -25,8 +25,16 @@ class AgentAdapter(AgentBase):
 
     @property
     def metadata(self) -> dict[str, Any]:
-        """Return adapter metadata for discovery."""
-        return {"type": "adapter", "adapter": self.adapter_name}
+        """Return adapter metadata for discovery.
+
+        Adapters accept both 'messages' (chat-style) and 'prompt' (simple) inputs.
+        """
+        return {
+            "type": "adapter",
+            "adapter": self.adapter_name,
+            "requestKeys": ["messages", "prompt"],
+            "responseKeys": ["output"],
+        }
 
     async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
         """Handle a streaming execute request."""

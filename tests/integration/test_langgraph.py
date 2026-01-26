@@ -7,7 +7,7 @@ from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from reminix_langgraph import wrap
+from reminix_langgraph import wrap_agent
 from reminix_runtime import create_app
 
 
@@ -31,11 +31,11 @@ class TestLangGraphAdapter:
     def agent(self, openai_api_key):
         llm = ChatOpenAI(model="gpt-4.1-nano", api_key=openai_api_key)
         graph = create_react_agent(llm, tools=[get_weather])
-        return wrap(graph, name="test-langgraph")
+        return wrap_agent(graph, name="test-langgraph")
 
     @pytest.fixture
     def app(self, agent):
-        return create_app([agent])
+        return create_app(agents=[agent])
 
     @pytest.fixture
     async def client(self, app):
@@ -49,11 +49,7 @@ class TestLangGraphAdapter:
         """Test invoke endpoint."""
         response = await client.post(
             "/agents/test-langgraph/execute",
-            json={
-                "input": {
-                    "messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]
-                }
-            },
+            json={"messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]},
         )
 
         assert response.status_code == 200
@@ -70,7 +66,6 @@ class TestLangGraphAdapter:
         assert response.status_code == 200
         data = response.json()
         assert "output" in data
-        assert "messages" in data
 
     async def test_tool_calling(self, client):
         """Test that the agent calls tools and returns results."""

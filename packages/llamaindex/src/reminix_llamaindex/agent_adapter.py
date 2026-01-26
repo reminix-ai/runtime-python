@@ -31,6 +31,19 @@ class LlamaIndexAgentAdapter(AgentAdapter):
 
     adapter_name = "llamaindex"
 
+    @property
+    def metadata(self) -> dict[str, Any]:
+        """Return adapter metadata for discovery.
+
+        LlamaIndex adapters accept 'messages', 'prompt', or 'query' inputs.
+        """
+        return {
+            "type": "adapter",
+            "adapter": self.adapter_name,
+            "requestKeys": ["messages", "prompt", "query"],
+            "responseKeys": ["output"],
+        }
+
     def __init__(self, engine: ChatEngine, name: str = "llamaindex-agent") -> None:
         """Initialize the adapter.
 
