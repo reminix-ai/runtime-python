@@ -329,11 +329,11 @@ class Agent(AgentBase):
         self._execute_handler = fn
         return fn
 
-    def handler_stream(self, fn: ExecuteStreamHandler) -> ExecuteStreamHandler:
+    def stream_handler(self, fn: ExecuteStreamHandler) -> ExecuteStreamHandler:
         """Register a streaming handler.
 
         Example:
-            @agent.handler_stream
+            @agent.stream_handler
             async def handle(request: ExecuteRequest):
                 yield '{"chunk": "Hello"}'
                 yield '{"chunk": " world!"}'
@@ -343,7 +343,8 @@ class Agent(AgentBase):
 
     # Aliases for backward compatibility
     on_execute = handler
-    handler_stream = handler_stream
+    on_execute_stream = stream_handler
+    handler_stream = stream_handler
 
     # Implementation of abstract methods
 
@@ -557,7 +558,7 @@ def agent(
                     else:
                         yield json.dumps(chunk)
 
-            agent_instance.handler_stream(execute_stream_handler)
+            agent_instance.stream_handler(execute_stream_handler)
 
             # Also register non-streaming handler that collects chunks
             async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
@@ -763,7 +764,7 @@ def chat_agent(
                     else:
                         yield json.dumps(chunk)
 
-            agent_instance.handler_stream(execute_stream_handler)
+            agent_instance.stream_handler(execute_stream_handler)
 
             # Also register non-streaming handler that collects chunks
             async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:

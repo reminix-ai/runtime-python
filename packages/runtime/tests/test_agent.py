@@ -50,11 +50,11 @@ class TestAgentHandlerRegistration:
         # Handler should be registered
         assert agent._execute_handler is not None
 
-    def test_handler_stream_registers_handler(self):
-        """handler_stream decorator registers the handler."""
+    def test_stream_handler_registers_handler(self):
+        """stream_handler decorator registers the handler."""
         agent = Agent("test-agent")
 
-        @agent.handler_stream
+        @agent.stream_handler
         async def handle_stream(request: ExecuteRequest):
             yield '{"chunk": "test"}'
 
@@ -86,7 +86,7 @@ class TestAgentStreamingFlags:
         """streaming is True when stream handler is registered."""
         agent = Agent("test-agent")
 
-        @agent.handler_stream
+        @agent.stream_handler
         async def handle_stream(request: ExecuteRequest):
             yield '{"chunk": "test"}'
 
@@ -132,7 +132,7 @@ class TestAgentExecuteStream:
         """execute_stream calls the registered handler."""
         agent = Agent("test-agent")
 
-        @agent.handler_stream
+        @agent.stream_handler
         async def handle_stream(request: ExecuteRequest):
             yield '{"chunk": "Hello"}'
             yield '{"chunk": " world"}'

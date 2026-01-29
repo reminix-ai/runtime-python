@@ -78,7 +78,7 @@ async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
     return ExecuteResponse(output=output)
 
 
-@agent.handler_stream
+@agent.stream_handler
 async def handle_execute_stream(request: ExecuteRequest):
     """Handle streaming execute requests."""
     # Check if this is a chat-style request (has messages)

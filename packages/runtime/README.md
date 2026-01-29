@@ -549,7 +549,7 @@ async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
     return ExecuteResponse(output="Hello!")
 
 # Optional: streaming handler
-@agent.handler_stream
+@agent.stream_handler
 async def handle_execute_stream(request: ExecuteRequest):
     yield "Hello"
     yield " world!"
