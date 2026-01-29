@@ -39,8 +39,8 @@ class TestAgentCreation:
 class TestAgentHandlerRegistration:
     """Tests for handler registration with decorators."""
 
-    def test_on_execute_registers_handler(self):
-        """on_execute decorator registers the handler."""
+    def test_handler_registers_handler(self):
+        """handler decorator registers the handler."""
         agent = Agent("test-agent")
 
         @agent.handler
@@ -101,7 +101,7 @@ class TestAgentExecute:
         """execute calls the registered handler."""
         test_agent = Agent("test-agent")
 
-        @test_agent.on_execute
+        @test_agent.handler
         async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
             task = request.input.get("task", "unknown")
             return {"content": f"Completed: {task}"}

@@ -341,11 +341,6 @@ class Agent(AgentBase):
         self._execute_stream_handler = fn
         return fn
 
-    # Aliases for backward compatibility
-    on_execute = handler
-    on_execute_stream = stream_handler
-    handler_stream = stream_handler
-
     # Implementation of abstract methods
 
     async def execute(self, request: ExecuteRequest) -> ExecuteResponse:

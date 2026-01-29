@@ -84,7 +84,7 @@ class TestToAsgi:
         """ASGI app handles /agents/{name}/invoke endpoint with default prompt key."""
         test_agent = Agent("test-agent")
 
-        @test_agent.on_execute
+        @test_agent.handler
         async def handle(request: ExecuteRequest) -> ExecuteResponse:
             # Default requestKeys is ['prompt']
             prompt = request.input.get("prompt", "")
@@ -106,7 +106,7 @@ class TestToAsgi:
         # Create agent with custom requestKeys
         test_agent = Agent("test-agent", metadata={"requestKeys": ["messages"]})
 
-        @test_agent.on_execute
+        @test_agent.handler
         async def handle(request: ExecuteRequest) -> ExecuteResponse:
             messages = request.input.get("messages", [])
             if messages:
@@ -131,7 +131,7 @@ class TestToAsgi:
         """ASGI app returns 404 for wrong agent name."""
         test_agent = Agent("test-agent")
 
-        @test_agent.on_execute
+        @test_agent.handler
         async def handle(request: ExecuteRequest) -> ExecuteResponse:
             return {"output": "ok"}
 
