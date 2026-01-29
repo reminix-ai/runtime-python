@@ -43,8 +43,8 @@ The runtime creates a REST server with the following endpoints:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Runtime discovery (version, agents, tools) |
-| `/agents/{name}/invoke` | POST | Execute an agent |
-| `/tools/{name}/call` | POST | Execute a tool |
+| `/agents/{name}/invoke` | POST | Invoke an agent |
+| `/tools/{name}/call` | POST | Call a tool |
 
 ### Health Endpoint
 
@@ -137,9 +137,9 @@ Returns runtime information, available agents, and tools:
 }
 ```
 
-### Agent Execute Endpoint
+### Agent Invoke Endpoint
 
-`POST /agents/{name}/invoke` - Execute an agent.
+`POST /agents/{name}/invoke` - Invoke an agent.
 
 Request keys are defined by the agent's `parameters` schema. For example, a calculator agent with `parameters: { properties: { a, b } }` expects `a` and `b` at the top level:
 
@@ -183,9 +183,9 @@ curl -X POST http://localhost:8080/agents/assistant/invoke \
 }
 ```
 
-### Tool Execute Endpoint
+### Tool Call Endpoint
 
-`POST /tools/{name}/call` - Execute a standalone tool.
+`POST /tools/{name}/call` - Call a standalone tool.
 
 ```bash
 curl -X POST http://localhost:8080/tools/get_weather/call \
