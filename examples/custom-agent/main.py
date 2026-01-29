@@ -16,21 +16,21 @@ Then test the endpoints:
     curl http://localhost:8080/info
 
     # Execute endpoint
-    curl -X POST http://localhost:8080/agents/echo/execute \
+    curl -X POST http://localhost:8080/agents/echo/invoke \
       -H "Content-Type: application/json" \
       -d '{"input": {"message": "Hello!"}}'
 
     # Response: {"output": "Echo: Hello!"}
 
     # Execute with messages (chat-style)
-    curl -X POST http://localhost:8080/agents/echo/execute \
+    curl -X POST http://localhost:8080/agents/echo/invoke \
       -H "Content-Type: application/json" \
       -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
 
     # Response: {"output": "You said: Hello!"}
 
     # Streaming execute
-    curl -X POST http://localhost:8080/agents/echo/execute \
+    curl -X POST http://localhost:8080/agents/echo/invoke \
       -H "Content-Type: application/json" \
       -d '{"input": {"message": "Hello!"}, "stream": true}'
 """
@@ -54,7 +54,7 @@ agent = Agent(
 )
 
 
-@agent.on_execute
+@agent.handler
 async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
     """Handle execute requests."""
     # Check if this is a chat-style request (has messages)
@@ -78,7 +78,7 @@ async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
     return ExecuteResponse(output=output)
 
 
-@agent.on_execute_stream
+@agent.handler_stream
 async def handle_execute_stream(request: ExecuteRequest):
     """Handle streaming execute requests."""
     # Check if this is a chat-style request (has messages)
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     print("Endpoints:")
     print("  GET  /health")
     print("  GET  /info")
-    print("  POST /agents/echo/execute")
+    print("  POST /agents/echo/invoke")
     print()
 
     serve(agents=[agent], port=8080)

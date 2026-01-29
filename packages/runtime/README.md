@@ -43,8 +43,8 @@ The runtime creates a REST server with the following endpoints:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Runtime discovery (version, agents, tools) |
-| `/agents/{name}/execute` | POST | Execute an agent |
-| `/tools/{name}/execute` | POST | Execute a tool |
+| `/agents/{name}/invoke` | POST | Execute an agent |
+| `/tools/{name}/call` | POST | Execute a tool |
 
 ### Health Endpoint
 
@@ -139,13 +139,13 @@ Returns runtime information, available agents, and tools:
 
 ### Agent Execute Endpoint
 
-`POST /agents/{name}/execute` - Execute an agent.
+`POST /agents/{name}/invoke` - Execute an agent.
 
 Request keys are defined by the agent's `parameters` schema. For example, a calculator agent with `parameters: { properties: { a, b } }` expects `a` and `b` at the top level:
 
 **Task-oriented agent:**
 ```bash
-curl -X POST http://localhost:8080/agents/calculator/execute \
+curl -X POST http://localhost:8080/agents/calculator/invoke \
   -H "Content-Type: application/json" \
   -d '{"a": 5, "b": 3}'
 ```
@@ -162,7 +162,7 @@ curl -X POST http://localhost:8080/agents/calculator/execute \
 Chat agents expect `messages` at the top level and return `messages` (array):
 
 ```bash
-curl -X POST http://localhost:8080/agents/assistant/execute \
+curl -X POST http://localhost:8080/agents/assistant/invoke \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [
@@ -185,10 +185,10 @@ curl -X POST http://localhost:8080/agents/assistant/execute \
 
 ### Tool Execute Endpoint
 
-`POST /tools/{name}/execute` - Execute a standalone tool.
+`POST /tools/{name}/call` - Execute a standalone tool.
 
 ```bash
-curl -X POST http://localhost:8080/tools/get_weather/execute \
+curl -X POST http://localhost:8080/tools/get_weather/call \
   -H "Content-Type: application/json" \
   -d '{"location": "San Francisco"}'
 ```
@@ -202,7 +202,7 @@ curl -X POST http://localhost:8080/tools/get_weather/execute \
 
 ## Agents
 
-Agents handle requests via the `/agents/{name}/execute` endpoint.
+Agents handle requests via the `/agents/{name}/invoke` endpoint.
 
 ### Task-Oriented Agent
 
@@ -288,7 +288,7 @@ For streaming agents:
 
 ## Tools
 
-Tools are standalone functions served via `/tools/{name}/execute`. They're useful for exposing utility functions, external API integrations, or any reusable logic.
+Tools are standalone functions served via `/tools/{name}/call`. They're useful for exposing utility functions, external API integrations, or any reusable logic.
 
 ### Creating Tools
 
@@ -544,12 +544,12 @@ from reminix_runtime import Agent, ExecuteRequest, ExecuteResponse, serve
 
 agent = Agent("my-agent", metadata={"version": "1.0"})
 
-@agent.on_execute
+@agent.handler
 async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
     return ExecuteResponse(output="Hello!")
 
 # Optional: streaming handler
-@agent.on_execute_stream
+@agent.handler_stream
 async def handle_execute_stream(request: ExecuteRequest):
     yield "Hello"
     yield " world!"

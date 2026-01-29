@@ -39,7 +39,7 @@ serve(agents=[agent], port=8080)
 ```
 
 Your agent is now available at:
-- `POST /agents/my-agent/execute` - Execute the agent
+- `POST /agents/my-agent/invoke` - Execute the agent
 
 ## API Reference
 
@@ -75,7 +75,7 @@ LangGraph uses a state-based approach. The adapter:
 
 ## Endpoint Input/Output Formats
 
-### POST /agents/{name}/execute
+### POST /agents/{name}/invoke
 
 Execute the graph. Input keys are passed directly to the graph.
 

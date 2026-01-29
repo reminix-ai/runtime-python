@@ -64,8 +64,8 @@ serve(agents=[calculator, assistant], port=8080)
 ```
 
 Your agents are now available at:
-- `POST /agents/calculator/execute` - Execute the calculator agent
-- `POST /agents/assistant/execute` - Execute the assistant agent
+- `POST /agents/calculator/invoke` - Execute the calculator agent
+- `POST /agents/assistant/invoke` - Execute the assistant agent
 
 See the [runtime package docs](./packages/runtime) for tools, streaming, and advanced usage.
 

@@ -35,7 +35,7 @@ serve(agents=[agent], port=8080)
 ```
 
 Your agent is now available at:
-- `POST /agents/my-claude/execute` - Execute the agent
+- `POST /agents/my-claude/invoke` - Execute the agent
 
 ## API Reference
 
@@ -81,7 +81,7 @@ request = {
 
 ## Endpoint Input/Output Formats
 
-### POST /agents/{name}/execute
+### POST /agents/{name}/invoke
 
 Execute the agent with a prompt or messages.
 

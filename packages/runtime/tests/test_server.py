@@ -136,12 +136,12 @@ class TestExecuteEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_success(self):
-        """POST /agents/{agent}/execute should return execute response."""
+        """POST /agents/{agent}/invoke should return execute response."""
         app = create_app(agents=[MockTaskAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             # Request body has top-level keys matching requestKeys: ['task']
             response = await client.post(
-                "/agents/my-agent/execute",
+                "/agents/my-agent/invoke",
                 json={"task": "summarize"},
             )
 
@@ -151,11 +151,11 @@ class TestExecuteEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_with_context(self):
-        """POST /agents/{agent}/execute should accept context."""
+        """POST /agents/{agent}/invoke should accept context."""
         app = create_app(agents=[MockTaskAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/agents/my-agent/execute",
+                "/agents/my-agent/invoke",
                 json={
                     "task": "test",
                     "context": {"user_id": "123"},
@@ -166,11 +166,11 @@ class TestExecuteEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_unknown_agent_returns_404(self):
-        """POST /agents/{agent}/execute should return 404 for unknown agent."""
+        """POST /agents/{agent}/invoke should return 404 for unknown agent."""
         app = create_app(agents=[MockTaskAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/agents/unknown-agent/execute",
+                "/agents/unknown-agent/invoke",
                 json={"task": "test"},
             )
 
@@ -179,12 +179,12 @@ class TestExecuteEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_with_messages_input(self):
-        """POST /agents/{agent}/execute should handle chat-style input."""
+        """POST /agents/{agent}/invoke should handle chat-style input."""
         app = create_app(agents=[MockChatAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             # Request body has top-level keys matching requestKeys: ['messages']
             response = await client.post(
-                "/agents/my-agent/execute",
+                "/agents/my-agent/invoke",
                 json={"messages": [{"role": "user", "content": "hi there"}]},
             )
 
@@ -199,7 +199,7 @@ class TestToolExecuteEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_tool_success(self):
-        """POST /tools/{tool}/execute should return tool response."""
+        """POST /tools/{tool}/call should return tool response."""
 
         @tool
         async def greet(name: str) -> dict:
@@ -209,7 +209,7 @@ class TestToolExecuteEndpoint:
         app = create_app(tools=[greet])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/tools/greet/execute",
+                "/tools/greet/call",
                 json={"input": {"name": "World"}},
             )
 
@@ -220,7 +220,7 @@ class TestToolExecuteEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_tool_with_context(self):
-        """POST /tools/{tool}/execute should accept context."""
+        """POST /tools/{tool}/call should accept context."""
 
         @tool
         async def my_tool(param: str) -> dict:
@@ -230,7 +230,7 @@ class TestToolExecuteEndpoint:
         app = create_app(tools=[my_tool])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/tools/my_tool/execute",
+                "/tools/my_tool/call",
                 json={"input": {"param": "test"}, "context": {"user_id": "123"}},
             )
 
@@ -238,7 +238,7 @@ class TestToolExecuteEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_tool_unknown_returns_404(self):
-        """POST /tools/{tool}/execute should return 404 for unknown tool."""
+        """POST /tools/{tool}/call should return 404 for unknown tool."""
 
         @tool
         async def my_tool(param: str) -> dict:
@@ -248,7 +248,7 @@ class TestToolExecuteEndpoint:
         app = create_app(tools=[my_tool])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/tools/unknown_tool/execute",
+                "/tools/unknown_tool/call",
                 json={"input": {"param": "test"}},
             )
 
@@ -257,7 +257,7 @@ class TestToolExecuteEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_tool_with_error(self):
-        """POST /tools/{tool}/execute should return error on exception."""
+        """POST /tools/{tool}/call should return error on exception."""
 
         @tool
         async def failing_tool(param: str) -> dict:
@@ -267,7 +267,7 @@ class TestToolExecuteEndpoint:
         app = create_app(tools=[failing_tool])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/tools/failing_tool/execute",
+                "/tools/failing_tool/call",
                 json={"input": {"param": "test"}},
             )
 
@@ -278,7 +278,7 @@ class TestToolExecuteEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_sync_tool(self):
-        """POST /tools/{tool}/execute should work with sync tools."""
+        """POST /tools/{tool}/call should work with sync tools."""
 
         @tool
         def add(a: int, b: int) -> int:
@@ -288,7 +288,7 @@ class TestToolExecuteEndpoint:
         app = create_app(tools=[add])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/tools/add/execute",
+                "/tools/add/call",
                 json={"input": {"a": 2, "b": 3}},
             )
 

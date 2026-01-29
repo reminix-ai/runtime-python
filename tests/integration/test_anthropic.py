@@ -38,7 +38,7 @@ class TestAnthropicAdapter:
     async def test_invoke(self, client):
         """Test invoke endpoint."""
         response = await client.post(
-            "/agents/test-anthropic/execute",
+            "/agents/test-anthropic/invoke",
             json={"prompt": "Say 'hello' and nothing else."},
         )
 
@@ -50,7 +50,7 @@ class TestAnthropicAdapter:
     async def test_invoke_with_messages(self, client):
         """Test invoke with messages array."""
         response = await client.post(
-            "/agents/test-anthropic/execute",
+            "/agents/test-anthropic/invoke",
             json={"messages": [{"role": "user", "content": "Say 'test' and nothing else."}]},
         )
 
@@ -62,7 +62,7 @@ class TestAnthropicAdapter:
     async def test_invoke_with_system_message(self, client):
         """Test invoke with system message."""
         response = await client.post(
-            "/agents/test-anthropic/execute",
+            "/agents/test-anthropic/invoke",
             json={
                 "messages": [
                     {"role": "system", "content": "You only respond with 'yes'."},
@@ -79,7 +79,7 @@ class TestAnthropicAdapter:
     async def test_chat(self, client):
         """Test chat endpoint."""
         response = await client.post(
-            "/agents/test-anthropic/execute",
+            "/agents/test-anthropic/invoke",
             json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
         )
 
@@ -91,7 +91,7 @@ class TestAnthropicAdapter:
         """Test streaming invoke endpoint."""
         async with client.stream(
             "POST",
-            "/agents/test-anthropic/execute",
+            "/agents/test-anthropic/invoke",
             json={"prompt": "Say 'stream' and nothing else.", "stream": True},
         ) as response:
             assert response.status_code == 200

@@ -16,12 +16,12 @@ Then test the endpoints:
     curl http://localhost:8080/info
 
     # Execute the weather tool
-    curl -X POST http://localhost:8080/tools/get_weather/execute \
+    curl -X POST http://localhost:8080/tools/get_weather/call \
       -H "Content-Type: application/json" \
       -d '{"input": {"location": "San Francisco"}}'
 
     # Execute the calculator tool
-    curl -X POST http://localhost:8080/tools/calculate/execute \
+    curl -X POST http://localhost:8080/tools/calculate/call \
       -H "Content-Type: application/json" \
       -d '{"input": {"a": 10, "b": 5, "operation": "add"}}'
 """
@@ -125,9 +125,9 @@ if __name__ == "__main__":
     print("Endpoints:")
     print("  GET  /health")
     print("  GET  /info")
-    print("  POST /tools/get_weather/execute")
-    print("  POST /tools/calculate/execute")
-    print("  POST /tools/string_utils/execute")
+    print("  POST /tools/get_weather/call")
+    print("  POST /tools/calculate/call")
+    print("  POST /tools/string_utils/call")
     print()
 
     serve(tools=[get_weather, calculate, string_utils], port=8080)

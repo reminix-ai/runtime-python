@@ -17,7 +17,7 @@ Once running, the following endpoints are available:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
-| `/agents/echo/execute` | POST | Execute the agent |
+| `/agents/echo/invoke` | POST | Execute the agent |
 
 ## Testing
 
@@ -29,17 +29,17 @@ curl http://localhost:8080/health
 curl http://localhost:8080/info
 
 # Task-style execution
-curl -X POST http://localhost:8080/agents/echo/execute \
+curl -X POST http://localhost:8080/agents/echo/invoke \
   -H "Content-Type: application/json" \
   -d '{"input": {"message": "Hello!"}}'
 
 # Chat-style execution
-curl -X POST http://localhost:8080/agents/echo/execute \
+curl -X POST http://localhost:8080/agents/echo/invoke \
   -H "Content-Type: application/json" \
   -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
 
 # Streaming execution
-curl -X POST http://localhost:8080/agents/echo/execute \
+curl -X POST http://localhost:8080/agents/echo/invoke \
   -H "Content-Type: application/json" \
   -d '{"input": {"message": "Hello!"}, "stream": true}'
 ```

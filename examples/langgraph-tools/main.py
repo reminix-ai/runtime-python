@@ -17,14 +17,14 @@ Usage:
 Then test the endpoints:
 
     # Invoke endpoint (task-oriented)
-    curl -X POST http://localhost:8080/agents/langgraph-tools/execute \
+    curl -X POST http://localhost:8080/agents/langgraph-tools/invoke \
       -H "Content-Type: application/json" \
       -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Paris?"}]}}'
 
     # Response: {"output": "The weather in Paris is sunny with a temperature of 22°C."}
 
     # Chat endpoint (conversational)
-    curl -X POST http://localhost:8080/agents/langgraph-tools/execute \
+    curl -X POST http://localhost:8080/agents/langgraph-tools/invoke \
       -H "Content-Type: application/json" \
       -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     print("\nEndpoints:")
     print("  GET  /health")
     print("  GET  /info")
-    print("  POST /agents/langgraph-tools/execute")
+    print("  POST /agents/langgraph-tools/invoke")
     print("\nAvailable tools:")
     print("  - get_weather(city): Get weather for Paris, London, Tokyo, or New York")
     serve(agents=[agent], port=8080)

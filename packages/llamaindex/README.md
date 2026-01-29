@@ -39,7 +39,7 @@ serve(agents=[agent], port=8080)
 ```
 
 Your agent is now available at:
-- `POST /agents/my-chatbot/execute` - Execute the agent
+- `POST /agents/my-chatbot/invoke` - Execute the agent
 
 ## API Reference
 
@@ -87,7 +87,7 @@ serve(agents=[agent], port=8080)
 
 ## Endpoint Input/Output Formats
 
-### POST /agents/{name}/execute
+### POST /agents/{name}/invoke
 
 Execute the agent with a query or prompt.
 

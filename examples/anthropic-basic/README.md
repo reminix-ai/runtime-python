@@ -34,8 +34,8 @@ Once running, the following endpoints are available:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
-| `/agents/anthropic-basic/execute` | POST | Execute agent |
-| `/agents/anthropic-basic/execute` | POST | Execute agent |
+| `/agents/anthropic-basic/invoke` | POST | Execute agent |
+| `/agents/anthropic-basic/invoke` | POST | Execute agent |
 
 ## Testing
 
@@ -47,12 +47,12 @@ curl http://localhost:8080/health
 curl http://localhost:8080/info
 
 # Invoke
-curl -X POST http://localhost:8080/agents/anthropic-basic/execute \
+curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
   -H "Content-Type: application/json" \
   -d '{"input": {"prompt": "What is the capital of France?"}}'
 
 # Chat
-curl -X POST http://localhost:8080/agents/anthropic-basic/execute \
+curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
 ```

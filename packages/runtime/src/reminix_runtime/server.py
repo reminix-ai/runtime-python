@@ -88,9 +88,9 @@ def create_app(
             ],
         }
 
-    @app.post("/agents/{agent_name}/execute", response_model=None)
-    async def execute(agent_name: str, body: dict[str, Any]) -> ExecuteResponse | StreamingResponse:
-        """Execute an agent."""
+    @app.post("/agents/{agent_name}/invoke", response_model=None)
+    async def invoke(agent_name: str, body: dict[str, Any]) -> ExecuteResponse | StreamingResponse:
+        """Invoke an agent."""
         agent = agent_map.get(agent_name)
         if agent is None:
             raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
@@ -118,9 +118,9 @@ def create_app(
 
         return await agent.execute(request)
 
-    @app.post("/tools/{tool_name}/execute", response_model=None)
-    async def execute_tool(tool_name: str, request: ToolExecuteRequest) -> ToolExecuteResponse:
-        """Execute a tool."""
+    @app.post("/tools/{tool_name}/call", response_model=None)
+    async def call_tool(tool_name: str, request: ToolExecuteRequest) -> ToolExecuteResponse:
+        """Call a tool."""
         tool = tool_map.get(tool_name)
         if tool is None:
             raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")

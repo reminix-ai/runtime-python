@@ -47,7 +47,7 @@ class TestLangChainAdapter:
     async def test_invoke(self, client):
         """Test invoke endpoint."""
         response = await client.post(
-            "/agents/test-langchain/execute",
+            "/agents/test-langchain/invoke",
             json={"messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]},
         )
 
@@ -58,7 +58,7 @@ class TestLangChainAdapter:
     async def test_chat(self, client):
         """Test chat endpoint."""
         response = await client.post(
-            "/agents/test-langchain/execute",
+            "/agents/test-langchain/invoke",
             json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
         )
 
@@ -69,7 +69,7 @@ class TestLangChainAdapter:
     async def test_tool_calling(self, client):
         """Test that the model can call tools."""
         response = await client.post(
-            "/agents/test-langchain/execute",
+            "/agents/test-langchain/invoke",
             json={
                 "messages": [
                     {

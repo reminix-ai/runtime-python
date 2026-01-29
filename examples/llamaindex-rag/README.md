@@ -34,8 +34,8 @@ Once running, the following endpoints are available:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
-| `/agents/llamaindex-rag/execute` | POST | Execute agent |
-| `/agents/llamaindex-rag/execute` | POST | Execute agent |
+| `/agents/llamaindex-rag/invoke` | POST | Execute agent |
+| `/agents/llamaindex-rag/invoke` | POST | Execute agent |
 
 ## Available Tools
 
@@ -51,12 +51,12 @@ curl http://localhost:8080/health
 curl http://localhost:8080/info
 
 # Invoke
-curl -X POST http://localhost:8080/agents/llamaindex-rag/execute \
+curl -X POST http://localhost:8080/agents/llamaindex-rag/invoke \
   -H "Content-Type: application/json" \
   -d '{"input": {"query": "What is the weather in Paris?"}}'
 
 # Chat
-curl -X POST http://localhost:8080/agents/llamaindex-rag/execute \
+curl -X POST http://localhost:8080/agents/llamaindex-rag/invoke \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
 ```

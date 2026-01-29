@@ -26,9 +26,9 @@ Once running, the following endpoints are available:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Tool discovery |
-| `/tools/get_weather/execute` | POST | Get weather for a city |
-| `/tools/calculate/execute` | POST | Basic math operations |
-| `/tools/string_utils/execute` | POST | String manipulation |
+| `/tools/get_weather/call` | POST | Get weather for a city |
+| `/tools/calculate/call` | POST | Basic math operations |
+| `/tools/string_utils/call` | POST | String manipulation |
 
 ## Available Tools
 
@@ -46,22 +46,22 @@ curl http://localhost:8080/health
 curl http://localhost:8080/info
 
 # Get weather
-curl -X POST http://localhost:8080/tools/get_weather/execute \
+curl -X POST http://localhost:8080/tools/get_weather/call \
   -H "Content-Type: application/json" \
   -d '{"input": {"location": "San Francisco"}}'
 
 # Get weather in Celsius
-curl -X POST http://localhost:8080/tools/get_weather/execute \
+curl -X POST http://localhost:8080/tools/get_weather/call \
   -H "Content-Type: application/json" \
   -d '{"input": {"location": "New York", "units": "celsius"}}'
 
 # Calculate
-curl -X POST http://localhost:8080/tools/calculate/execute \
+curl -X POST http://localhost:8080/tools/calculate/call \
   -H "Content-Type: application/json" \
   -d '{"input": {"a": 10, "b": 5, "operation": "multiply"}}'
 
 # String utils
-curl -X POST http://localhost:8080/tools/string_utils/execute \
+curl -X POST http://localhost:8080/tools/string_utils/call \
   -H "Content-Type: application/json" \
   -d '{"input": {"text": "Hello World", "operation": "reverse"}}'
 ```

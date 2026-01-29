@@ -92,7 +92,7 @@ class AgentBase(ABC):
 
             agent = Agent("my-agent")
 
-            @agent.on_execute
+            @agent.handler
             async def handle(request):
                 return ExecuteResponse(output="Hello!")
 
@@ -223,10 +223,10 @@ class AgentBase(ABC):
                     )
                     return
 
-                # POST /agents/{name}/execute
-                execute_match = re.match(r"^/agents/([^/]+)/execute$", path)
-                if method == "POST" and execute_match:
-                    agent_name = execute_match.group(1)
+                # POST /agents/{name}/invoke
+                invoke_match = re.match(r"^/agents/([^/]+)/invoke$", path)
+                if method == "POST" and invoke_match:
+                    agent_name = invoke_match.group(1)
                     if agent_name != agent.name:
                         await json_response({"error": f"Agent '{agent_name}' not found"}, 404)
                         return
@@ -274,7 +274,7 @@ class Agent(AgentBase):
 
         agent = Agent("my-agent")
 
-        @agent.on_execute
+        @agent.handler
         async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
             return ExecuteResponse(output="Hello!")
 
@@ -285,7 +285,7 @@ class Agent(AgentBase):
         """Create a new agent.
 
         Args:
-            name: The agent name (used in URLs like /agents/{name}/execute)
+            name: The agent name (used in URLs like /agents/{name}/invoke)
             metadata: Optional metadata for discovery
         """
         self._name = name
@@ -318,28 +318,32 @@ class Agent(AgentBase):
 
     # Decorator methods for handler registration
 
-    def on_execute(self, fn: ExecuteHandler) -> ExecuteHandler:
-        """Register an execute handler.
+    def handler(self, fn: ExecuteHandler) -> ExecuteHandler:
+        """Register a handler.
 
         Example:
-            @agent.on_execute
+            @agent.handler
             async def handle(request: ExecuteRequest) -> ExecuteResponse:
                 return ExecuteResponse(output="Hello!")
         """
         self._execute_handler = fn
         return fn
 
-    def on_execute_stream(self, fn: ExecuteStreamHandler) -> ExecuteStreamHandler:
-        """Register a streaming execute handler.
+    def handler_stream(self, fn: ExecuteStreamHandler) -> ExecuteStreamHandler:
+        """Register a streaming handler.
 
         Example:
-            @agent.on_execute_stream
+            @agent.handler_stream
             async def handle(request: ExecuteRequest):
                 yield '{"chunk": "Hello"}'
                 yield '{"chunk": " world!"}'
         """
         self._execute_stream_handler = fn
         return fn
+
+    # Aliases for backward compatibility
+    on_execute = handler
+    handler_stream = handler_stream
 
     # Implementation of abstract methods
 
@@ -553,7 +557,7 @@ def agent(
                     else:
                         yield json.dumps(chunk)
 
-            agent_instance.on_execute_stream(execute_stream_handler)
+            agent_instance.handler_stream(execute_stream_handler)
 
             # Also register non-streaming handler that collects chunks
             async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
@@ -570,7 +574,7 @@ def agent(
                 response_keys = get_response_keys()
                 return {response_keys[0]: result}
 
-            agent_instance.on_execute(execute_handler)
+            agent_instance.handler(execute_handler)
         else:
             # Register regular execute handler
             async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
@@ -584,7 +588,7 @@ def agent(
                 response_keys = get_response_keys()
                 return {response_keys[0]: result}
 
-            agent_instance.on_execute(execute_handler)
+            agent_instance.handler(execute_handler)
 
         # Preserve function metadata
         agent_instance.__doc__ = f.__doc__
@@ -759,7 +763,7 @@ def chat_agent(
                     else:
                         yield json.dumps(chunk)
 
-            agent_instance.on_execute_stream(execute_stream_handler)
+            agent_instance.handler_stream(execute_stream_handler)
 
             # Also register non-streaming handler that collects chunks
             async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
@@ -779,7 +783,7 @@ def chat_agent(
                 response_keys = get_response_keys()
                 return {response_keys[0]: result}
 
-            agent_instance.on_execute(execute_handler)
+            agent_instance.handler(execute_handler)
         else:
             # Register regular execute handler
             async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
@@ -815,7 +819,7 @@ def chat_agent(
                 # Otherwise wrap in first responseKey (typically "messages" for chat agents)
                 return {response_keys[0]: messages_list}
 
-            agent_instance.on_execute(execute_handler)
+            agent_instance.handler(execute_handler)
 
         # Preserve function metadata
         agent_instance.__doc__ = f.__doc__

@@ -43,18 +43,18 @@ class TestAgentHandlerRegistration:
         """on_execute decorator registers the handler."""
         agent = Agent("test-agent")
 
-        @agent.on_execute
+        @agent.handler
         async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
             return ExecuteResponse(content="test")
 
         # Handler should be registered
         assert agent._execute_handler is not None
 
-    def test_on_execute_stream_registers_handler(self):
-        """on_execute_stream decorator registers the handler."""
+    def test_handler_stream_registers_handler(self):
+        """handler_stream decorator registers the handler."""
         agent = Agent("test-agent")
 
-        @agent.on_execute_stream
+        @agent.handler_stream
         async def handle_stream(request: ExecuteRequest):
             yield '{"chunk": "test"}'
 
@@ -65,7 +65,7 @@ class TestAgentHandlerRegistration:
         """Decorator returns the original function for reuse."""
         agent = Agent("test-agent")
 
-        @agent.on_execute
+        @agent.handler
         async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
             return ExecuteResponse(content="test")
 
@@ -86,7 +86,7 @@ class TestAgentStreamingFlags:
         """streaming is True when stream handler is registered."""
         agent = Agent("test-agent")
 
-        @agent.on_execute_stream
+        @agent.handler_stream
         async def handle_stream(request: ExecuteRequest):
             yield '{"chunk": "test"}'
 
@@ -132,7 +132,7 @@ class TestAgentExecuteStream:
         """execute_stream calls the registered handler."""
         agent = Agent("test-agent")
 
-        @agent.on_execute_stream
+        @agent.handler_stream
         async def handle_stream(request: ExecuteRequest):
             yield '{"chunk": "Hello"}'
             yield '{"chunk": " world"}'
@@ -167,7 +167,7 @@ class TestAgentWithContext:
         agent = Agent("test-agent")
         received_context = None
 
-        @agent.on_execute
+        @agent.handler
         async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
             nonlocal received_context
             received_context = request.context

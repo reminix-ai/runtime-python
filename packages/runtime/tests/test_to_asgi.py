@@ -81,7 +81,7 @@ class TestToAsgi:
 
     @pytest.mark.asyncio
     async def test_execute_endpoint(self):
-        """ASGI app handles /agents/{name}/execute endpoint with default prompt key."""
+        """ASGI app handles /agents/{name}/invoke endpoint with default prompt key."""
         test_agent = Agent("test-agent")
 
         @test_agent.on_execute
@@ -94,7 +94,7 @@ class TestToAsgi:
 
         # Request body has top-level prompt key (matching default requestKeys)
         status, body = await call_asgi(
-            app, "POST", "/agents/test-agent/execute", {"prompt": "hello"}
+            app, "POST", "/agents/test-agent/invoke", {"prompt": "hello"}
         )
 
         assert status == 200
@@ -102,7 +102,7 @@ class TestToAsgi:
 
     @pytest.mark.asyncio
     async def test_execute_with_custom_request_keys(self):
-        """ASGI app handles /agents/{name}/execute with custom requestKeys."""
+        """ASGI app handles /agents/{name}/invoke with custom requestKeys."""
         # Create agent with custom requestKeys
         test_agent = Agent("test-agent", metadata={"requestKeys": ["messages"]})
 
@@ -119,7 +119,7 @@ class TestToAsgi:
         status, body = await call_asgi(
             app,
             "POST",
-            "/agents/test-agent/execute",
+            "/agents/test-agent/invoke",
             {"messages": [{"role": "user", "content": "hello"}]},
         )
 
@@ -138,7 +138,7 @@ class TestToAsgi:
         app = test_agent.to_asgi()
 
         status, body = await call_asgi(
-            app, "POST", "/agents/wrong-agent/execute", {"prompt": "test"}
+            app, "POST", "/agents/wrong-agent/invoke", {"prompt": "test"}
         )
 
         assert status == 404
