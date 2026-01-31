@@ -561,8 +561,8 @@ class TestToolErrorHandling:
     """Tests for error handling in tool execution."""
 
     @pytest.mark.asyncio
-    async def test_execute_catches_exceptions(self):
-        """Execute catches exceptions and returns error."""
+    async def test_execute_propagates_exceptions(self):
+        """Execute propagates exceptions to caller (server handles them)."""
 
         @tool
         async def failing_tool(param: str) -> dict:
@@ -570,14 +570,12 @@ class TestToolErrorHandling:
             raise ValueError("Something went wrong")
 
         request = ToolExecuteRequest(input={"param": "test"})
-        response = await failing_tool.execute(request)
-
-        assert response.output is None
-        assert response.error == "Something went wrong"
+        with pytest.raises(ValueError, match="Something went wrong"):
+            await failing_tool.execute(request)
 
     @pytest.mark.asyncio
-    async def test_execute_missing_required_parameter(self):
-        """Execute returns error when required parameter is missing."""
+    async def test_execute_propagates_missing_parameter_error(self):
+        """Execute propagates TypeError when required parameter is missing."""
 
         @tool
         async def my_tool(required_param: str) -> dict:
@@ -585,11 +583,8 @@ class TestToolErrorHandling:
             return {"result": required_param}
 
         request = ToolExecuteRequest(input={})
-        response = await my_tool.execute(request)
-
-        assert response.output is None
-        assert response.error is not None
-        assert "required_param" in response.error
+        with pytest.raises(TypeError, match="required_param"):
+            await my_tool.execute(request)
 
 
 class TestToolBase:

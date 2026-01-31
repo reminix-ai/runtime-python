@@ -14,7 +14,6 @@ from .tool import ToolBase
 from .types import (
     ExecuteRequest,
     ExecuteResponse,
-    RuntimeError as RuntimeErrorType,
     ToolExecuteRequest,
     ToolExecuteResponse,
 )
@@ -28,11 +27,11 @@ def _create_error_response(
     error_type: str = "ExecutionError",
 ) -> dict[str, Any]:
     """Create a structured error response.
-    
+
     Args:
         error: The exception that occurred.
         error_type: The type/category of the error.
-        
+
     Returns:
         A structured error response dict.
     """
@@ -42,18 +41,18 @@ def _create_error_response(
             "message": str(error),
         }
     }
-    
+
     # Include stack trace in debug mode
     if REMINIX_CLOUD:
         response["error"]["stack"] = traceback.format_exc()
-    
+
     return response
 
 
 async def _sse_generator(stream: AsyncIterator[str]) -> AsyncIterator[bytes]:
     """Convert an async string iterator to SSE format."""
     import json
-    
+
     try:
         async for chunk in stream:
             yield f"data: {chunk}\n\n".encode()
@@ -128,7 +127,9 @@ def create_app(
         }
 
     @app.post("/agents/{agent_name}/invoke", response_model=None)
-    async def invoke(agent_name: str, body: dict[str, Any]) -> ExecuteResponse | StreamingResponse | JSONResponse:
+    async def invoke(
+        agent_name: str, body: dict[str, Any]
+    ) -> ExecuteResponse | StreamingResponse | JSONResponse:
         """Invoke an agent."""
         agent = agent_map.get(agent_name)
         if agent is None:
@@ -174,7 +175,9 @@ def create_app(
             )
 
     @app.post("/tools/{tool_name}/call", response_model=None)
-    async def call_tool(tool_name: str, request: ToolExecuteRequest) -> ToolExecuteResponse | JSONResponse:
+    async def call_tool(
+        tool_name: str, request: ToolExecuteRequest
+    ) -> ToolExecuteResponse | JSONResponse:
         """Call a tool."""
         tool = tool_map.get(tool_name)
         if tool is None:

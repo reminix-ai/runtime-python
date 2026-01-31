@@ -241,7 +241,7 @@ class Tool(ToolBase):
 
     async def execute(self, request: ToolExecuteRequest) -> ToolExecuteResponse:
         """Execute the tool by calling the wrapped function.
-        
+
         Exceptions are not caught here - they propagate to the server
         which returns appropriate HTTP error codes.
         """

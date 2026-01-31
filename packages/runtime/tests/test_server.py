@@ -257,7 +257,7 @@ class TestToolExecuteEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_tool_with_error(self):
-        """POST /tools/{tool}/call should return error on exception."""
+        """POST /tools/{tool}/call should return error response on exception."""
 
         @tool
         async def failing_tool(param: str) -> dict:
@@ -271,10 +271,11 @@ class TestToolExecuteEndpoint:
                 json={"input": {"param": "test"}},
             )
 
-        assert response.status_code == 200  # Tool errors are returned in response
+        assert response.status_code == 400  # Tool errors return proper HTTP error codes
         data = response.json()
-        assert data["output"] is None
-        assert data["error"] == "Something went wrong"
+        assert "error" in data
+        assert data["error"]["message"] == "Something went wrong"
+        assert data["error"]["type"] == "ValidationError"  # ValueError maps to ValidationError
 
     @pytest.mark.asyncio
     async def test_execute_sync_tool(self):
