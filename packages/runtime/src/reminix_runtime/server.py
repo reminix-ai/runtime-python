@@ -1,10 +1,12 @@
 """Reminix Runtime Server."""
 
+import os
+import traceback
 from collections.abc import AsyncIterator
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from . import __version__
 from .agent import AgentBase
@@ -12,19 +14,56 @@ from .tool import ToolBase
 from .types import (
     ExecuteRequest,
     ExecuteResponse,
+    RuntimeError as RuntimeErrorType,
     ToolExecuteRequest,
     ToolExecuteResponse,
 )
 
+# Enable debug mode via environment variable to include stack traces in error responses
+REMINIX_CLOUD = os.getenv("REMINIX_CLOUD", "").lower() in ("true", "1", "yes")
+
+
+def _create_error_response(
+    error: Exception,
+    error_type: str = "ExecutionError",
+) -> dict[str, Any]:
+    """Create a structured error response.
+    
+    Args:
+        error: The exception that occurred.
+        error_type: The type/category of the error.
+        
+    Returns:
+        A structured error response dict.
+    """
+    response: dict[str, Any] = {
+        "error": {
+            "type": error_type,
+            "message": str(error),
+        }
+    }
+    
+    # Include stack trace in debug mode
+    if REMINIX_CLOUD:
+        response["error"]["stack"] = traceback.format_exc()
+    
+    return response
+
 
 async def _sse_generator(stream: AsyncIterator[str]) -> AsyncIterator[bytes]:
     """Convert an async string iterator to SSE format."""
+    import json
+    
     try:
         async for chunk in stream:
             yield f"data: {chunk}\n\n".encode()
         yield b"data: [DONE]\n\n"
     except NotImplementedError as e:
-        yield f'data: {{"error": "{str(e)}"}}\n\n'.encode()
+        error_data = _create_error_response(e, "NotImplementedError")
+        yield f"data: {json.dumps(error_data)}\n\n".encode()
+    except Exception as e:
+        error_data = _create_error_response(e, type(e).__name__)
+        yield f"data: {json.dumps(error_data)}\n\n".encode()
 
 
 def create_app(
@@ -89,7 +128,7 @@ def create_app(
         }
 
     @app.post("/agents/{agent_name}/invoke", response_model=None)
-    async def invoke(agent_name: str, body: dict[str, Any]) -> ExecuteResponse | StreamingResponse:
+    async def invoke(agent_name: str, body: dict[str, Any]) -> ExecuteResponse | StreamingResponse | JSONResponse:
         """Invoke an agent."""
         agent = agent_map.get(agent_name)
         if agent is None:
@@ -116,16 +155,43 @@ def create_app(
                 media_type="text/event-stream",
             )
 
-        return await agent.execute(request)
+        try:
+            return await agent.execute(request)
+        except NotImplementedError as e:
+            return JSONResponse(
+                status_code=501,
+                content=_create_error_response(e, "NotImplementedError"),
+            )
+        except ValueError as e:
+            return JSONResponse(
+                status_code=400,
+                content=_create_error_response(e, "ValidationError"),
+            )
+        except Exception as e:
+            return JSONResponse(
+                status_code=500,
+                content=_create_error_response(e, type(e).__name__),
+            )
 
     @app.post("/tools/{tool_name}/call", response_model=None)
-    async def call_tool(tool_name: str, request: ToolExecuteRequest) -> ToolExecuteResponse:
+    async def call_tool(tool_name: str, request: ToolExecuteRequest) -> ToolExecuteResponse | JSONResponse:
         """Call a tool."""
         tool = tool_map.get(tool_name)
         if tool is None:
             raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
 
-        return await tool.execute(request)
+        try:
+            return await tool.execute(request)
+        except ValueError as e:
+            return JSONResponse(
+                status_code=400,
+                content=_create_error_response(e, "ValidationError"),
+            )
+        except Exception as e:
+            return JSONResponse(
+                status_code=500,
+                content=_create_error_response(e, type(e).__name__),
+            )
 
     return app
 

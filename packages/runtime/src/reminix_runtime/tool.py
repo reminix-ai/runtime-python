@@ -240,17 +240,18 @@ class Tool(ToolBase):
         return self._output
 
     async def execute(self, request: ToolExecuteRequest) -> ToolExecuteResponse:
-        """Execute the tool by calling the wrapped function."""
-        try:
-            # Check if function is async
-            if inspect.iscoroutinefunction(self._func):
-                result = await self._func(**request.input)
-            else:
-                result = self._func(**request.input)
+        """Execute the tool by calling the wrapped function.
+        
+        Exceptions are not caught here - they propagate to the server
+        which returns appropriate HTTP error codes.
+        """
+        # Check if function is async
+        if inspect.iscoroutinefunction(self._func):
+            result = await self._func(**request.input)
+        else:
+            result = self._func(**request.input)
 
-            return ToolExecuteResponse(output=result)
-        except Exception as e:
-            return ToolExecuteResponse(output=None, error=str(e))
+        return ToolExecuteResponse(output=result)
 
 
 def tool(

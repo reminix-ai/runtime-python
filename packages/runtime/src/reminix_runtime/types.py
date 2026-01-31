@@ -65,3 +65,22 @@ class ToolExecuteResponse(BaseModel):
 
     output: Any
     error: str | None = None
+
+
+class RuntimeError(BaseModel):
+    """Structured runtime error information."""
+
+    type: str
+    """Error type/category (e.g., 'ValidationError', 'ExecutionError')."""
+
+    message: str
+    """Human-readable error message."""
+
+    stack: str | None = None
+    """Stack trace (only included when REMINIX_CLOUD is enabled)."""
+
+
+class RuntimeErrorResponse(BaseModel):
+    """Error response from runtime endpoints."""
+
+    error: RuntimeError
