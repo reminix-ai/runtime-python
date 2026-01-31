@@ -75,7 +75,7 @@ Returns runtime information, available agents, and tools:
       "name": "calculator",
       "type": "agent",
       "description": "Add two numbers.",
-      "parameters": {
+      "input": {
         "type": "object",
         "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
         "required": ["a", "b"]
@@ -93,7 +93,7 @@ Returns runtime information, available agents, and tools:
       "name": "assistant",
       "type": "chat_agent",
       "description": "A helpful assistant.",
-      "parameters": {
+      "input": {
         "type": "object",
         "properties": {
           "messages": {
@@ -130,7 +130,7 @@ Returns runtime information, available agents, and tools:
       "name": "get_weather",
       "type": "tool",
       "description": "Get current weather for a location",
-      "parameters": { ... },
+      "input": { ... },
       "output": { ... }
     }
   ]
@@ -141,7 +141,7 @@ Returns runtime information, available agents, and tools:
 
 `POST /agents/{name}/invoke` - Invoke an agent.
 
-Request keys are defined by the agent's `parameters` schema. For example, a calculator agent with `parameters: { properties: { a, b } }` expects `a` and `b` at the top level:
+Request keys are defined by the agent's input schema. For example, a calculator agent with input schema `{ properties: { a, b } }` expects `a` and `b` at the top level:
 
 **Task-oriented agent:**
 ```bash
@@ -231,7 +231,7 @@ serve(agents=[calculator, process_text], port=8080)
 The decorator automatically extracts:
 - **name** from the function name (or use `name=` to override)
 - **description** from the docstring (or use `description=` to override)
-- **parameters** from type hints and defaults
+- **input schema** from type hints and defaults
 - **output** from the return type hint
 
 ### Chat Agent
@@ -323,8 +323,8 @@ serve(tools=[get_weather], port=8080)
 The decorator automatically extracts:
 - **name** from the function name
 - **description** from the docstring (first line/paragraph)
-- **parameters** from type hints and defaults
-- **parameter descriptions** from docstring `Args:` section (Google, NumPy, or Sphinx style)
+- **input schema** from type hints and defaults
+- **input field descriptions** from docstring `Args:` section (Google, NumPy, or Sphinx style)
 - **output** from the return type hint (supports Pydantic models, TypedDict, and basic types)
 
 ### Output Schema Options
@@ -495,7 +495,7 @@ async def my_tool(param: str, optional_param: int = 10) -> MyOutput:
     """Tool description from docstring.
 
     Args:
-        param: The input parameter
+        param: The input value
         optional_param: An optional value
     """
     return MyOutput(result=param, value=optional_param)
@@ -509,11 +509,11 @@ def another_tool(x: int) -> int:
 ### Request/Response Types
 
 ```python
-# Request: top-level keys based on agent's requestKeys (derived from parameters)
-# For a calculator agent with parameters { a: float, b: float }:
+# Request: top-level keys based on agent's requestKeys (derived from input schema)
+# For a calculator agent with input schema { a: float, b: float }:
 # {
-#   "a": 5,                         # Top-level key from parameters
-#   "b": 3,                         # Top-level key from parameters  
+#   "a": 5,                         # Top-level key from input schema
+#   "b": 3,                         # Top-level key from input schema  
 #   "stream": false,                # Whether to stream the response
 #   "context": { ... }              # Optional metadata
 # }
