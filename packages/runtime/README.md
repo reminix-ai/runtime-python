@@ -2,7 +2,7 @@
 
 The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `@agent` and `@tool` decorators for building and serving AI agents.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `@agent` and `@tool` decorators, agent templates (prompt, chat, task, rag, thread), and types `Message` and `ToolCall` for OpenAI-style conversations.
 
 Built on [FastAPI](https://fastapi.tiangolo.com) with full async support.
 
@@ -118,7 +118,7 @@ curl -X POST http://localhost:8080/agents/calculator/invoke \
 
 **Chat agent:**
 
-Chat agents expect `messages` at the top level and return `messages` (array):
+Chat agents (template `chat` or `thread`) expect `messages` at the top level. Messages are OpenAI-style: `role` (`user` | `assistant` | `system` | `tool`), `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the `Message` and `ToolCall` types from `reminix_runtime` in your handler. Chat returns a string; thread returns a list of messages.
 
 ```bash
 curl -X POST http://localhost:8080/agents/assistant/invoke \
@@ -130,15 +130,10 @@ curl -X POST http://localhost:8080/agents/assistant/invoke \
   }'
 ```
 
-**Response:**
+**Response (chat):**
 ```json
 {
-  "messages": [
-    {
-      "role": "assistant",
-      "content": "You said: Hello!"
-    }
-  ]
+  "content": "You said: Hello!"
 }
 ```
 
@@ -163,9 +158,34 @@ curl -X POST http://localhost:8080/tools/get_weather/call \
 
 Agents handle requests via the `/agents/{name}/invoke` endpoint.
 
+### Agent templates
+
+You can use a **template** to get standard input/output schemas without defining them yourself. Pass `template` to the `@agent` decorator:
+
+| Template | Input | Output | Use case |
+|----------|--------|--------|----------|
+| `prompt` (default) | `{ prompt: str }` | `str` | Single prompt in, text out |
+| `chat` | `{ messages: list[Message] }` | `str` | Multi-turn chat, final reply as string |
+| `task` | `{ task: str, ... }` | JSON | Task name + params, structured result |
+| `rag` | `{ query: str, messages?: list[Message], collectionIds?: list[str] }` | `str` | RAG query, optional history and collections |
+| `thread` | `{ messages: list[Message] }` | `list[Message]` | Multi-turn with tool calls; returns updated thread |
+
+Messages are OpenAI-style: `role`, `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the exported types `Message` and `ToolCall` from `reminix_runtime` for type-safe handlers. `Message.tool_calls` is `list[ToolCall] | None`.
+
+```python
+from reminix_runtime import agent, serve, Message, ToolCall
+
+@agent(template="chat", description="Helpful assistant")
+async def assistant(messages: list[Message]) -> str:
+    last = messages[-1] if messages else None
+    return f"You said: {last.content}" if last and last.role == "user" else "Hello!"
+
+serve(agents=[assistant], port=8080)
+```
+
 ### Task-Oriented Agent
 
-Use `@agent` for task-oriented agents that take structured input and return output:
+Use `@agent` for task-oriented agents that take structured input and return output (omit `template` or use `template="prompt"` or `template="task"` for standard shapes):
 
 ```python
 from reminix_runtime import agent, serve
@@ -356,7 +376,13 @@ app = create_app(agents=[my_agent], tools=[my_tool])
 
 ### `@agent`
 
-Decorator to create a task-oriented agent from a function.
+Decorator to create an agent from a function. Use `template` for standard I/O shapes, or let the decorator infer input/output from type hints.
+
+| Parameter | Description |
+|-----------|-------------|
+| `template` | `"prompt"` \| `"chat"` \| `"task"` \| `"rag"` \| `"thread"`. Standard input/output schema (default: `"prompt"` when no custom input/output). |
+| `name` | Agent name (default: function name) |
+| `description` | Human-readable description (default: from docstring) |
 
 ```python
 from reminix_runtime import agent
@@ -365,6 +391,11 @@ from reminix_runtime import agent
 async def my_agent(param: str, count: int = 5) -> str:
     """Agent description from docstring."""
     return param * count
+
+# With template (e.g. chat)
+@agent(template="chat", description="Helpful assistant")
+async def assistant(messages: list) -> str:
+    return "Hello!"
 
 # With custom name/description
 @agent(name="custom_name", description="Custom description")
@@ -427,12 +458,9 @@ def another_tool(x: int) -> int:
 #   "context": { ... }
 # }
 
-# Response: keys based on agent's responseKeys
-# Regular agent (responseKeys: ['content']):
-# { "content": ... }
-
-# Chat agent (responseKeys: ['messages']):
-# { "messages": [{ "role": "assistant", "content": "..." }, ...] }
+# Response: { "output": ... } (value from handler)
+# Chat template: output is a string (final reply)
+# Thread template: output is a list of Message (updated thread)
 ```
 
 ## Advanced
