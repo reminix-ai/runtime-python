@@ -1,6 +1,6 @@
 [project]
 name = "reminix-openai"
-version = "0.0.14"
+version = "0.0.15"
 description = "Reminix adapter for OpenAI - serve agents as REST APIs"
 readme = "README.md"
 license = "Apache-2.0"
@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-    "reminix-runtime~=0.0.14",
+    "reminix-runtime~=0.0.15",
     "openai>=2.15.0",
 ]
 
