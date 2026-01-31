@@ -16,8 +16,8 @@ from langchain_core.runnables import Runnable
 
 from reminix_runtime import (
     AgentAdapter,
-    ExecuteRequest,
-    ExecuteResponse,
+    InvokeRequest,
+    InvokeResponseDict,
     Message,
     serve,
 )
@@ -77,8 +77,8 @@ class LangChainAgentAdapter(AgentAdapter):
         content = message.content if isinstance(message.content, str) else str(message.content)
         return {"role": role, "content": content}
 
-    def _build_langchain_input(self, request: ExecuteRequest) -> Any:
-        """Build LangChain input from execute request."""
+    def _build_langchain_input(self, request: InvokeRequest) -> Any:
+        """Build LangChain input from invoke request."""
         # Check if input contains messages (chat-style)
         if "messages" in request.input:
             # Convert message dicts to LangChain messages
@@ -93,17 +93,17 @@ class LangChainAgentAdapter(AgentAdapter):
             # Pass input directly to the runnable
             return request.input
 
-    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
-        """Handle an execute request.
+    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+        """Handle an invoke request.
 
         For both task-oriented and chat-style operations. Expects input with 'messages' key
         or a 'prompt' key for simple text generation.
 
         Args:
-            request: The execute request with input data.
+            request: The invoke request with input data.
 
         Returns:
-            The execute response with the output.
+            The invoke response with the output.
         """
         invoke_input = self._build_langchain_input(request)
 
@@ -121,13 +121,13 @@ class LangChainAgentAdapter(AgentAdapter):
 
         return {"output": output}
 
-    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
-        """Handle a streaming execute request.
+    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+        """Handle a streaming invoke request.
 
         Streams chunks from the LangChain runnable.
 
         Args:
-            request: The execute request with input data.
+            request: The invoke request with input data.
 
         Yields:
             JSON-encoded chunks from the stream.

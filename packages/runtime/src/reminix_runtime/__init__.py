@@ -5,24 +5,30 @@ from .agent_adapter import AgentAdapter
 from .server import create_app, serve
 from .tool import Tool, ToolBase, tool
 from .types import (
-    ExecuteRequest,
-    ExecuteResponse,
+    Capabilities,
+    InvokeRequest,
+    InvokeResponse,
+    InvokeResponseDict,
     Message,
     Role,
-    ToolExecuteRequest,
-    ToolExecuteResponse,
-    ToolSchema,
+    RuntimeError,
+    RuntimeErrorResponse,
 )
 
 __all__ = [
     "__version__",
     "serve",
     "create_app",
-    # Agent types
+    # Types
     "Role",
     "Message",
-    "ExecuteRequest",
-    "ExecuteResponse",
+    "InvokeRequest",
+    "InvokeResponse",
+    "InvokeResponseDict",
+    "Capabilities",
+    "RuntimeError",
+    "RuntimeErrorResponse",
+    # Agent types
     "AgentBase",
     "Agent",
     "AgentAdapter",
@@ -34,7 +40,4 @@ __all__ = [
     "ToolBase",
     "Tool",
     "tool",
-    "ToolSchema",
-    "ToolExecuteRequest",
-    "ToolExecuteResponse",
 ]

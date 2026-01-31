@@ -12,16 +12,92 @@ from docstring_parser import parse as parse_docstring
 
 from . import __version__
 from .tool import _python_type_to_json_schema
-from .types import ExecuteRequest, ExecuteResponse, Message
+from .types import InvokeRequest, InvokeResponseDict, Message
 
-# Default parameters schema for agents
-# Request: { "prompt": "..." }
-DEFAULT_AGENT_PARAMETERS: dict[str, Any] = {
+# Default input schema for agents
+# Request: { "input": { "prompt": "..." } }
+DEFAULT_AGENT_INPUT: dict[str, Any] = {
     "type": "object",
     "properties": {
         "prompt": {"type": "string", "description": "The prompt or task for the agent"},
     },
     "required": ["prompt"],
+}
+
+# Default output schema for agents
+# Response: { "output": "..." }
+DEFAULT_AGENT_OUTPUT: dict[str, Any] = {
+    "type": "string",
+}
+
+# Chat agent input schema
+# Request: { "input": { "messages": [...] } }
+CHAT_AGENT_INPUT: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "messages": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "role": {
+                        "type": "string",
+                        "enum": ["system", "user", "assistant", "tool"],
+                    },
+                    "content": {
+                        "type": ["string", "null"],
+                    },
+                    "name": {
+                        "type": "string",
+                    },
+                    "tool_call_id": {
+                        "type": "string",
+                    },
+                    "tool_calls": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string"},
+                                "type": {"type": "string", "enum": ["function"]},
+                                "function": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "arguments": {"type": "string"},
+                                    },
+                                    "required": ["name", "arguments"],
+                                },
+                            },
+                            "required": ["id", "type", "function"],
+                        },
+                    },
+                },
+                "required": ["role"],
+            },
+        },
+    },
+    "required": ["messages"],
+}
+
+# Chat agent output schema
+# Response: { "output": { "messages": [...] } }
+CHAT_AGENT_OUTPUT: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "messages": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "role": {"type": "string"},
+                    "content": {"type": ["string", "null"]},
+                },
+                "required": ["role"],
+            },
+        },
+    },
+    "required": ["messages"],
 }
 
 # ASGI type aliases
@@ -31,8 +107,8 @@ Send = Callable[[dict[str, Any]], Awaitable[None]]
 ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
 
 # Type aliases for handlers
-ExecuteHandler = Callable[[ExecuteRequest], Awaitable[ExecuteResponse]]
-ExecuteStreamHandler = Callable[[ExecuteRequest], AsyncIterator[str]]
+InvokeHandler = Callable[[InvokeRequest], Awaitable[InvokeResponseDict]]
+InvokeStreamHandler = Callable[[InvokeRequest], AsyncIterator[str]]
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -44,11 +120,6 @@ class AgentBase(ABC):
     Use `Agent` for decorator-based registration or extend
     `AgentAdapter` for framework adapters.
     """
-
-    @property
-    def streaming(self) -> bool:
-        """Whether this agent supports streaming requests."""
-        return False
 
     @property
     @abstractmethod
@@ -63,19 +134,18 @@ class AgentBase(ABC):
         Override this to provide custom metadata.
         """
         return {
-            "type": "agent",
-            "parameters": DEFAULT_AGENT_PARAMETERS,
-            "requestKeys": ["prompt"],
-            "responseKeys": ["content"],
+            "capabilities": {"streaming": False},
+            "input": DEFAULT_AGENT_INPUT,
+            "output": DEFAULT_AGENT_OUTPUT,
         }
 
     @abstractmethod
-    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
-        """Handle an execute request."""
+    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+        """Handle an invoke request."""
         ...
 
-    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
-        """Handle a streaming execute request."""
+    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+        """Handle a streaming invoke request."""
         raise NotImplementedError("Streaming not implemented for this agent")
         # Unreachable, but required to make this an async generator
         yield  # type: ignore[misc]
@@ -94,7 +164,7 @@ class AgentBase(ABC):
 
             @agent.handler
             async def handle(request):
-                return ExecuteResponse(output="Hello!")
+                return {"output": "Hello!"}
 
             # AWS Lambda handler
             handler = Mangum(agent.to_asgi())
@@ -147,25 +217,27 @@ class AgentBase(ABC):
                 )
                 try:
                     async for chunk in stream:
+                        data = json.dumps({"delta": chunk})
                         await send(
                             {
                                 "type": "http.response.body",
-                                "body": f"data: {chunk}\n\n".encode(),
+                                "body": f"data: {data}\n\n".encode(),
                                 "more_body": True,
                             }
                         )
                     await send(
                         {
                             "type": "http.response.body",
-                            "body": b"data: [DONE]\n\n",
+                            "body": f"data: {json.dumps({'done': True})}\n\n".encode(),
                             "more_body": False,
                         }
                     )
                 except NotImplementedError as e:
+                    error_data = {"error": {"type": "NotImplementedError", "message": str(e)}}
                     await send(
                         {
                             "type": "http.response.body",
-                            "body": f'data: {{"error": "{str(e)}"}}\n\n'.encode(),
+                            "body": f"data: {json.dumps(error_data)}\n\n".encode(),
                             "more_body": False,
                         }
                     )
@@ -216,7 +288,6 @@ class AgentBase(ABC):
                                 {
                                     "name": agent.name,
                                     **agent.metadata,
-                                    "streaming": agent.streaming,
                                 }
                             ],
                         }
@@ -228,40 +299,45 @@ class AgentBase(ABC):
                 if method == "POST" and invoke_match:
                     agent_name = invoke_match.group(1)
                     if agent_name != agent.name:
-                        await json_response({"error": f"Agent '{agent_name}' not found"}, 404)
+                        await json_response(
+                            {
+                                "error": {
+                                    "type": "NotFoundError",
+                                    "message": f"Agent '{agent_name}' not found",
+                                }
+                            },
+                            404,
+                        )
                         return
 
                     body_bytes = await read_body()
                     body = json.loads(body_bytes)
 
-                    # Get requestKeys from agent metadata
-                    request_keys = agent.metadata.get("requestKeys", [])
-
-                    # Extract declared keys from body into input
-                    input_data: dict[str, Any] = {}
-                    for key in request_keys:
-                        if key in body:
-                            input_data[key] = body[key]
-
-                    request = ExecuteRequest(
-                        input=input_data,
+                    request = InvokeRequest(
+                        input=body.get("input", {}),
                         context=body.get("context"),
                         stream=body.get("stream", False),
                     )
 
                     if request.stream:
-                        await sse_response(agent.execute_stream(request))
+                        await sse_response(agent.invoke_stream(request))
                         return
 
-                    response = await agent.execute(request)
+                    response = await agent.invoke(request)
                     await json_response(response)
                     return
 
                 # Not found
-                await json_response({"error": "Not found"}, 404)
+                await json_response(
+                    {"error": {"type": "NotFoundError", "message": "Not found"}},
+                    404,
+                )
 
             except Exception as e:
-                await json_response({"error": str(e)}, 500)
+                await json_response(
+                    {"error": {"type": type(e).__name__, "message": str(e)}},
+                    500,
+                )
 
         return asgi_app
 
@@ -275,8 +351,8 @@ class Agent(AgentBase):
         agent = Agent("my-agent")
 
         @agent.handler
-        async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
-            return ExecuteResponse(output="Hello!")
+        async def handle_invoke(request: InvokeRequest) -> InvokeResponseDict:
+            return {"output": "Hello!"}
 
         serve(agents=[agent], port=8080)
     """
@@ -292,8 +368,8 @@ class Agent(AgentBase):
         self._metadata = metadata or {}
 
         # Handler storage
-        self._execute_handler: ExecuteHandler | None = None
-        self._execute_stream_handler: ExecuteStreamHandler | None = None
+        self._invoke_handler: InvokeHandler | None = None
+        self._invoke_stream_handler: InvokeStreamHandler | None = None
 
     @property
     def name(self) -> str:
@@ -304,73 +380,74 @@ class Agent(AgentBase):
     def metadata(self) -> dict[str, Any]:
         """Return agent metadata for discovery."""
         return {
-            "type": "agent",
-            "parameters": DEFAULT_AGENT_PARAMETERS,
-            "requestKeys": ["prompt"],
-            "responseKeys": ["content"],
-            **self._metadata,
+            "capabilities": {
+                "streaming": self._invoke_stream_handler is not None,
+                **self._metadata.get("capabilities", {}),
+            },
+            "input": self._metadata.get("input", DEFAULT_AGENT_INPUT),
+            "output": self._metadata.get("output", DEFAULT_AGENT_OUTPUT),
+            **{
+                k: v
+                for k, v in self._metadata.items()
+                if k not in ("capabilities", "input", "output")
+            },
         }
-
-    @property
-    def streaming(self) -> bool:
-        """Whether execute supports streaming."""
-        return self._execute_stream_handler is not None
 
     # Decorator methods for handler registration
 
-    def handler(self, fn: ExecuteHandler) -> ExecuteHandler:
+    def handler(self, fn: InvokeHandler) -> InvokeHandler:
         """Register a handler.
 
         Example:
             @agent.handler
-            async def handle(request: ExecuteRequest) -> ExecuteResponse:
-                return ExecuteResponse(output="Hello!")
+            async def handle(request: InvokeRequest) -> InvokeResponseDict:
+                return {"output": "Hello!"}
         """
-        self._execute_handler = fn
+        self._invoke_handler = fn
         return fn
 
-    def stream_handler(self, fn: ExecuteStreamHandler) -> ExecuteStreamHandler:
+    def stream_handler(self, fn: InvokeStreamHandler) -> InvokeStreamHandler:
         """Register a streaming handler.
 
         Example:
             @agent.stream_handler
-            async def handle(request: ExecuteRequest):
-                yield '{"chunk": "Hello"}'
-                yield '{"chunk": " world!"}'
+            async def handle(request: InvokeRequest):
+                yield "Hello"
+                yield " world!"
         """
-        self._execute_stream_handler = fn
+        self._invoke_stream_handler = fn
         return fn
 
     # Implementation of abstract methods
 
-    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
-        """Handle an execute request."""
-        if self._execute_handler is None:
-            raise NotImplementedError(f"No execute handler registered for agent '{self._name}'")
-        return await self._execute_handler(request)
+    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+        """Handle an invoke request."""
+        if self._invoke_handler is None:
+            raise NotImplementedError(f"No invoke handler registered for agent '{self._name}'")
+        return await self._invoke_handler(request)
 
-    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
-        """Handle a streaming execute request."""
-        if self._execute_stream_handler is None:
+    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+        """Handle a streaming invoke request."""
+        if self._invoke_stream_handler is None:
             raise NotImplementedError(
-                f"No streaming execute handler registered for agent '{self._name}'"
+                f"No streaming invoke handler registered for agent '{self._name}'"
             )
-        async for chunk in self._execute_stream_handler(request):
+        async for chunk in self._invoke_stream_handler(request):
             yield chunk
 
 
-def _extract_parameters_from_function(
+def _extract_input_from_function(
     func: Callable[..., Any],
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
-    """Extract JSON Schema parameters and output from function signature.
+    """Extract JSON Schema input and output from function signature.
 
     Parses docstrings (Google, NumPy, or Sphinx style) to extract:
     - Parameter descriptions from Args section
     - Return description from Returns section
 
     Returns:
-        A tuple of (parameters_schema, output_schema).
-        parameters_schema is a dict with 'type', 'properties', and 'required' keys.
+        A tuple of (input_schema, output_schema).
+        input_schema is a dict with 'type', 'properties', and 'required' keys.
         output_schema is the JSON schema for the return type, or None if not specified.
     """
     # Parse docstring for parameter descriptions
@@ -420,51 +497,6 @@ def _extract_parameters_from_function(
     return {"type": "object", "properties": properties, "required": required}, output_schema
 
 
-def _wrap_output_schema_for_response_keys(
-    output_schema: dict[str, Any] | None, response_keys: list[str]
-) -> dict[str, Any] | None:
-    """Wrap output schema to match the full response structure based on responseKeys.
-
-    If responseKeys = ["output"], wraps the schema as { output: <schema> }
-    If responseKeys = ["message"], wraps the schema as { message: <schema> }
-    If responseKeys = ["message", "output"], wraps as { message: <schema>, output: <schema> }
-
-    Args:
-        output_schema: The schema for the return value (or None)
-        response_keys: List of top-level response keys
-
-    Returns:
-        Wrapped schema describing the full response object, or None if output_schema is None
-    """
-    if output_schema is None or not response_keys:
-        return None
-
-    # If single response key, wrap the output schema
-    if len(response_keys) == 1:
-        return {
-            "type": "object",
-            "properties": {response_keys[0]: output_schema},
-            "required": response_keys,
-        }
-
-    # Multiple response keys - need to split the output schema
-    # For now, assume the output schema describes the first key's value
-    # and other keys are optional/unknown
-    properties: dict[str, Any] = {response_keys[0]: output_schema}
-    required = [response_keys[0]]
-
-    # For additional keys, we don't know their schema, so mark as optional
-    # Users can override via metadata if they need full schema
-    for key in response_keys[1:]:
-        properties[key] = {"type": "object"}  # Placeholder - should be overridden
-
-    return {
-        "type": "object",
-        "properties": properties,
-        "required": required,
-    }
-
-
 def agent(
     func: Callable[..., Any] | None = None,
     *,
@@ -500,7 +532,7 @@ def agent(
         description: Optional description override. Defaults to docstring.
 
     Returns:
-        An Agent instance that handles execute requests.
+        An Agent instance that handles invoke requests.
     """
 
     def decorator(f: Callable[..., Any]) -> Agent:
@@ -510,27 +542,16 @@ def agent(
         # Detect if streaming (async generator function)
         is_streaming = inspect.isasyncgenfunction(f)
 
-        # Extract parameter and output schemas
-        parameters, output = _extract_parameters_from_function(f)
-
-        # Derive requestKeys from parameters properties
-        request_keys = list(parameters.get("properties", {}).keys())
-
-        # Default responseKeys (can be overridden via metadata)
-        response_keys = ["content"]
-
-        # Wrap output schema to match responseKeys structure
-        wrapped_output = _wrap_output_schema_for_response_keys(output, response_keys)
+        # Extract input and output schemas
+        input_schema, output_schema = _extract_input_from_function(f)
 
         # Build metadata
         metadata: dict[str, Any] = {
             "description": agent_description,
-            "parameters": parameters,
-            "requestKeys": request_keys,
-            "responseKeys": response_keys,
+            "input": input_schema,
+            "output": output_schema or DEFAULT_AGENT_OUTPUT,
+            "capabilities": {"streaming": is_streaming},
         }
-        if wrapped_output is not None:
-            metadata["output"] = wrapped_output
 
         # Create agent instance
         agent_instance = Agent(
@@ -538,53 +559,39 @@ def agent(
             metadata=metadata,
         )
 
-        # Helper to get response keys from metadata (allows override)
-        def get_response_keys() -> list[str]:
-            keys = agent_instance.metadata.get("responseKeys", ["content"])
-            return keys if keys else ["content"]
-
         if is_streaming:
-            # Register streaming execute handler
-            async def execute_stream_handler(request: ExecuteRequest) -> AsyncIterator[str]:
+            # Register streaming invoke handler
+            async def invoke_stream_handler(request: InvokeRequest) -> AsyncIterator[str]:
                 async for chunk in f(**request.input):
-                    # Convert to JSON string if not already a string
+                    # Convert to string if not already
                     if isinstance(chunk, str):
                         yield chunk
                     else:
                         yield json.dumps(chunk)
 
-            agent_instance.stream_handler(execute_stream_handler)
+            agent_instance.stream_handler(invoke_stream_handler)
 
             # Also register non-streaming handler that collects chunks
-            async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
+            async def invoke_handler(request: InvokeRequest) -> InvokeResponseDict:
                 chunks: list[str] = []
                 async for chunk in f(**request.input):
                     if isinstance(chunk, str):
                         chunks.append(chunk)
                     else:
                         chunks.append(str(chunk))
-                result = "".join(chunks)
-                # If result is dict, use as-is; otherwise wrap in first responseKey
-                if isinstance(result, dict):
-                    return result
-                response_keys = get_response_keys()
-                return {response_keys[0]: result}
+                return {"output": "".join(chunks)}
 
-            agent_instance.handler(execute_handler)
+            agent_instance.handler(invoke_handler)
         else:
-            # Register regular execute handler
-            async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
+            # Register regular invoke handler
+            async def invoke_handler(request: InvokeRequest) -> InvokeResponseDict:
                 if inspect.iscoroutinefunction(f):
                     result = await f(**request.input)
                 else:
                     result = f(**request.input)
-                # If result is dict, use as-is; otherwise wrap in first responseKey
-                if isinstance(result, dict):
-                    return result
-                response_keys = get_response_keys()
-                return {response_keys[0]: result}
+                return {"output": result}
 
-            agent_instance.handler(execute_handler)
+            agent_instance.handler(invoke_handler)
 
         # Preserve function metadata
         agent_instance.__doc__ = f.__doc__
@@ -614,8 +621,8 @@ def chat_agent(
     This is a convenience decorator that creates an agent with a standard chat
     interface (messages in, messages out).
 
-    Request: { "messages": [...] }
-    Response: { "messages": [{ "role": "assistant", "content": "..." }, ...] }
+    Request: { "input": { "messages": [...] } }
+    Response: { "output": { "messages": [{ "role": "assistant", "content": "..." }, ...] } }
 
     Examples:
         @chat_agent
@@ -644,7 +651,7 @@ def chat_agent(
         description: Optional description override. Defaults to docstring.
 
     Returns:
-        An Agent instance that handles execute requests with chat semantics.
+        An Agent instance that handles invoke requests with chat semantics.
     """
 
     def decorator(f: Callable[..., Any]) -> Agent:
@@ -658,80 +665,13 @@ def chat_agent(
         sig = inspect.signature(f)
         accepts_context = "context" in sig.parameters
 
-        # Chat agents have default request/response keys (can be overridden via metadata)
-        request_keys = ["messages"]
-        response_keys = ["messages"]
-
-        # Message item schema (shared between parameters and output)
-        message_item_schema = {
-            "type": "object",
-            "properties": {
-                "role": {
-                    "type": "string",
-                    "enum": ["system", "user", "assistant", "tool"],
-                },
-                "content": {
-                    "type": ["string", "null"],
-                },
-                "name": {
-                    "type": "string",
-                },
-                "tool_call_id": {
-                    "type": "string",
-                },
-                "tool_calls": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "string"},
-                            "type": {"type": "string", "enum": ["function"]},
-                            "function": {
-                                "type": "object",
-                                "properties": {
-                                    "name": {"type": "string"},
-                                    "arguments": {"type": "string"},
-                                },
-                                "required": ["name", "arguments"],
-                            },
-                        },
-                        "required": ["id", "type", "function"],
-                    },
-                },
-            },
-            "required": ["role"],
-        }
-
-        # Define standard chat agent schemas
-        parameters_schema = {
-            "type": "object",
-            "properties": {
-                "messages": {
-                    "type": "array",
-                    "items": message_item_schema,
-                }
-            },
-            "required": ["messages"],
-        }
-        # Messages schema (array of messages, the value, not the full response)
-        messages_schema = {
-            "type": "array",
-            "items": message_item_schema,
-        }
-
-        # Wrap messages schema to match responseKeys structure
-        wrapped_output = _wrap_output_schema_for_response_keys(messages_schema, response_keys)
-
         # Build metadata
         metadata: dict[str, Any] = {
-            "type": "chat_agent",
             "description": agent_description,
-            "parameters": parameters_schema,
-            "requestKeys": request_keys,
-            "responseKeys": response_keys,
+            "input": CHAT_AGENT_INPUT,
+            "output": CHAT_AGENT_OUTPUT,
+            "capabilities": {"streaming": is_streaming},
         }
-        if wrapped_output is not None:
-            metadata["output"] = wrapped_output
 
         # Create agent instance
         agent_instance = Agent(
@@ -739,14 +679,9 @@ def chat_agent(
             metadata=metadata,
         )
 
-        # Helper to get response keys from metadata (allows override)
-        def get_response_keys() -> list[str]:
-            keys = agent_instance.metadata.get("responseKeys", ["messages"])
-            return keys if keys else ["messages"]
-
         if is_streaming:
-            # Register streaming execute handler
-            async def execute_stream_handler(request: ExecuteRequest) -> AsyncIterator[str]:
+            # Register streaming invoke handler
+            async def invoke_stream_handler(request: InvokeRequest) -> AsyncIterator[str]:
                 # Extract messages from input
                 raw_messages = request.input.get("messages", [])
                 messages = [Message(**m) for m in raw_messages]
@@ -759,10 +694,10 @@ def chat_agent(
                     else:
                         yield json.dumps(chunk)
 
-            agent_instance.stream_handler(execute_stream_handler)
+            agent_instance.stream_handler(invoke_stream_handler)
 
             # Also register non-streaming handler that collects chunks
-            async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
+            async def invoke_handler(request: InvokeRequest) -> InvokeResponseDict:
                 raw_messages = request.input.get("messages", [])
                 messages = [Message(**m) for m in raw_messages]
                 kwargs: dict[str, Any] = {"messages": messages}
@@ -774,15 +709,12 @@ def chat_agent(
                         chunks.append(chunk)
                     else:
                         chunks.append(str(chunk))
-                result = [{"role": "assistant", "content": "".join(chunks)}]
-                # For chat agents, always wrap in first responseKey (typically "messages")
-                response_keys = get_response_keys()
-                return {response_keys[0]: result}
+                return {"output": {"messages": [{"role": "assistant", "content": "".join(chunks)}]}}
 
-            agent_instance.handler(execute_handler)
+            agent_instance.handler(invoke_handler)
         else:
-            # Register regular execute handler
-            async def execute_handler(request: ExecuteRequest) -> ExecuteResponse:
+            # Register regular invoke handler
+            async def invoke_handler(request: InvokeRequest) -> InvokeResponseDict:
                 raw_messages = request.input.get("messages", [])
                 messages = [Message(**m) for m in raw_messages]
                 kwargs: dict[str, Any] = {"messages": messages}
@@ -806,16 +738,9 @@ def chat_agent(
                 else:
                     messages_list = result
 
-                # Check if result is already a full response dict with all responseKeys
-                response_keys = get_response_keys()
-                if isinstance(messages_list, dict) and all(
-                    key in messages_list for key in response_keys
-                ):
-                    return messages_list
-                # Otherwise wrap in first responseKey (typically "messages" for chat agents)
-                return {response_keys[0]: messages_list}
+                return {"output": {"messages": messages_list}}
 
-            agent_instance.handler(execute_handler)
+            agent_instance.handler(invoke_handler)
 
         # Preserve function metadata
         agent_instance.__doc__ = f.__doc__

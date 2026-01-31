@@ -15,8 +15,8 @@ from langchain_core.messages import (
 
 from reminix_runtime import (
     AgentAdapter,
-    ExecuteRequest,
-    ExecuteResponse,
+    InvokeRequest,
+    InvokeResponseDict,
     Message,
     serve,
 )
@@ -81,8 +81,8 @@ class LangGraphAgentAdapter(AgentAdapter):
                 return message.content if isinstance(message.content, str) else str(message.content)
         return ""
 
-    def _build_graph_input(self, request: ExecuteRequest) -> Any:
-        """Build LangGraph input from execute request."""
+    def _build_graph_input(self, request: InvokeRequest) -> Any:
+        """Build LangGraph input from invoke request."""
         # Check if input contains messages (chat-style)
         if "messages" in request.input:
             messages_data = request.input["messages"]
@@ -93,16 +93,16 @@ class LangGraphAgentAdapter(AgentAdapter):
             # Pass input directly to the graph
             return request.input
 
-    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
-        """Handle an execute request.
+    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+        """Handle an invoke request.
 
         For both task-oriented and chat-style operations.
 
         Args:
-            request: The execute request with input data.
+            request: The invoke request with input data.
 
         Returns:
-            The execute response with the output.
+            The invoke response with the output.
         """
         graph_input = self._build_graph_input(request)
 
@@ -120,11 +120,11 @@ class LangGraphAgentAdapter(AgentAdapter):
 
         return {"output": output}
 
-    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
-        """Handle a streaming execute request.
+    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+        """Handle a streaming invoke request.
 
         Args:
-            request: The execute request with input data.
+            request: The invoke request with input data.
 
         Yields:
             JSON-encoded chunks from the stream.

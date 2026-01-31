@@ -8,8 +8,8 @@ from openai import AsyncOpenAI
 
 from reminix_runtime import (
     AgentAdapter,
-    ExecuteRequest,
-    ExecuteResponse,
+    InvokeRequest,
+    InvokeResponseDict,
     Message,
     serve,
 )
@@ -56,8 +56,8 @@ class OpenAIAgentAdapter(AgentAdapter):
             result["name"] = message.name
         return result
 
-    def _build_openai_messages(self, request: ExecuteRequest) -> list[dict[str, Any]]:
-        """Build OpenAI messages from execute request input."""
+    def _build_openai_messages(self, request: InvokeRequest) -> list[dict[str, Any]]:
+        """Build OpenAI messages from invoke request input."""
         # Check if input contains messages (chat-style)
         if "messages" in request.input:
             messages_data = request.input["messages"]
@@ -70,17 +70,17 @@ class OpenAIAgentAdapter(AgentAdapter):
             # Use input as a single user message
             return [{"role": "user", "content": str(request.input)}]
 
-    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
-        """Handle an execute request.
+    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+        """Handle an invoke request.
 
         For both task-oriented and chat-style operations. Expects input with 'messages' key
         or a 'prompt' key for simple text generation.
 
         Args:
-            request: The execute request with input data.
+            request: The invoke request with input data.
 
         Returns:
-            The execute response with the output.
+            The invoke response with the output.
         """
         messages = self._build_openai_messages(request)
 
@@ -95,11 +95,11 @@ class OpenAIAgentAdapter(AgentAdapter):
 
         return {"output": output}
 
-    async def execute_stream(self, request: ExecuteRequest) -> AsyncIterator[str]:
-        """Handle a streaming execute request.
+    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+        """Handle a streaming invoke request.
 
         Args:
-            request: The execute request with input data.
+            request: The invoke request with input data.
 
         Yields:
             JSON-encoded chunks from the stream.

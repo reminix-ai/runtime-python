@@ -1,5 +1,6 @@
 """Reminix Runtime Server."""
 
+import json
 import os
 import traceback
 from collections.abc import AsyncIterator
@@ -12,10 +13,9 @@ from . import __version__
 from .agent import AgentBase
 from .tool import ToolBase
 from .types import (
-    ExecuteRequest,
-    ExecuteResponse,
-    ToolExecuteRequest,
-    ToolExecuteResponse,
+    InvokeRequest,
+    InvokeResponse,
+    InvokeResponseDict,
 )
 
 # Enable debug mode via environment variable to include stack traces in error responses
@@ -51,12 +51,11 @@ def _create_error_response(
 
 async def _sse_generator(stream: AsyncIterator[str]) -> AsyncIterator[bytes]:
     """Convert an async string iterator to SSE format."""
-    import json
-
     try:
         async for chunk in stream:
-            yield f"data: {chunk}\n\n".encode()
-        yield b"data: [DONE]\n\n"
+            data = json.dumps({"delta": chunk})
+            yield f"data: {data}\n\n".encode()
+        yield f"data: {json.dumps({'done': True})}\n\n".encode()
     except NotImplementedError as e:
         error_data = _create_error_response(e, "NotImplementedError")
         yield f"data: {json.dumps(error_data)}\n\n".encode()
@@ -113,7 +112,6 @@ def create_app(
                 {
                     "name": agent.name,
                     **agent.metadata,
-                    "streaming": agent.streaming,
                 }
                 for agent in agents
             ],
@@ -129,35 +127,26 @@ def create_app(
     @app.post("/agents/{agent_name}/invoke", response_model=None)
     async def invoke(
         agent_name: str, body: dict[str, Any]
-    ) -> ExecuteResponse | StreamingResponse | JSONResponse:
+    ) -> InvokeResponseDict | StreamingResponse | JSONResponse:
         """Invoke an agent."""
         agent = agent_map.get(agent_name)
         if agent is None:
             raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
 
-        # Get requestKeys from agent metadata
-        request_keys = agent.metadata.get("requestKeys", [])
-
-        # Extract declared keys from body into input
-        input_data: dict[str, Any] = {}
-        for key in request_keys:
-            if key in body:
-                input_data[key] = body[key]
-
-        request = ExecuteRequest(
-            input=input_data,
+        request = InvokeRequest(
+            input=body.get("input", {}),
             context=body.get("context"),
             stream=body.get("stream", False),
         )
 
         if request.stream:
             return StreamingResponse(
-                _sse_generator(agent.execute_stream(request)),
+                _sse_generator(agent.invoke_stream(request)),
                 media_type="text/event-stream",
             )
 
         try:
-            return await agent.execute(request)
+            return await agent.invoke(request)
         except NotImplementedError as e:
             return JSONResponse(
                 status_code=501,
@@ -175,13 +164,16 @@ def create_app(
             )
 
     @app.post("/tools/{tool_name}/call", response_model=None)
-    async def call_tool(
-        tool_name: str, request: ToolExecuteRequest
-    ) -> ToolExecuteResponse | JSONResponse:
+    async def call_tool(tool_name: str, body: dict[str, Any]) -> InvokeResponse | JSONResponse:
         """Call a tool."""
         tool = tool_map.get(tool_name)
         if tool is None:
             raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
+
+        request = InvokeRequest(
+            input=body.get("input", {}),
+            context=body.get("context"),
+        )
 
         try:
             return await tool.execute(request)

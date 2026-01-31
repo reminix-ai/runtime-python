@@ -8,7 +8,13 @@ from typing import Any, get_args, get_origin, get_type_hints, is_typeddict
 from docstring_parser import parse as parse_docstring
 from pydantic import BaseModel
 
-from .types import ToolExecuteRequest, ToolExecuteResponse, ToolSchema
+from .types import InvokeRequest, InvokeResponse
+
+# Default output schema for tools
+# Response: { "output": "..." }
+DEFAULT_TOOL_OUTPUT: dict[str, Any] = {
+    "type": "string",
+}
 
 
 class ToolBase(ABC):
@@ -28,8 +34,8 @@ class ToolBase(ABC):
 
     @property
     @abstractmethod
-    def parameters(self) -> ToolSchema:
-        """JSON Schema for the tool's input parameters."""
+    def input(self) -> dict[str, Any]:
+        """JSON Schema for the tool's input."""
         ...
 
     @property
@@ -41,16 +47,15 @@ class ToolBase(ABC):
     def metadata(self) -> dict[str, Any]:
         """Metadata for runtime discovery."""
         meta = {
-            "type": "tool",
             "description": self.description,
-            "parameters": self.parameters.model_dump(),
+            "input": self.input,
         }
         if self.output:
             meta["output"] = self.output
         return meta
 
     @abstractmethod
-    async def execute(self, request: ToolExecuteRequest) -> ToolExecuteResponse:
+    async def execute(self, request: InvokeRequest) -> InvokeResponse:
         """Execute the tool with the given input."""
         ...
 
@@ -137,7 +142,7 @@ def _python_type_to_json_schema(python_type: type) -> dict[str, Any]:
 
 def _extract_schema_from_function(
     func: Callable[..., Any],
-) -> tuple[str, ToolSchema, dict[str, Any] | None]:
+) -> tuple[str, dict[str, Any], dict[str, Any] | None]:
     """Extract tool schema from function signature and docstring.
 
     Parses docstrings (Google, NumPy, or Sphinx style) to extract:
@@ -146,7 +151,7 @@ def _extract_schema_from_function(
     - Return description from Returns section
 
     Returns:
-        Tuple of (description, parameters_schema, output_schema)
+        Tuple of (description, input_schema, output_schema)
     """
     # Parse docstring using docstring-parser (supports Google, NumPy, Sphinx styles)
     docstring = func.__doc__ or ""
@@ -198,7 +203,8 @@ def _extract_schema_from_function(
             # Add default value to schema
             properties[param_name]["default"] = param.default
 
-    return description, ToolSchema(properties=properties, required=required), output_schema
+    input_schema = {"type": "object", "properties": properties, "required": required}
+    return description, input_schema, output_schema
 
 
 class Tool(ToolBase):
@@ -220,7 +226,7 @@ class Tool(ToolBase):
         """
         self._func = func
         self._name = name or func.__name__
-        extracted_desc, self._parameters, self._output = _extract_schema_from_function(func)
+        extracted_desc, self._input, self._output = _extract_schema_from_function(func)
         self._description = description or extracted_desc
 
     @property
@@ -232,14 +238,14 @@ class Tool(ToolBase):
         return self._description
 
     @property
-    def parameters(self) -> ToolSchema:
-        return self._parameters
+    def input(self) -> dict[str, Any]:
+        return self._input
 
     @property
     def output(self) -> dict[str, Any] | None:
-        return self._output
+        return self._output or DEFAULT_TOOL_OUTPUT
 
-    async def execute(self, request: ToolExecuteRequest) -> ToolExecuteResponse:
+    async def execute(self, request: InvokeRequest) -> InvokeResponse:
         """Execute the tool by calling the wrapped function.
 
         Exceptions are not caught here - they propagate to the server
@@ -251,7 +257,7 @@ class Tool(ToolBase):
         else:
             result = self._func(**request.input)
 
-        return ToolExecuteResponse(output=result)
+        return InvokeResponse(output=result)
 
 
 def tool(
@@ -280,7 +286,7 @@ def tool(
         description: Optional description override. Defaults to docstring.
 
     Returns:
-        A Tool instance with parameters and output schemas extracted from type hints.
+        A Tool instance with input and output schemas extracted from type hints.
     """
 
     def decorator(f: Callable[..., Any]) -> Tool:
