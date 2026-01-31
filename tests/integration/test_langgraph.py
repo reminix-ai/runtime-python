@@ -49,7 +49,11 @@ class TestLangGraphAdapter:
         """Test invoke endpoint."""
         response = await client.post(
             "/agents/test-langgraph/invoke",
-            json={"messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]},
+            json={
+                "input": {
+                    "messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]
+                }
+            },
         )
 
         assert response.status_code == 200
@@ -60,7 +64,9 @@ class TestLangGraphAdapter:
         """Test chat endpoint."""
         response = await client.post(
             "/agents/test-langgraph/invoke",
-            json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
+            json={
+                "input": {"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]}
+            },
         )
 
         assert response.status_code == 200
@@ -71,7 +77,9 @@ class TestLangGraphAdapter:
         """Test that the agent calls tools and returns results."""
         response = await client.post(
             "/agents/test-langgraph/invoke",
-            json={"messages": [{"role": "user", "content": "What's the weather in Paris?"}]},
+            json={
+                "input": {"messages": [{"role": "user", "content": "What's the weather in Paris?"}]}
+            },
         )
 
         assert response.status_code == 200

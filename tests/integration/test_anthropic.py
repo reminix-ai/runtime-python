@@ -39,7 +39,7 @@ class TestAnthropicAdapter:
         """Test invoke endpoint."""
         response = await client.post(
             "/agents/test-anthropic/invoke",
-            json={"prompt": "Say 'hello' and nothing else."},
+            json={"input": {"prompt": "Say 'hello' and nothing else."}},
         )
 
         assert response.status_code == 200
@@ -51,7 +51,9 @@ class TestAnthropicAdapter:
         """Test invoke with messages array."""
         response = await client.post(
             "/agents/test-anthropic/invoke",
-            json={"messages": [{"role": "user", "content": "Say 'test' and nothing else."}]},
+            json={
+                "input": {"messages": [{"role": "user", "content": "Say 'test' and nothing else."}]}
+            },
         )
 
         assert response.status_code == 200
@@ -64,10 +66,12 @@ class TestAnthropicAdapter:
         response = await client.post(
             "/agents/test-anthropic/invoke",
             json={
-                "messages": [
-                    {"role": "system", "content": "You only respond with 'yes'."},
-                    {"role": "user", "content": "Do you understand?"},
-                ]
+                "input": {
+                    "messages": [
+                        {"role": "system", "content": "You only respond with 'yes'."},
+                        {"role": "user", "content": "Do you understand?"},
+                    ]
+                }
             },
         )
 
@@ -80,7 +84,9 @@ class TestAnthropicAdapter:
         """Test chat endpoint."""
         response = await client.post(
             "/agents/test-anthropic/invoke",
-            json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
+            json={
+                "input": {"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]}
+            },
         )
 
         assert response.status_code == 200
@@ -92,7 +98,7 @@ class TestAnthropicAdapter:
         async with client.stream(
             "POST",
             "/agents/test-anthropic/invoke",
-            json={"prompt": "Say 'stream' and nothing else.", "stream": True},
+            json={"input": {"prompt": "Say 'stream' and nothing else."}, "stream": True},
         ) as response:
             assert response.status_code == 200
             chunks = []

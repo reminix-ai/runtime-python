@@ -67,7 +67,7 @@ class TestLlamaIndexAdapter:
         """Test invoke endpoint."""
         response = await client.post(
             "/agents/test-llamaindex/invoke",
-            json={"query": "Say 'hello' and nothing else."},
+            json={"input": {"query": "Say 'hello' and nothing else."}},
         )
 
         assert response.status_code == 200
@@ -78,7 +78,9 @@ class TestLlamaIndexAdapter:
         """Test chat endpoint."""
         response = await client.post(
             "/agents/test-llamaindex/invoke",
-            json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
+            json={
+                "input": {"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]}
+            },
         )
 
         assert response.status_code == 200
@@ -89,7 +91,9 @@ class TestLlamaIndexAdapter:
         """Test that the agent calls tools and returns results."""
         response = await client.post(
             "/agents/test-llamaindex/invoke",
-            json={"messages": [{"role": "user", "content": "What's the weather in Paris?"}]},
+            json={
+                "input": {"messages": [{"role": "user", "content": "What's the weather in Paris?"}]}
+            },
         )
 
         assert response.status_code == 200

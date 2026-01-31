@@ -48,7 +48,11 @@ class TestLangChainAdapter:
         """Test invoke endpoint."""
         response = await client.post(
             "/agents/test-langchain/invoke",
-            json={"messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]},
+            json={
+                "input": {
+                    "messages": [{"role": "user", "content": "Say 'hello' and nothing else."}]
+                }
+            },
         )
 
         assert response.status_code == 200
@@ -59,7 +63,9 @@ class TestLangChainAdapter:
         """Test chat endpoint."""
         response = await client.post(
             "/agents/test-langchain/invoke",
-            json={"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]},
+            json={
+                "input": {"messages": [{"role": "user", "content": "Say 'hi' and nothing else."}]}
+            },
         )
 
         assert response.status_code == 200
@@ -71,12 +77,14 @@ class TestLangChainAdapter:
         response = await client.post(
             "/agents/test-langchain/invoke",
             json={
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": "What's the weather in Paris? Use the get_weather tool.",
-                    }
-                ]
+                "input": {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "What's the weather in Paris? Use the get_weather tool.",
+                        }
+                    ]
+                }
             },
         )
 
