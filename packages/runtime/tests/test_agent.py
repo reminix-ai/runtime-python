@@ -376,9 +376,7 @@ class TestAgentTemplates:
             last = messages[-1] if messages else {}
             return f"Reply to: {last.get('content', '')}"
 
-        request = AgentInvokeRequest(
-            input={"messages": [{"role": "user", "content": "Hi"}]}
-        )
+        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
         response = await chat_handler.invoke(request)
         assert response["output"] == "Reply to: Hi"
 
@@ -403,9 +401,7 @@ class TestAgentTemplates:
         async def task_handler(task: str, text: str | None = None):
             return f'Task "{task}" on: {text or "—"}'
 
-        request = AgentInvokeRequest(
-            input={"task": "summarize", "text": "Some content"}
-        )
+        request = AgentInvokeRequest(input={"task": "summarize", "text": "Some content"})
         response = await task_handler.invoke(request)
         assert response["output"] == 'Task "summarize" on: Some content'
 
@@ -470,9 +466,7 @@ class TestAgentTemplates:
                 {"role": "assistant", "content": f"Reply: {last.get('content', '')}"}
             ]
 
-        request = AgentInvokeRequest(
-            input={"messages": [{"role": "user", "content": "Hello"}]}
-        )
+        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
         response = await thread_handler.invoke(request)
         output = response["output"]
         assert isinstance(output, list)

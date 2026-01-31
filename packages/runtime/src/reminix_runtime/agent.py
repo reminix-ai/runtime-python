@@ -49,7 +49,10 @@ MESSAGE_ITEM_SCHEMA: dict[str, Any] = {
             "description": "Tool calls requested by the model (assistant messages)",
             "items": TOOL_CALL_ITEM_SCHEMA,
         },
-        "tool_call_id": {"type": "string", "description": "Id of the tool call this message is a result for (tool messages)"},
+        "tool_call_id": {
+            "type": "string",
+            "description": "Id of the tool call this message is a result for (tool messages)",
+        },
         "name": {"type": "string", "description": "Tool name (tool messages)"},
     },
 }
