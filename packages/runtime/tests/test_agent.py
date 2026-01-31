@@ -326,3 +326,98 @@ class TestAgentDecorator:
         response = await streamer.invoke(request)
 
         assert response["output"] == "hello world "
+
+
+class TestAgentTemplates:
+    """Tests for @agent(template=...) templates (prompt, chat, task)."""
+
+    def test_template_prompt_metadata(self):
+        """template=prompt sets prompt input and string output in metadata."""
+
+        @agent(template="prompt")
+        async def echo(prompt: str):
+            return f"You said: {prompt}"
+
+        assert echo.metadata["template"] == "prompt"
+        assert echo.metadata["input"]["required"] == ["prompt"]
+        assert echo.metadata["input"]["properties"]["prompt"]["type"] == "string"
+        assert echo.metadata["output"]["type"] == "string"
+
+    @pytest.mark.asyncio
+    async def test_template_prompt_invoke(self):
+        """template=prompt agent handles invoke with prompt input."""
+
+        @agent(template="prompt")
+        async def echo(prompt: str):
+            return f"You said: {prompt}"
+
+        request = AgentInvokeRequest(input={"prompt": "hello"})
+        response = await echo.invoke(request)
+        assert response["output"] == "You said: hello"
+
+    def test_template_chat_metadata(self):
+        """template=chat sets messages input and string output in metadata."""
+
+        @agent(template="chat")
+        async def chat_handler(messages: list):
+            return "ok"
+
+        assert chat_handler.metadata["template"] == "chat"
+        assert chat_handler.metadata["input"]["required"] == ["messages"]
+        assert "messages" in chat_handler.metadata["input"]["properties"]
+        assert chat_handler.metadata["output"]["type"] == "string"
+
+    @pytest.mark.asyncio
+    async def test_template_chat_invoke(self):
+        """template=chat agent handles invoke with messages input."""
+
+        @agent(template="chat")
+        async def chat_handler(messages: list):
+            last = messages[-1] if messages else {}
+            return f"Reply to: {last.get('content', '')}"
+
+        request = AgentInvokeRequest(
+            input={"messages": [{"role": "user", "content": "Hi"}]}
+        )
+        response = await chat_handler.invoke(request)
+        assert response["output"] == "Reply to: Hi"
+
+    def test_template_task_metadata(self):
+        """template=task sets task input and structured output in metadata."""
+
+        @agent(template="task")
+        async def task_handler(task: str, text: str | None = None):
+            return f"Task {task}"
+
+        assert task_handler.metadata["template"] == "task"
+        assert task_handler.metadata["input"]["required"] == ["task"]
+        assert "task" in task_handler.metadata["input"]["properties"]
+        assert "description" in task_handler.metadata["output"]
+        assert "Structured JSON" in task_handler.metadata["output"]["description"]
+
+    @pytest.mark.asyncio
+    async def test_template_task_invoke(self):
+        """template=task agent handles invoke with task input."""
+
+        @agent(template="task")
+        async def task_handler(task: str, text: str | None = None):
+            return f'Task "{task}" on: {text or "—"}'
+
+        request = AgentInvokeRequest(
+            input={"task": "summarize", "text": "Some content"}
+        )
+        response = await task_handler.invoke(request)
+        assert response["output"] == 'Task "summarize" on: Some content'
+
+    def test_no_template_derives_from_function(self):
+        """Without template, input/output are derived from function signature."""
+
+        @agent
+        async def add(a: int, b: int) -> int:
+            """Add two numbers."""
+            return a + b
+
+        assert "template" not in add.metadata
+        assert "a" in add.metadata["input"]["properties"]
+        assert "b" in add.metadata["input"]["properties"]
+        assert add.metadata["input"]["required"] == ["a", "b"]

@@ -6,7 +6,7 @@ import json
 import re
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import Any, TypeVar, get_type_hints
+from typing import Any, Literal, TypeVar, get_type_hints
 
 from docstring_parser import parse as parse_docstring
 
@@ -14,21 +14,63 @@ from . import __version__
 from .tool import _python_type_to_json_schema
 from .types import AgentInvokeRequest, AgentInvokeResponseDict
 
-# Default input schema for agents
-# Request: { "input": { "prompt": "..." } }
-DEFAULT_AGENT_INPUT: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "prompt": {"type": "string", "description": "The prompt or task for the agent"},
+# Named agent templates with predefined input/output schemas.
+# The default template is 'prompt'; use it when no template or custom schema is provided.
+AgentTemplate = Literal["prompt", "chat", "task"]
+
+DEFAULT_AGENT_TEMPLATE: AgentTemplate = "prompt"
+
+AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
+    "prompt": {
+        "input": {
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string", "description": "The prompt or task for the agent"},
+            },
+            "required": ["prompt"],
+        },
+        "output": {"type": "string"},
     },
-    "required": ["prompt"],
+    "chat": {
+        "input": {
+            "type": "object",
+            "properties": {
+                "messages": {
+                    "type": "array",
+                    "description": "Chat messages (OpenAI-style)",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "role": {"type": "string", "description": "Message role (user, assistant, system)"},
+                            "content": {"type": "string", "description": "Message content", "nullable": True},
+                        },
+                    },
+                },
+            },
+            "required": ["messages"],
+        },
+        "output": {"type": "string"},
+    },
+    "task": {
+        "input": {
+            "type": "object",
+            "properties": {
+                "task": {"type": "string", "description": "Task name or description"},
+            },
+            "required": ["task"],
+            "additionalProperties": True,
+        },
+        "output": {
+            "description": "Structured JSON result (object, array, string, number, boolean, or null)",
+            "type": "object",
+            "additionalProperties": True,
+        },
+    },
 }
 
-# Default output schema for agents
-# Response: { "output": "..." }
-DEFAULT_AGENT_OUTPUT: dict[str, Any] = {
-    "type": "string",
-}
+# Default input/output schemas (same as prompt template). Used by AgentBase and custom agents.
+DEFAULT_AGENT_INPUT: dict[str, Any] = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE]["input"]
+DEFAULT_AGENT_OUTPUT: dict[str, Any] = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE]["output"]
 
 # ASGI type aliases
 Scope = dict[str, Any]
@@ -432,10 +474,13 @@ def agent(
     *,
     name: str | None = None,
     description: str | None = None,
+    template: AgentTemplate | None = None,
 ) -> Agent | Callable[[Callable[..., Any]], Agent]:
     """Decorator to create an agent from a function.
 
-    The function parameters become the agent's input schema (like @tool).
+    The function parameters become the agent's input schema (like @tool),
+    unless template is set, in which case the template's input/output schema is used.
+
     Supports both sync and async functions, and async generators for streaming.
 
     Examples:
@@ -449,6 +494,12 @@ def agent(
             '''Echo the message.'''
             return f"Echo: {message}"
 
+        @agent(template="chat")
+        async def chat_handler(messages: list):
+            '''Reply to messages.'''
+            last = messages[-1] if messages else {}
+            return f"Reply to: {last.get('content', '')}"
+
         # Streaming agent (yields chunks, collected for non-streaming requests)
         @agent
         async def streamer(text: str):
@@ -460,6 +511,8 @@ def agent(
         func: The function to wrap (when used without parentheses).
         name: Optional name override. Defaults to function name.
         description: Optional description override. Defaults to docstring.
+        template: Optional template (prompt, chat, task). When set, uses that template's
+            input/output schema instead of deriving from the function signature.
 
     Returns:
         An Agent instance that handles invoke requests.
@@ -472,16 +525,24 @@ def agent(
         # Detect if streaming (async generator function)
         is_streaming = inspect.isasyncgenfunction(f)
 
-        # Extract input and output schemas
-        input_schema, output_schema = _extract_input_from_function(f)
+        # Resolve input and output schemas: template overrides derivation
+        if template is not None and template in AGENT_TEMPLATES:
+            t = AGENT_TEMPLATES[template]
+            input_schema = t["input"]
+            output_schema = t["output"]
+        else:
+            input_schema, output_schema = _extract_input_from_function(f)
+            output_schema = output_schema or DEFAULT_AGENT_OUTPUT
 
         # Build metadata
         metadata: dict[str, Any] = {
             "description": agent_description,
             "input": input_schema,
-            "output": output_schema or DEFAULT_AGENT_OUTPUT,
+            "output": output_schema,
             "capabilities": {"streaming": is_streaming},
         }
+        if template is not None:
+            metadata["template"] = template
 
         # Create agent instance
         agent_instance = Agent(
