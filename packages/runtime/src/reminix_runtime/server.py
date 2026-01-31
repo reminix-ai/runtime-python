@@ -6,7 +6,7 @@ import traceback
 from collections.abc import AsyncIterator
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from . import __version__
@@ -131,7 +131,12 @@ def create_app(
         """Invoke an agent."""
         agent = agent_map.get(agent_name)
         if agent is None:
-            raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "error": {"type": "NotFoundError", "message": f"Agent '{agent_name}' not found"}
+                },
+            )
 
         request = InvokeRequest(
             input=body.get("input", {}),
@@ -168,7 +173,12 @@ def create_app(
         """Call a tool."""
         tool = tool_map.get(tool_name)
         if tool is None:
-            raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "error": {"type": "NotFoundError", "message": f"Tool '{tool_name}' not found"}
+                },
+            )
 
         request = InvokeRequest(
             input=body.get("input", {}),

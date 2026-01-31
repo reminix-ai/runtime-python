@@ -6,7 +6,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from reminix_langgraph import LangGraphAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, ExecuteRequest
+from reminix_runtime import AgentAdapter, InvokeRequest
 
 
 class TestWrap:
@@ -35,25 +35,25 @@ class TestWrap:
         assert adapter.name == "langgraph-agent"
 
 
-class TestLangGraphAgentAdapterExecute:
-    """Tests for the execute() method."""
+class TestLangGraphAgentAdapterInvoke:
+    """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
-    async def test_execute_calls_graph(self):
-        """execute() should call the underlying graph with the input."""
+    async def test_invoke_calls_graph(self):
+        """invoke() should call the underlying graph with the input."""
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(return_value={"messages": [AIMessage(content="Hello!")]})
 
         adapter = wrap_agent(mock_graph)
-        request = ExecuteRequest(input={"query": "What is AI?"})
+        request = InvokeRequest(input={"query": "What is AI?"})
 
-        response = await adapter.execute(request)
+        response = await adapter.invoke(request)
 
         mock_graph.ainvoke.assert_called_once_with({"query": "What is AI?"})
 
     @pytest.mark.asyncio
-    async def test_execute_returns_output_from_messages(self):
-        """execute() should extract output from messages in the result."""
+    async def test_invoke_returns_output_from_messages(self):
+        """invoke() should extract output from messages in the result."""
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(
             return_value={
@@ -62,35 +62,35 @@ class TestLangGraphAgentAdapterExecute:
         )
 
         adapter = wrap_agent(mock_graph)
-        request = ExecuteRequest(input={"messages": []})
+        request = InvokeRequest(input={"messages": []})
 
-        response = await adapter.execute(request)
+        response = await adapter.invoke(request)
 
         assert response["output"] == "Hi there!"
 
     @pytest.mark.asyncio
-    async def test_execute_handles_dict_result(self):
-        """execute() should handle dict results without messages."""
+    async def test_invoke_handles_dict_result(self):
+        """invoke() should handle dict results without messages."""
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(return_value={"result": "success"})
 
         adapter = wrap_agent(mock_graph)
-        request = ExecuteRequest(input={"task": "compute"})
+        request = InvokeRequest(input={"task": "compute"})
 
-        response = await adapter.execute(request)
+        response = await adapter.invoke(request)
 
         assert response["output"] == {"result": "success"}
 
     @pytest.mark.asyncio
-    async def test_execute_with_messages_input(self):
-        """execute() should call graph with state dict format for chat-style input."""
+    async def test_invoke_with_messages_input(self):
+        """invoke() should call graph with state dict format for chat-style input."""
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(return_value={"messages": [AIMessage(content="Hello!")]})
 
         adapter = wrap_agent(mock_graph)
-        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
+        request = InvokeRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
-        response = await adapter.execute(request)
+        response = await adapter.invoke(request)
 
         # Should be called with {"messages": [...]}
         call_args = mock_graph.ainvoke.call_args[0][0]
@@ -99,8 +99,8 @@ class TestLangGraphAgentAdapterExecute:
         assert isinstance(call_args["messages"][0], HumanMessage)
 
     @pytest.mark.asyncio
-    async def test_execute_converts_messages_correctly(self):
-        """execute() should convert messages to/from LangChain format."""
+    async def test_invoke_converts_messages_correctly(self):
+        """invoke() should convert messages to/from LangChain format."""
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(
             return_value={
@@ -113,7 +113,7 @@ class TestLangGraphAgentAdapterExecute:
         )
 
         adapter = wrap_agent(mock_graph)
-        request = ExecuteRequest(
+        request = InvokeRequest(
             input={
                 "messages": [
                     {"role": "system", "content": "You are helpful"},
@@ -122,7 +122,7 @@ class TestLangGraphAgentAdapterExecute:
             }
         )
 
-        response = await adapter.execute(request)
+        response = await adapter.invoke(request)
 
         # Output should be extracted from last AI message
         assert response["output"] == "Hi!"

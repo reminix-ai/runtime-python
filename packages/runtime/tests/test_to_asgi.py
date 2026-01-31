@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from reminix_runtime import Agent, ExecuteRequest, ExecuteResponse
+from reminix_runtime import Agent, InvokeRequest, InvokeResponse
 
 
 async def call_asgi(app, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
@@ -80,51 +80,24 @@ class TestToAsgi:
         assert body["agents"][0]["version"] == "1.0"
 
     @pytest.mark.asyncio
-    async def test_execute_endpoint(self):
-        """ASGI app handles /agents/{name}/invoke endpoint with default prompt key."""
+    async def test_invoke_endpoint(self):
+        """ASGI app handles /agents/{name}/invoke endpoint with input wrapper."""
         test_agent = Agent("test-agent")
 
         @test_agent.handler
-        async def handle(request: ExecuteRequest) -> ExecuteResponse:
-            # Default requestKeys is ['prompt']
+        async def handle(request: InvokeRequest) -> InvokeResponse:
             prompt = request.input.get("prompt", "")
             return {"output": f"Received: {prompt}"}
 
         app = test_agent.to_asgi()
 
-        # Request body has top-level prompt key (matching default requestKeys)
+        # New API uses { input: { ... } }
         status, body = await call_asgi(
-            app, "POST", "/agents/test-agent/invoke", {"prompt": "hello"}
+            app, "POST", "/agents/test-agent/invoke", {"input": {"prompt": "hello"}}
         )
 
         assert status == 200
         assert body["output"] == "Received: hello"
-
-    @pytest.mark.asyncio
-    async def test_execute_with_custom_request_keys(self):
-        """ASGI app handles /agents/{name}/invoke with custom requestKeys."""
-        # Create agent with custom requestKeys
-        test_agent = Agent("test-agent", metadata={"requestKeys": ["messages"]})
-
-        @test_agent.handler
-        async def handle(request: ExecuteRequest) -> ExecuteResponse:
-            messages = request.input.get("messages", [])
-            if messages:
-                content = messages[0].get("content", "")
-                return {"output": f"Reply to: {content}"}
-            return {"output": "No messages"}
-
-        app = test_agent.to_asgi()
-
-        status, body = await call_asgi(
-            app,
-            "POST",
-            "/agents/test-agent/invoke",
-            {"messages": [{"role": "user", "content": "hello"}]},
-        )
-
-        assert status == 200
-        assert body["output"] == "Reply to: hello"
 
     @pytest.mark.asyncio
     async def test_wrong_agent_name_returns_404(self):
@@ -132,17 +105,17 @@ class TestToAsgi:
         test_agent = Agent("test-agent")
 
         @test_agent.handler
-        async def handle(request: ExecuteRequest) -> ExecuteResponse:
+        async def handle(request: InvokeRequest) -> InvokeResponse:
             return {"output": "ok"}
 
         app = test_agent.to_asgi()
 
         status, body = await call_asgi(
-            app, "POST", "/agents/wrong-agent/invoke", {"prompt": "test"}
+            app, "POST", "/agents/wrong-agent/invoke", {"input": {"prompt": "test"}}
         )
 
         assert status == 404
-        assert "not found" in body["error"]
+        assert "not found" in body["error"]["message"].lower()
 
     @pytest.mark.asyncio
     async def test_unknown_path_returns_404(self):

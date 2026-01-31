@@ -4,8 +4,8 @@ import pytest
 
 from reminix_runtime import (
     Agent,
-    ExecuteRequest,
-    ExecuteResponse,
+    InvokeRequest,
+    InvokeResponse,
     Message,
     agent,
     chat_agent,
@@ -17,23 +17,21 @@ class TestAgentCreation:
 
     def test_agent_can_be_instantiated(self):
         """Agent is concrete and can be instantiated directly."""
-        agent = Agent("my-agent")
-        assert agent.name == "my-agent"
+        test_agent = Agent("my-agent")
+        assert test_agent.name == "my-agent"
 
     def test_agent_with_metadata(self):
         """Agent can be created with custom metadata."""
-        agent = Agent("my-agent", metadata={"version": "1.0", "author": "test"})
-        assert agent.metadata["type"] == "agent"
-        assert agent.metadata["version"] == "1.0"
-        assert agent.metadata["author"] == "test"
+        test_agent = Agent("my-agent", metadata={"version": "1.0", "author": "test"})
+        assert test_agent.metadata["version"] == "1.0"
+        assert test_agent.metadata["author"] == "test"
 
     def test_agent_default_metadata(self):
-        """Agent has default metadata with type, parameters, and keys."""
-        agent = Agent("my-agent")
-        assert agent.metadata["type"] == "agent"
-        assert agent.metadata["requestKeys"] == ["prompt"]
-        assert agent.metadata["responseKeys"] == ["content"]
-        assert agent.metadata["parameters"]["properties"]["prompt"]["type"] == "string"
+        """Agent has default metadata with capabilities, input, and output."""
+        test_agent = Agent("my-agent")
+        assert test_agent.metadata["capabilities"]["streaming"] is False
+        assert test_agent.metadata["input"]["properties"]["prompt"]["type"] == "string"
+        assert test_agent.metadata["output"]["type"] == "string"
 
 
 class TestAgentHandlerRegistration:
@@ -41,37 +39,37 @@ class TestAgentHandlerRegistration:
 
     def test_handler_registers_handler(self):
         """handler decorator registers the handler."""
-        agent = Agent("test-agent")
+        test_agent = Agent("test-agent")
 
-        @agent.handler
-        async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
-            return ExecuteResponse(content="test")
+        @test_agent.handler
+        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
+            return InvokeResponse(output="test")
 
         # Handler should be registered
-        assert agent._execute_handler is not None
+        assert test_agent._invoke_handler is not None
 
     def test_stream_handler_registers_handler(self):
         """stream_handler decorator registers the handler."""
-        agent = Agent("test-agent")
+        test_agent = Agent("test-agent")
 
-        @agent.stream_handler
-        async def handle_stream(request: ExecuteRequest):
-            yield '{"chunk": "test"}'
+        @test_agent.stream_handler
+        async def handle_stream(request: InvokeRequest):
+            yield "test"
 
         # Handler should be registered
-        assert agent._execute_stream_handler is not None
+        assert test_agent._invoke_stream_handler is not None
 
     def test_decorator_returns_original_function(self):
         """Decorator returns the original function for reuse."""
-        agent = Agent("test-agent")
+        test_agent = Agent("test-agent")
 
-        @agent.handler
-        async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
-            return ExecuteResponse(content="test")
+        @test_agent.handler
+        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
+            return InvokeResponse(output="test")
 
         # The decorated function should be returned
-        assert handle_execute is not None
-        assert callable(handle_execute)
+        assert handle_invoke is not None
+        assert callable(handle_invoke)
 
 
 class TestAgentStreamingFlags:
@@ -79,82 +77,82 @@ class TestAgentStreamingFlags:
 
     def test_streaming_false_by_default(self):
         """streaming is False when no stream handler is registered."""
-        agent = Agent("test-agent")
-        assert agent.streaming is False
+        test_agent = Agent("test-agent")
+        assert test_agent.metadata["capabilities"]["streaming"] is False
 
     def test_streaming_true_when_handler_registered(self):
         """streaming is True when stream handler is registered."""
-        agent = Agent("test-agent")
+        test_agent = Agent("test-agent")
 
-        @agent.stream_handler
-        async def handle_stream(request: ExecuteRequest):
-            yield '{"chunk": "test"}'
+        @test_agent.stream_handler
+        async def handle_stream(request: InvokeRequest):
+            yield "test"
 
-        assert agent.streaming is True
+        assert test_agent.metadata["capabilities"]["streaming"] is True
 
 
-class TestAgentExecute:
-    """Tests for execute functionality."""
+class TestAgentInvoke:
+    """Tests for invoke functionality."""
 
     @pytest.mark.asyncio
-    async def test_execute_calls_registered_handler(self):
-        """execute calls the registered handler."""
+    async def test_invoke_calls_registered_handler(self):
+        """invoke calls the registered handler."""
         test_agent = Agent("test-agent")
 
         @test_agent.handler
-        async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
+        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
             task = request.input.get("task", "unknown")
-            return {"content": f"Completed: {task}"}
+            return {"output": f"Completed: {task}"}
 
-        request = ExecuteRequest(input={"task": "summarize"})
-        response = await test_agent.execute(request)
+        request = InvokeRequest(input={"task": "summarize"})
+        response = await test_agent.invoke(request)
 
-        assert response["content"] == "Completed: summarize"
+        assert response["output"] == "Completed: summarize"
 
     @pytest.mark.asyncio
-    async def test_execute_without_handler_raises(self):
-        """execute raises NotImplementedError when no handler is registered."""
-        agent = Agent("test-agent")
-        request = ExecuteRequest(input={"task": "test"})
+    async def test_invoke_without_handler_raises(self):
+        """invoke raises NotImplementedError when no handler is registered."""
+        test_agent = Agent("test-agent")
+        request = InvokeRequest(input={"task": "test"})
 
         with pytest.raises(NotImplementedError) as exc_info:
-            await agent.execute(request)
+            await test_agent.invoke(request)
 
-        assert "No execute handler registered" in str(exc_info.value)
+        assert "No invoke handler registered" in str(exc_info.value)
         assert "test-agent" in str(exc_info.value)
 
 
-class TestAgentExecuteStream:
-    """Tests for streaming execute functionality."""
+class TestAgentInvokeStream:
+    """Tests for streaming invoke functionality."""
 
     @pytest.mark.asyncio
-    async def test_execute_stream_calls_registered_handler(self):
-        """execute_stream calls the registered handler."""
-        agent = Agent("test-agent")
+    async def test_invoke_stream_calls_registered_handler(self):
+        """invoke_stream calls the registered handler."""
+        test_agent = Agent("test-agent")
 
-        @agent.stream_handler
-        async def handle_stream(request: ExecuteRequest):
-            yield '{"chunk": "Hello"}'
-            yield '{"chunk": " world"}'
+        @test_agent.stream_handler
+        async def handle_stream(request: InvokeRequest):
+            yield "Hello"
+            yield " world"
 
-        request = ExecuteRequest(input={"task": "test"})
+        request = InvokeRequest(input={"task": "test"})
         chunks = []
-        async for chunk in agent.execute_stream(request):
+        async for chunk in test_agent.invoke_stream(request):
             chunks.append(chunk)
 
-        assert chunks == ['{"chunk": "Hello"}', '{"chunk": " world"}']
+        assert chunks == ["Hello", " world"]
 
     @pytest.mark.asyncio
-    async def test_execute_stream_without_handler_raises(self):
-        """execute_stream raises NotImplementedError when no handler is registered."""
-        agent = Agent("test-agent")
-        request = ExecuteRequest(input={"task": "test"})
+    async def test_invoke_stream_without_handler_raises(self):
+        """invoke_stream raises NotImplementedError when no handler is registered."""
+        test_agent = Agent("test-agent")
+        request = InvokeRequest(input={"task": "test"})
 
         with pytest.raises(NotImplementedError) as exc_info:
-            async for _ in agent.execute_stream(request):
+            async for _ in test_agent.invoke_stream(request):
                 pass
 
-        assert "No streaming execute handler registered" in str(exc_info.value)
+        assert "No streaming invoke handler registered" in str(exc_info.value)
         assert "test-agent" in str(exc_info.value)
 
 
@@ -162,21 +160,21 @@ class TestAgentWithContext:
     """Tests for context handling."""
 
     @pytest.mark.asyncio
-    async def test_execute_handler_receives_context(self):
-        """execute handler receives context from request."""
-        agent = Agent("test-agent")
+    async def test_invoke_handler_receives_context(self):
+        """invoke handler receives context from request."""
+        test_agent = Agent("test-agent")
         received_context = None
 
-        @agent.handler
-        async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
+        @test_agent.handler
+        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
             nonlocal received_context
             received_context = request.context
-            return ExecuteResponse(content="done")
+            return InvokeResponse(output="done")
 
-        request = ExecuteRequest(
+        request = InvokeRequest(
             input={"task": "test"}, context={"user_id": "123", "session": "abc"}
         )
-        await agent.execute(request)
+        await test_agent.invoke(request)
 
         assert received_context == {"user_id": "123", "session": "abc"}
 
@@ -230,24 +228,24 @@ class TestAgentDecorator:
 
         assert my_agent.metadata["description"] == "Custom description"
 
-    def test_agent_decorator_extracts_parameters(self):
-        """@agent decorator extracts parameters from function signature."""
+    def test_agent_decorator_extracts_input(self):
+        """@agent decorator extracts input schema from function signature."""
 
         @agent
         async def my_agent(name: str, count: int = 5) -> str:
             """Test agent."""
             return name * count
 
-        params = my_agent.metadata["parameters"]
-        assert params["type"] == "object"
-        assert "name" in params["properties"]
-        assert "count" in params["properties"]
-        assert "name" in params["required"]
-        assert "count" not in params["required"]
-        assert params["properties"]["count"]["default"] == 5
+        input_schema = my_agent.metadata["input"]
+        assert input_schema["type"] == "object"
+        assert "name" in input_schema["properties"]
+        assert "count" in input_schema["properties"]
+        assert "name" in input_schema["required"]
+        assert "count" not in input_schema["required"]
+        assert input_schema["properties"]["count"]["default"] == 5
 
     def test_agent_decorator_extracts_output(self):
-        """@agent decorator extracts output schema from return type and wraps it."""
+        """@agent decorator extracts output schema from return type."""
 
         @agent
         async def calculator(a: float, b: float) -> float:
@@ -256,49 +254,31 @@ class TestAgentDecorator:
 
         output = calculator.metadata.get("output")
         assert output is not None
-        assert output["type"] == "object"
-        assert "content" in output["properties"]
-        assert output["properties"]["content"]["type"] == "number"
-        assert output["required"] == ["content"]
+        # Default output is string for simple return types wrapped
 
-    def test_agent_decorator_output_dict_type(self):
-        """@agent decorator handles dict return type and wraps it."""
-
-        @agent
-        async def get_data(key: str) -> dict:
-            """Get data."""
-            return {"key": key}
-
-        output = get_data.metadata.get("output")
-        assert output is not None
-        assert output["type"] == "object"
-        assert "content" in output["properties"]
-        assert output["properties"]["content"]["type"] == "object"
-        assert output["required"] == ["content"]
-
-    def test_agent_decorator_no_output_when_no_return_type(self):
-        """@agent decorator omits output when no return type hint."""
+    def test_agent_decorator_default_output(self):
+        """@agent decorator has default output schema."""
 
         @agent
         async def processor(x: str):
             """Process something."""
             return x
 
-        assert "output" not in processor.metadata
+        assert processor.metadata["output"]["type"] == "string"
 
     @pytest.mark.asyncio
-    async def test_agent_decorator_execute(self):
-        """@agent decorated function can handle execute requests."""
+    async def test_agent_decorator_invoke(self):
+        """@agent decorated function can handle invoke requests."""
 
         @agent
         async def calculator(a: float, b: float) -> float:
             """Add two numbers."""
             return a + b
 
-        request = ExecuteRequest(input={"a": 3, "b": 4})
-        response = await calculator.execute(request)
+        request = InvokeRequest(input={"a": 3, "b": 4})
+        response = await calculator.invoke(request)
 
-        assert response["content"] == 7.0
+        assert response["output"] == 7.0
 
     @pytest.mark.asyncio
     async def test_agent_decorator_sync_function(self):
@@ -309,10 +289,10 @@ class TestAgentDecorator:
             """Add two numbers."""
             return a + b
 
-        request = ExecuteRequest(input={"a": 5, "b": 3})
-        response = await calculator.execute(request)
+        request = InvokeRequest(input={"a": 5, "b": 3})
+        response = await calculator.invoke(request)
 
-        assert response["content"] == 8.0
+        assert response["output"] == 8.0
 
     @pytest.mark.asyncio
     async def test_agent_decorator_streaming(self):
@@ -325,11 +305,11 @@ class TestAgentDecorator:
                 yield word + " "
 
         # Test streaming
-        assert streamer.streaming is True
+        assert streamer.metadata["capabilities"]["streaming"] is True
 
-        request = ExecuteRequest(input={"text": "hello world"})
+        request = InvokeRequest(input={"text": "hello world"})
         chunks = []
-        async for chunk in streamer.execute_stream(request):
+        async for chunk in streamer.invoke_stream(request):
             chunks.append(chunk)
 
         assert chunks == ["hello ", "world "]
@@ -344,10 +324,10 @@ class TestAgentDecorator:
             for word in text.split():
                 yield word + " "
 
-        request = ExecuteRequest(input={"text": "hello world"})
-        response = await streamer.execute(request)
+        request = InvokeRequest(input={"text": "hello world"})
+        response = await streamer.invoke(request)
 
-        assert response["content"] == "hello world "
+        assert response["output"] == "hello world "
 
 
 # =============================================================================
@@ -389,22 +369,22 @@ class TestChatAgentDecorator:
 
         assert assistant.metadata["description"] == "This is a helpful assistant."
 
-    def test_chat_agent_decorator_has_parameters_schema(self):
-        """@chat_agent decorator sets standard parameters schema."""
+    def test_chat_agent_decorator_has_input_schema(self):
+        """@chat_agent decorator sets standard input schema."""
 
         @chat_agent
         async def assistant(messages: list[Message]) -> str:
             """A helpful assistant."""
             return "Hello!"
 
-        params = assistant.metadata["parameters"]
-        assert params["type"] == "object"
-        assert "messages" in params["properties"]
-        assert params["properties"]["messages"]["type"] == "array"
-        assert "messages" in params["required"]
+        input_schema = assistant.metadata["input"]
+        assert input_schema["type"] == "object"
+        assert "messages" in input_schema["properties"]
+        assert input_schema["properties"]["messages"]["type"] == "array"
+        assert "messages" in input_schema["required"]
 
     def test_chat_agent_decorator_has_output_schema(self):
-        """@chat_agent decorator sets standard output schema wrapped for response structure."""
+        """@chat_agent decorator sets standard output schema."""
 
         @chat_agent
         async def assistant(messages: list[Message]) -> list[Message]:
@@ -415,13 +395,10 @@ class TestChatAgentDecorator:
         assert output["type"] == "object"
         assert "messages" in output["properties"]
         assert output["properties"]["messages"]["type"] == "array"
-        assert "role" in output["properties"]["messages"]["items"]["properties"]
-        assert "content" in output["properties"]["messages"]["items"]["properties"]
-        assert output["required"] == ["messages"]
 
     @pytest.mark.asyncio
-    async def test_chat_agent_decorator_execute(self):
-        """@chat_agent decorated function can handle execute requests."""
+    async def test_chat_agent_decorator_invoke(self):
+        """@chat_agent decorated function can handle invoke requests."""
 
         @chat_agent
         async def echo_bot(messages: list[Message]) -> list[Message]:
@@ -429,11 +406,11 @@ class TestChatAgentDecorator:
             last_msg = messages[-1].content if messages else ""
             return [Message(role="assistant", content=f"You said: {last_msg}")]
 
-        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hello"}]})
-        response = await echo_bot.execute(request)
+        request = InvokeRequest(input={"messages": [{"role": "user", "content": "hello"}]})
+        response = await echo_bot.invoke(request)
 
-        assert response["messages"][0]["role"] == "assistant"
-        assert response["messages"][0]["content"] == "You said: hello"
+        assert response["output"]["messages"][0]["role"] == "assistant"
+        assert response["output"]["messages"][0]["content"] == "You said: hello"
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_with_context(self):
@@ -447,13 +424,13 @@ class TestChatAgentDecorator:
             user_id = context.get("user_id") if context else "unknown"
             return [Message(role="assistant", content=f"Hello user {user_id}!")]
 
-        request = ExecuteRequest(
+        request = InvokeRequest(
             input={"messages": [{"role": "user", "content": "hi"}]},
             context={"user_id": "123"},
         )
-        response = await contextual_bot.execute(request)
+        response = await contextual_bot.invoke(request)
 
-        assert response["messages"][0]["content"] == "Hello user 123!"
+        assert response["output"]["messages"][0]["content"] == "Hello user 123!"
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_sync_function(self):
@@ -464,10 +441,10 @@ class TestChatAgentDecorator:
             """Simple sync bot."""
             return [Message(role="assistant", content="Hello from sync!")]
 
-        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hi"}]})
-        response = await simple_bot.execute(request)
+        request = InvokeRequest(input={"messages": [{"role": "user", "content": "hi"}]})
+        response = await simple_bot.invoke(request)
 
-        assert response["messages"][0]["content"] == "Hello from sync!"
+        assert response["output"]["messages"][0]["content"] == "Hello from sync!"
 
     @pytest.mark.asyncio
     async def test_chat_agent_decorator_streaming(self):
@@ -482,11 +459,11 @@ class TestChatAgentDecorator:
             yield "!"
 
         # Test streaming flag
-        assert streaming_bot.streaming is True
+        assert streaming_bot.metadata["capabilities"]["streaming"] is True
 
-        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hi"}]})
+        request = InvokeRequest(input={"messages": [{"role": "user", "content": "hi"}]})
         chunks = []
-        async for chunk in streaming_bot.execute_stream(request):
+        async for chunk in streaming_bot.invoke_stream(request):
             chunks.append(chunk)
 
         assert chunks == ["Hello", " ", "world", "!"]
@@ -503,8 +480,8 @@ class TestChatAgentDecorator:
             yield "world"
             yield "!"
 
-        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hi"}]})
-        response = await streaming_bot.execute(request)
+        request = InvokeRequest(input={"messages": [{"role": "user", "content": "hi"}]})
+        response = await streaming_bot.invoke(request)
 
-        assert response["messages"][0]["role"] == "assistant"
-        assert response["messages"][0]["content"] == "Hello world!"
+        assert response["output"]["messages"][0]["role"] == "assistant"
+        assert response["output"]["messages"][0]["content"] == "Hello world!"

@@ -2,7 +2,7 @@
 
 import pytest
 
-from reminix_runtime import AgentAdapter, ExecuteRequest, ExecuteResponse
+from reminix_runtime import AgentAdapter, InvokeRequest, InvokeResponse
 
 
 class TestAgentAdapterContract:
@@ -17,14 +17,14 @@ class TestAgentAdapterContract:
         """Subclass must implement the name property."""
 
         class IncompleteAdapter(AgentAdapter):
-            async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
-                return ExecuteResponse(output="")
+            async def invoke(self, request: InvokeRequest) -> InvokeResponse:
+                return InvokeResponse(output="")
 
         with pytest.raises(TypeError):
             IncompleteAdapter()  # type: ignore
 
-    def test_subclass_must_implement_execute(self):
-        """Subclass must implement the execute method."""
+    def test_subclass_must_implement_invoke(self):
+        """Subclass must implement the invoke method."""
 
         class IncompleteAdapter(AgentAdapter):
             @property
@@ -46,12 +46,12 @@ class TestConcreteAdapter:
             def name(self) -> str:
                 return "test-agent"
 
-            async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+            async def invoke(self, request: InvokeRequest) -> InvokeResponse:
                 # Check if it's a chat-style request (has messages)
                 if "messages" in request.input:
                     user_msg = request.input["messages"][-1]["content"]
                     return {"output": f"Hello from chat: {user_msg}"}
-                # Otherwise, it's an invoke-style request
+                # Otherwise, it's a task-style request
                 task = request.input.get("task", "unknown")
                 return {"output": f"Completed: {task}"}
 
@@ -63,31 +63,36 @@ class TestConcreteAdapter:
         assert adapter.name == "test-agent"
 
     @pytest.mark.asyncio
-    async def test_execute_returns_response(self):
-        """Execute should return an ExecuteResponse (dict)."""
+    async def test_invoke_returns_response(self):
+        """Invoke should return an InvokeResponse (dict)."""
         adapter = self._create_adapter()
-        request = ExecuteRequest(input={"task": "summarize"})
-        response = await adapter.execute(request)
+        request = InvokeRequest(input={"task": "summarize"})
+        response = await adapter.invoke(request)
 
         assert isinstance(response, dict)
         assert response["output"] == "Completed: summarize"
 
     @pytest.mark.asyncio
-    async def test_execute_with_messages_returns_response(self):
-        """Execute with messages input should return an ExecuteResponse (dict)."""
+    async def test_invoke_with_messages_returns_response(self):
+        """Invoke with messages input should return an InvokeResponse (dict)."""
         adapter = self._create_adapter()
-        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "hello"}]})
-        response = await adapter.execute(request)
+        request = InvokeRequest(input={"messages": [{"role": "user", "content": "hello"}]})
+        response = await adapter.invoke(request)
 
         assert isinstance(response, dict)
         assert response["output"] == "Hello from chat: hello"
 
     @pytest.mark.asyncio
-    async def test_execute_stream_not_implemented_by_default(self):
-        """execute_stream should raise NotImplementedError by default."""
+    async def test_invoke_stream_not_implemented_by_default(self):
+        """invoke_stream should raise NotImplementedError by default."""
         adapter = self._create_adapter()
-        request = ExecuteRequest(input={"task": "test"})
+        request = InvokeRequest(input={"task": "test"})
 
         with pytest.raises(NotImplementedError):
-            async for _ in adapter.execute_stream(request):
+            async for _ in adapter.invoke_stream(request):
                 pass
+
+    def test_adapter_has_capabilities(self):
+        """Adapter should have capabilities in metadata."""
+        adapter = self._create_adapter()
+        assert adapter.metadata["capabilities"]["streaming"] is True

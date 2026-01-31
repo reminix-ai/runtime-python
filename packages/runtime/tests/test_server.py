@@ -5,8 +5,8 @@ from httpx import ASGITransport, AsyncClient
 
 from reminix_runtime import (
     AgentAdapter,
-    ExecuteRequest,
-    ExecuteResponse,
+    InvokeRequest,
+    InvokeResponse,
     __version__,
     tool,
 )
@@ -25,15 +25,7 @@ class MockTaskAdapter(AgentAdapter):
     def name(self) -> str:
         return self._name
 
-    @property
-    def metadata(self) -> dict:
-        return {
-            **super().metadata,
-            "requestKeys": ["task"],
-            "responseKeys": ["output"],
-        }
-
-    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
         task = request.input.get("task", "unknown")
         return {"output": f"Completed task: {task}"}
 
@@ -50,18 +42,14 @@ class MockChatAdapter(AgentAdapter):
     def name(self) -> str:
         return self._name
 
-    @property
-    def metadata(self) -> dict:
-        return {
-            **super().metadata,
-            "requestKeys": ["messages"],
-            "responseKeys": ["messages"],
-        }
-
-    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
+    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
         messages = request.input.get("messages", [])
         user_message = messages[-1]["content"] if messages else ""
-        return {"messages": [{"role": "assistant", "content": f"Chat response to: {user_message}"}]}
+        return {
+            "output": {
+                "messages": [{"role": "assistant", "content": f"Chat response to: {user_message}"}]
+            }
+        }
 
 
 class TestCreateApp:
@@ -126,23 +114,22 @@ class TestInfoEndpoint:
         # Check agents
         assert len(data["agents"]) == 2
         assert data["agents"][0]["name"] == "agent-one"
-        assert data["agents"][0]["type"] == "adapter"
         assert data["agents"][0]["adapter"] == "mock"
-        assert data["agents"][0]["streaming"] is True
+        assert data["agents"][0]["capabilities"]["streaming"] is True
 
 
-class TestExecuteEndpoint:
-    """Tests for the execute endpoint."""
+class TestInvokeEndpoint:
+    """Tests for the invoke endpoint."""
 
     @pytest.mark.asyncio
-    async def test_execute_success(self):
-        """POST /agents/{agent}/invoke should return execute response."""
+    async def test_invoke_success(self):
+        """POST /agents/{agent}/invoke should return invoke response."""
         app = create_app(agents=[MockTaskAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            # Request body has top-level keys matching requestKeys: ['task']
+            # New API uses { input: { ... } }
             response = await client.post(
                 "/agents/my-agent/invoke",
-                json={"task": "summarize"},
+                json={"input": {"task": "summarize"}},
             )
 
         assert response.status_code == 200
@@ -150,14 +137,14 @@ class TestExecuteEndpoint:
         assert data["output"] == "Completed task: summarize"
 
     @pytest.mark.asyncio
-    async def test_execute_with_context(self):
+    async def test_invoke_with_context(self):
         """POST /agents/{agent}/invoke should accept context."""
         app = create_app(agents=[MockTaskAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
                 json={
-                    "task": "test",
+                    "input": {"task": "test"},
                     "context": {"user_id": "123"},
                 },
             )
@@ -165,40 +152,39 @@ class TestExecuteEndpoint:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_execute_unknown_agent_returns_404(self):
+    async def test_invoke_unknown_agent_returns_404(self):
         """POST /agents/{agent}/invoke should return 404 for unknown agent."""
         app = create_app(agents=[MockTaskAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/unknown-agent/invoke",
-                json={"task": "test"},
+                json={"input": {"task": "test"}},
             )
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["error"]["message"].lower()
 
     @pytest.mark.asyncio
-    async def test_execute_with_messages_input(self):
+    async def test_invoke_with_messages_input(self):
         """POST /agents/{agent}/invoke should handle chat-style input."""
         app = create_app(agents=[MockChatAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            # Request body has top-level keys matching requestKeys: ['messages']
             response = await client.post(
                 "/agents/my-agent/invoke",
-                json={"messages": [{"role": "user", "content": "hi there"}]},
+                json={"input": {"messages": [{"role": "user", "content": "hi there"}]}},
             )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["messages"][0]["role"] == "assistant"
-        assert data["messages"][0]["content"] == "Chat response to: hi there"
+        assert data["output"]["messages"][0]["role"] == "assistant"
+        assert data["output"]["messages"][0]["content"] == "Chat response to: hi there"
 
 
-class TestToolExecuteEndpoint:
-    """Tests for the tool execute endpoint."""
+class TestToolCallEndpoint:
+    """Tests for the tool call endpoint."""
 
     @pytest.mark.asyncio
-    async def test_execute_tool_success(self):
+    async def test_call_tool_success(self):
         """POST /tools/{tool}/call should return tool response."""
 
         @tool
@@ -216,10 +202,9 @@ class TestToolExecuteEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert data["output"] == {"message": "Hello, World!"}
-        assert data["error"] is None
 
     @pytest.mark.asyncio
-    async def test_execute_tool_with_context(self):
+    async def test_call_tool_with_context(self):
         """POST /tools/{tool}/call should accept context."""
 
         @tool
@@ -237,7 +222,7 @@ class TestToolExecuteEndpoint:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_execute_tool_unknown_returns_404(self):
+    async def test_call_tool_unknown_returns_404(self):
         """POST /tools/{tool}/call should return 404 for unknown tool."""
 
         @tool
@@ -253,10 +238,10 @@ class TestToolExecuteEndpoint:
             )
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["error"]["message"].lower()
 
     @pytest.mark.asyncio
-    async def test_execute_tool_with_error(self):
+    async def test_call_tool_with_error(self):
         """POST /tools/{tool}/call should return error response on exception."""
 
         @tool
@@ -271,14 +256,14 @@ class TestToolExecuteEndpoint:
                 json={"input": {"param": "test"}},
             )
 
-        assert response.status_code == 400  # Tool errors return proper HTTP error codes
+        assert response.status_code == 400
         data = response.json()
         assert "error" in data
         assert data["error"]["message"] == "Something went wrong"
-        assert data["error"]["type"] == "ValidationError"  # ValueError maps to ValidationError
+        assert data["error"]["type"] == "ValidationError"
 
     @pytest.mark.asyncio
-    async def test_execute_sync_tool(self):
+    async def test_call_sync_tool(self):
         """POST /tools/{tool}/call should work with sync tools."""
 
         @tool
@@ -320,9 +305,8 @@ class TestInfoEndpointWithTools:
         assert "tools" in data
         assert len(data["tools"]) == 1
         assert data["tools"][0]["name"] == "my_tool"
-        assert data["tools"][0]["type"] == "tool"
         assert data["tools"][0]["description"] == "My tool description."
-        assert "parameters" in data["tools"][0]
+        assert "input" in data["tools"][0]
 
     @pytest.mark.asyncio
     async def test_info_with_agents_and_tools(self):

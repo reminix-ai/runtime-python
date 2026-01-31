@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from reminix_anthropic import AnthropicAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, ExecuteRequest
+from reminix_runtime import AgentAdapter, InvokeRequest
 
 
 class TestWrap:
@@ -42,64 +42,64 @@ class TestWrap:
         assert adapter.model == "claude-sonnet-4-20250514"
 
 
-class TestAnthropicAgentAdapterExecute:
-    """Tests for the execute() method."""
+class TestAnthropicAgentAdapterInvoke:
+    """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
-    async def test_execute_calls_client(self):
-        """execute() should call the Anthropic client."""
+    async def test_invoke_calls_client(self):
+        """invoke() should call the Anthropic client."""
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.content = [MagicMock(type="text", text="Hello!")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = ExecuteRequest(input={"prompt": "Hi"})
+        request = InvokeRequest(input={"prompt": "Hi"})
 
-        response = await adapter.execute(request)
+        response = await adapter.invoke(request)
 
         mock_client.messages.create.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_execute_returns_output(self):
-        """execute() should return the output from the API."""
+    async def test_invoke_returns_output(self):
+        """invoke() should return the output from the API."""
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.content = [MagicMock(type="text", text="Hello from Anthropic!")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = ExecuteRequest(input={"prompt": "Hi"})
+        request = InvokeRequest(input={"prompt": "Hi"})
 
-        response = await adapter.execute(request)
+        response = await adapter.invoke(request)
 
         assert response["output"] == "Hello from Anthropic!"
 
     @pytest.mark.asyncio
-    async def test_execute_with_messages_input(self):
-        """execute() should handle input with messages key."""
+    async def test_invoke_with_messages_input(self):
+        """invoke() should handle input with messages key."""
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.content = [MagicMock(type="text", text="Response")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = ExecuteRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
+        request = InvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
-        response = await adapter.execute(request)
+        response = await adapter.invoke(request)
 
         assert response["output"] == "Response"
 
     @pytest.mark.asyncio
-    async def test_execute_extracts_system_message(self):
-        """execute() should extract system message for Anthropic API."""
+    async def test_invoke_extracts_system_message(self):
+        """invoke() should extract system message for Anthropic API."""
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.content = [MagicMock(type="text", text="Response")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = ExecuteRequest(
+        request = InvokeRequest(
             input={
                 "messages": [
                     {"role": "system", "content": "You are helpful"},
@@ -108,7 +108,7 @@ class TestAnthropicAgentAdapterExecute:
             }
         )
 
-        await adapter.execute(request)
+        await adapter.invoke(request)
 
         call_kwargs = mock_client.messages.create.call_args[1]
         assert call_kwargs["system"] == "You are helpful"
