@@ -16,6 +16,7 @@ from .types import (
     Role,
     RuntimeError,
     RuntimeErrorResponse,
+    ToolCall,
     ToolCallRequest,
     ToolCallResponse,
     ToolCallResponseDict,
@@ -34,6 +35,7 @@ __all__ = [
     "Capabilities",
     "RuntimeError",
     "RuntimeErrorResponse",
+    "ToolCall",
     # Agent types
     "AgentInvokeRequest",
     "AgentInvokeResponse",

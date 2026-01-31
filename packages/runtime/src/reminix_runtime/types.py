@@ -8,12 +8,20 @@ from pydantic import BaseModel, Field
 Role = Literal["user", "assistant", "system", "tool"]
 
 
+class ToolCall(BaseModel):
+    """A single tool call (OpenAI-style)."""
+
+    id: str
+    type: Literal["function"] = "function"
+    function: dict[str, Any]  # {"name": str, "arguments": str}
+
+
 class Message(BaseModel):
-    """A message in the conversation."""
+    """A message in the conversation (OpenAI-style; supports tool_calls and tool results)."""
 
     role: Role
     content: str | None = None
-    tool_calls: list[dict[str, Any]] | None = None
+    tool_calls: list[ToolCall] | None = None
     tool_call_id: str | None = None
     name: str | None = None
 

@@ -20,6 +20,40 @@ AgentTemplate = Literal["prompt", "chat", "task", "rag", "thread"]
 
 DEFAULT_AGENT_TEMPLATE: AgentTemplate = "prompt"
 
+# JSON schema for a single tool call (OpenAI-style)
+TOOL_CALL_ITEM_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "string", "description": "Tool call id"},
+        "type": {"type": "string", "enum": ["function"], "description": "Tool call type"},
+        "function": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Function/tool name"},
+                "arguments": {"type": "string", "description": "JSON string of arguments"},
+            },
+            "required": ["name", "arguments"],
+        },
+    },
+    "required": ["id", "type", "function"],
+}
+
+# JSON schema for a message item (OpenAI-style; supports tool_calls and tool results)
+MESSAGE_ITEM_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "role": {"type": "string", "description": "Message role (user, assistant, system, tool)"},
+        "content": {"type": "string", "description": "Message content", "nullable": True},
+        "tool_calls": {
+            "type": "array",
+            "description": "Tool calls requested by the model (assistant messages)",
+            "items": TOOL_CALL_ITEM_SCHEMA,
+        },
+        "tool_call_id": {"type": "string", "description": "Id of the tool call this message is a result for (tool messages)"},
+        "name": {"type": "string", "description": "Tool name (tool messages)"},
+    },
+}
+
 AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
     "prompt": {
         "input": {
@@ -38,13 +72,7 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
                 "messages": {
                     "type": "array",
                     "description": "Chat messages (OpenAI-style)",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "role": {"type": "string", "description": "Message role (user, assistant, system)"},
-                            "content": {"type": "string", "description": "Message content", "nullable": True},
-                        },
-                    },
+                    "items": MESSAGE_ITEM_SCHEMA,
                 },
             },
             "required": ["messages"],
@@ -74,13 +102,7 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
                 "messages": {
                     "type": "array",
                     "description": "Optional prior conversation (chat-style RAG)",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "role": {"type": "string", "description": "Message role (user, assistant, system)"},
-                            "content": {"type": "string", "description": "Message content", "nullable": True},
-                        },
-                    },
+                    "items": MESSAGE_ITEM_SCHEMA,
                 },
                 "collectionIds": {
                     "type": "array",
@@ -99,13 +121,7 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
                 "messages": {
                     "type": "array",
                     "description": "Chat messages with tool_calls and tool results (OpenAI-style)",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "role": {"type": "string", "description": "Message role (user, assistant, system)"},
-                            "content": {"type": "string", "description": "Message content", "nullable": True},
-                        },
-                    },
+                    "items": MESSAGE_ITEM_SCHEMA,
                 },
             },
             "required": ["messages"],
@@ -113,13 +129,7 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
         "output": {
             "type": "array",
             "description": "Updated message thread (OpenAI-style, may include assistant message and tool_calls)",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "role": {"type": "string", "description": "Message role (user, assistant, system)"},
-                    "content": {"type": "string", "description": "Message content", "nullable": True},
-                },
-            },
+            "items": MESSAGE_ITEM_SCHEMA,
         },
     },
 }
