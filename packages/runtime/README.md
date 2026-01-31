@@ -2,7 +2,7 @@
 
 The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `@agent`, `@chat_agent`, and `@tool` decorators for building and serving AI agents.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `@agent` and `@tool` decorators for building and serving AI agents.
 
 Built on [FastAPI](https://fastapi.tiangolo.com) with full async support.
 
@@ -17,7 +17,7 @@ pip install reminix-runtime
 ## Quick Start
 
 ```python
-from reminix_runtime import agent, chat_agent, serve, Message
+from reminix_runtime import agent, serve
 
 # Create an agent for task-oriented operations
 @agent
@@ -25,14 +25,8 @@ async def calculator(a: float, b: float) -> float:
     """Add two numbers."""
     return a + b
 
-# Create a chat agent for conversational interactions
-@chat_agent
-async def assistant(messages: list[Message]) -> str:
-    """A helpful assistant."""
-    return f"You said: {messages[-1].content}"
-
-# Serve the agents
-serve(agents=[calculator, assistant], port=8080)
+# Serve the agent
+serve(agents=[calculator], port=8080)
 ```
 
 ## How It Works
@@ -87,41 +81,6 @@ Returns runtime information, available agents, and tools:
       },
       "requestKeys": ["a", "b"],
       "responseKeys": ["content"],
-      "streaming": false
-    },
-    {
-      "name": "assistant",
-      "type": "chat_agent",
-      "description": "A helpful assistant.",
-      "input": {
-        "type": "object",
-        "properties": {
-          "messages": {
-            "type": "array",
-            "items": { "type": "object", "properties": { "role": { "type": "string" }, "content": { "type": "string" } }, "required": ["role", "content"] }
-          }
-        },
-        "required": ["messages"]
-      },
-      "output": {
-        "type": "object",
-        "properties": {
-          "messages": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "role": { "type": "string" },
-                "content": { "type": "string" }
-              },
-              "required": ["role", "content"]
-            }
-          }
-        },
-        "required": ["messages"]
-      },
-      "requestKeys": ["messages"],
-      "responseKeys": ["messages"],
       "streaming": false
     }
   ],
@@ -234,52 +193,20 @@ The decorator automatically extracts:
 - **input schema** from type hints and defaults
 - **output** from the return type hint
 
-### Chat Agent
-
-Use `@chat_agent` for conversational agents that handle message history:
-
-```python
-from reminix_runtime import chat_agent, serve, Message
-
-@chat_agent
-async def assistant(messages: list[Message]) -> str:
-    """A helpful assistant."""
-    last_msg = messages[-1].content
-    return f"You said: {last_msg}"
-
-# With context support
-@chat_agent
-async def contextual_bot(messages: list[Message], context: dict | None = None) -> str:
-    """Bot with context awareness."""
-    user_id = context.get("user_id") if context else "unknown"
-    return f"Hello user {user_id}!"
-
-serve(agents=[assistant, contextual_bot], port=8080)
-```
-
 ### Streaming
 
-Both decorators support streaming via async generators. When you use `yield` instead of `return`, the agent automatically supports streaming:
+Agents support streaming via async generators. When you use `yield` instead of `return`, the agent automatically supports streaming:
 
 ```python
-from reminix_runtime import agent, chat_agent, serve, Message
+from reminix_runtime import agent, serve
 
-# Streaming task agent
 @agent
 async def streamer(text: str):
     """Stream text word by word."""
     for word in text.split():
         yield word + " "
 
-# Streaming chat agent
-@chat_agent
-async def streaming_assistant(messages: list[Message]):
-    """Stream responses token by token."""
-    response = f"You said: {messages[-1].content}"
-    for char in response:
-        yield char
-
-serve(agents=[streamer, streaming_assistant], port=8080)
+serve(agents=[streamer], port=8080)
 ```
 
 For streaming agents:
@@ -449,31 +376,6 @@ async def another_agent(x: int) -> int:
 async def streaming_agent(text: str):
     for word in text.split():
         yield word + " "
-```
-
-### `@chat_agent`
-
-Decorator to create a chat agent from a function.
-
-```python
-from reminix_runtime import chat_agent, Message
-
-@chat_agent
-async def my_chat_agent(messages: list[Message]) -> str:
-    """Chat agent description."""
-    return f"You said: {messages[-1].content}"
-
-# With context
-@chat_agent
-async def contextual_agent(messages: list[Message], context: dict | None = None) -> str:
-    user_id = context.get("user_id") if context else None
-    return f"Hello user {user_id}!"
-
-# Streaming chat agent
-@chat_agent
-async def streaming_chat(messages: list[Message]):
-    for token in ["Hello", " ", "world!"]:
-        yield token
 ```
 
 ### `@tool`

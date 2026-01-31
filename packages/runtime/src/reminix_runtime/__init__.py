@@ -1,6 +1,6 @@
 __version__ = "0.0.16"
 
-from .agent import Agent, AgentBase, ASGIApp, agent, chat_agent
+from .agent import Agent, AgentBase, ASGIApp, agent
 from .agent_adapter import AgentAdapter
 from .server import create_app, serve
 from .tool import Tool, ToolBase, tool
@@ -44,7 +44,6 @@ __all__ = [
     "ASGIApp",
     # Agent decorators
     "agent",
-    "chat_agent",
     # Tool types
     "ToolCallRequest",
     "ToolCallResponse",

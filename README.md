@@ -17,7 +17,7 @@ A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framewor
 
 | Package | Description |
 |---------|-------------|
-| [`reminix-runtime`](./packages/runtime) | Core runtime with `@agent`, `@chat_agent`, and `@tool` decorators |
+| [`reminix-runtime`](./packages/runtime) | Core runtime with `@agent` and `@tool` decorators |
 | [`reminix-langchain`](./packages/langchain) | LangChain adapter |
 | [`reminix-langgraph`](./packages/langgraph) | LangGraph adapter |
 | [`reminix-openai`](./packages/openai) | OpenAI Agents adapter |
@@ -48,24 +48,18 @@ serve(agents=[wrap_agent(agent, name="my-agent")], port=8080)
 ### With Decorators (No Framework)
 
 ```python
-from reminix_runtime import agent, chat_agent, serve, Message
+from reminix_runtime import agent, serve
 
 @agent
 async def calculator(a: float, b: float) -> float:
     """Add two numbers."""
     return a + b
 
-@chat_agent
-async def assistant(messages: list[Message]) -> str:
-    """A helpful assistant."""
-    return f"You said: {messages[-1].content}"
-
-serve(agents=[calculator, assistant], port=8080)
+serve(agents=[calculator], port=8080)
 ```
 
-Your agents are now available at:
+Your agent is now available at:
 - `POST /agents/calculator/invoke` - Execute the calculator agent
-- `POST /agents/assistant/invoke` - Execute the assistant agent
 
 See the [runtime package docs](./packages/runtime) for tools, streaming, and advanced usage.
 
