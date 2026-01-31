@@ -8,8 +8,8 @@ from anthropic import AsyncAnthropic
 
 from reminix_runtime import (
     AgentAdapter,
-    InvokeRequest,
-    InvokeResponseDict,
+    AgentInvokeRequest,
+    AgentInvokeResponseDict,
     Message,
     serve,
 )
@@ -82,7 +82,7 @@ class AnthropicAgentAdapter(AgentAdapter):
                 return block.text
         return ""
 
-    def _build_messages_from_input(self, request: InvokeRequest) -> list[Message]:
+    def _build_messages_from_input(self, request: AgentInvokeRequest) -> list[Message]:
         """Build Message list from invoke request input."""
         # Check if input contains messages (chat-style)
         if "messages" in request.input:
@@ -93,7 +93,7 @@ class AnthropicAgentAdapter(AgentAdapter):
         else:
             return [Message(role="user", content=str(request.input))]
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
         """Handle an invoke request.
 
         For both task-oriented and chat-style operations. Expects input with 'messages' key
@@ -127,7 +127,7 @@ class AnthropicAgentAdapter(AgentAdapter):
 
         return {"output": output}
 
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
         """Handle a streaming invoke request.
 
         Args:

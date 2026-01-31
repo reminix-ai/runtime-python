@@ -12,7 +12,7 @@ from docstring_parser import parse as parse_docstring
 
 from . import __version__
 from .tool import _python_type_to_json_schema
-from .types import InvokeRequest, InvokeResponseDict, Message
+from .types import AgentInvokeRequest, AgentInvokeResponseDict, Message
 
 # Default input schema for agents
 # Request: { "input": { "prompt": "..." } }
@@ -107,8 +107,8 @@ Send = Callable[[dict[str, Any]], Awaitable[None]]
 ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
 
 # Type aliases for handlers
-InvokeHandler = Callable[[InvokeRequest], Awaitable[InvokeResponseDict]]
-InvokeStreamHandler = Callable[[InvokeRequest], AsyncIterator[str]]
+InvokeHandler = Callable[[AgentInvokeRequest], Awaitable[AgentInvokeResponseDict]]
+InvokeStreamHandler = Callable[[AgentInvokeRequest], AsyncIterator[str]]
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -140,11 +140,11 @@ class AgentBase(ABC):
         }
 
     @abstractmethod
-    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
         """Handle an invoke request."""
         ...
 
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
         """Handle a streaming invoke request."""
         raise NotImplementedError("Streaming not implemented for this agent")
         # Unreachable, but required to make this an async generator
@@ -313,7 +313,7 @@ class AgentBase(ABC):
                     body_bytes = await read_body()
                     body = json.loads(body_bytes)
 
-                    request = InvokeRequest(
+                    request = AgentInvokeRequest(
                         input=body.get("input", {}),
                         context=body.get("context"),
                         stream=body.get("stream", False),
@@ -351,7 +351,7 @@ class Agent(AgentBase):
         agent = Agent("my-agent")
 
         @agent.handler
-        async def handle_invoke(request: InvokeRequest) -> InvokeResponseDict:
+        async def handle_invoke(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
             return {"output": "Hello!"}
 
         serve(agents=[agent], port=8080)
@@ -400,7 +400,7 @@ class Agent(AgentBase):
 
         Example:
             @agent.handler
-            async def handle(request: InvokeRequest) -> InvokeResponseDict:
+            async def handle(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
                 return {"output": "Hello!"}
         """
         self._invoke_handler = fn
@@ -411,7 +411,7 @@ class Agent(AgentBase):
 
         Example:
             @agent.stream_handler
-            async def handle(request: InvokeRequest):
+            async def handle(request: AgentInvokeRequest):
                 yield "Hello"
                 yield " world!"
         """
@@ -420,13 +420,13 @@ class Agent(AgentBase):
 
     # Implementation of abstract methods
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
         """Handle an invoke request."""
         if self._invoke_handler is None:
             raise NotImplementedError(f"No invoke handler registered for agent '{self._name}'")
         return await self._invoke_handler(request)
 
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
         """Handle a streaming invoke request."""
         if self._invoke_stream_handler is None:
             raise NotImplementedError(
@@ -561,7 +561,7 @@ def agent(
 
         if is_streaming:
             # Register streaming invoke handler
-            async def invoke_stream_handler(request: InvokeRequest) -> AsyncIterator[str]:
+            async def invoke_stream_handler(request: AgentInvokeRequest) -> AsyncIterator[str]:
                 async for chunk in f(**request.input):
                     # Convert to string if not already
                     if isinstance(chunk, str):
@@ -572,7 +572,7 @@ def agent(
             agent_instance.stream_handler(invoke_stream_handler)
 
             # Also register non-streaming handler that collects chunks
-            async def invoke_handler(request: InvokeRequest) -> InvokeResponseDict:
+            async def invoke_handler(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
                 chunks: list[str] = []
                 async for chunk in f(**request.input):
                     if isinstance(chunk, str):
@@ -584,7 +584,7 @@ def agent(
             agent_instance.handler(invoke_handler)
         else:
             # Register regular invoke handler
-            async def invoke_handler(request: InvokeRequest) -> InvokeResponseDict:
+            async def invoke_handler(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
                 if inspect.iscoroutinefunction(f):
                     result = await f(**request.input)
                 else:
@@ -681,7 +681,7 @@ def chat_agent(
 
         if is_streaming:
             # Register streaming invoke handler
-            async def invoke_stream_handler(request: InvokeRequest) -> AsyncIterator[str]:
+            async def invoke_stream_handler(request: AgentInvokeRequest) -> AsyncIterator[str]:
                 # Extract messages from input
                 raw_messages = request.input.get("messages", [])
                 messages = [Message(**m) for m in raw_messages]
@@ -697,7 +697,7 @@ def chat_agent(
             agent_instance.stream_handler(invoke_stream_handler)
 
             # Also register non-streaming handler that collects chunks
-            async def invoke_handler(request: InvokeRequest) -> InvokeResponseDict:
+            async def invoke_handler(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
                 raw_messages = request.input.get("messages", [])
                 messages = [Message(**m) for m in raw_messages]
                 kwargs: dict[str, Any] = {"messages": messages}
@@ -714,7 +714,7 @@ def chat_agent(
             agent_instance.handler(invoke_handler)
         else:
             # Register regular invoke handler
-            async def invoke_handler(request: InvokeRequest) -> InvokeResponseDict:
+            async def invoke_handler(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
                 raw_messages = request.input.get("messages", [])
                 messages = [Message(**m) for m in raw_messages]
                 kwargs: dict[str, Any] = {"messages": messages}

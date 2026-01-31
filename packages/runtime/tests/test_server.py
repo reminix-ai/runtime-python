@@ -5,8 +5,8 @@ from httpx import ASGITransport, AsyncClient
 
 from reminix_runtime import (
     AgentAdapter,
-    InvokeRequest,
-    InvokeResponse,
+    AgentInvokeRequest,
+    AgentInvokeResponse,
     __version__,
     tool,
 )
@@ -25,7 +25,7 @@ class MockTaskAdapter(AgentAdapter):
     def name(self) -> str:
         return self._name
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
+    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponse:
         task = request.input.get("task", "unknown")
         return {"output": f"Completed task: {task}"}
 
@@ -42,7 +42,7 @@ class MockChatAdapter(AgentAdapter):
     def name(self) -> str:
         return self._name
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponse:
+    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponse:
         messages = request.input.get("messages", [])
         user_message = messages[-1]["content"] if messages else ""
         return {

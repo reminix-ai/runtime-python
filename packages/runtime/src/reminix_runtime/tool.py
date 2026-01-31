@@ -8,7 +8,7 @@ from typing import Any, get_args, get_origin, get_type_hints, is_typeddict
 from docstring_parser import parse as parse_docstring
 from pydantic import BaseModel
 
-from .types import InvokeRequest, InvokeResponse
+from .types import ToolCallRequest, ToolCallResponse
 
 # Default output schema for tools
 # Response: { "output": "..." }
@@ -55,8 +55,8 @@ class ToolBase(ABC):
         return meta
 
     @abstractmethod
-    async def execute(self, request: InvokeRequest) -> InvokeResponse:
-        """Execute the tool with the given input."""
+    async def call(self, request: ToolCallRequest) -> ToolCallResponse:
+        """Call the tool with the given input."""
         ...
 
 
@@ -245,8 +245,8 @@ class Tool(ToolBase):
     def output(self) -> dict[str, Any] | None:
         return self._output or DEFAULT_TOOL_OUTPUT
 
-    async def execute(self, request: InvokeRequest) -> InvokeResponse:
-        """Execute the tool by calling the wrapped function.
+    async def call(self, request: ToolCallRequest) -> ToolCallResponse:
+        """Call the tool by invoking the wrapped function.
 
         Exceptions are not caught here - they propagate to the server
         which returns appropriate HTTP error codes.
@@ -257,7 +257,7 @@ class Tool(ToolBase):
         else:
             result = self._func(**request.input)
 
-        return InvokeResponse(output=result)
+        return ToolCallResponse(output=result)
 
 
 def tool(

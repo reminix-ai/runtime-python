@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import Runnable
 
 from reminix_langchain import LangChainAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, InvokeRequest
+from reminix_runtime import AgentAdapter, AgentInvokeRequest
 
 
 class TestWrap:
@@ -46,7 +46,7 @@ class TestLangChainAgentAdapterInvoke:
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello!"))
 
         adapter = wrap_agent(mock_runnable)
-        request = InvokeRequest(input={"query": "What is AI?"})
+        request = AgentInvokeRequest(input={"query": "What is AI?"})
 
         response = await adapter.invoke(request)
 
@@ -59,7 +59,7 @@ class TestLangChainAgentAdapterInvoke:
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello from LangChain!"))
 
         adapter = wrap_agent(mock_runnable)
-        request = InvokeRequest(input={"query": "Hi"})
+        request = AgentInvokeRequest(input={"query": "Hi"})
 
         response = await adapter.invoke(request)
 
@@ -72,7 +72,7 @@ class TestLangChainAgentAdapterInvoke:
         mock_runnable.ainvoke = AsyncMock(return_value={"result": "success", "value": 42})
 
         adapter = wrap_agent(mock_runnable)
-        request = InvokeRequest(input={"task": "compute"})
+        request = AgentInvokeRequest(input={"task": "compute"})
 
         response = await adapter.invoke(request)
 
@@ -85,7 +85,7 @@ class TestLangChainAgentAdapterInvoke:
         mock_runnable.ainvoke = AsyncMock(return_value="Simple string result")
 
         adapter = wrap_agent(mock_runnable)
-        request = InvokeRequest(input={"query": "test"})
+        request = AgentInvokeRequest(input={"query": "test"})
 
         response = await adapter.invoke(request)
 
@@ -98,7 +98,7 @@ class TestLangChainAgentAdapterInvoke:
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Response"))
 
         adapter = wrap_agent(mock_runnable)
-        request = InvokeRequest(
+        request = AgentInvokeRequest(
             input={
                 "messages": [
                     {"role": "system", "content": "You are helpful"},
@@ -130,7 +130,7 @@ class TestMessageConversion:
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Response"))
 
         adapter = wrap_agent(mock_runnable)
-        request = InvokeRequest(
+        request = AgentInvokeRequest(
             input={
                 "messages": [
                     {"role": "user", "content": "Use a tool"},

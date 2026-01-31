@@ -5,6 +5,9 @@ from .agent_adapter import AgentAdapter
 from .server import create_app, serve
 from .tool import Tool, ToolBase, tool
 from .types import (
+    AgentInvokeRequest,
+    AgentInvokeResponse,
+    AgentInvokeResponseDict,
     Capabilities,
     InvokeRequest,
     InvokeResponse,
@@ -13,13 +16,16 @@ from .types import (
     Role,
     RuntimeError,
     RuntimeErrorResponse,
+    ToolCallRequest,
+    ToolCallResponse,
+    ToolCallResponseDict,
 )
 
 __all__ = [
     "__version__",
     "serve",
     "create_app",
-    # Types
+    # Base types
     "Role",
     "Message",
     "InvokeRequest",
@@ -29,6 +35,9 @@ __all__ = [
     "RuntimeError",
     "RuntimeErrorResponse",
     # Agent types
+    "AgentInvokeRequest",
+    "AgentInvokeResponse",
+    "AgentInvokeResponseDict",
     "AgentBase",
     "Agent",
     "AgentAdapter",
@@ -37,6 +46,9 @@ __all__ = [
     "agent",
     "chat_agent",
     # Tool types
+    "ToolCallRequest",
+    "ToolCallResponse",
+    "ToolCallResponseDict",
     "ToolBase",
     "Tool",
     "tool",

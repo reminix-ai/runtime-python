@@ -6,9 +6,9 @@ import pytest
 from pydantic import BaseModel, Field
 
 from reminix_runtime import (
-    InvokeRequest,
     Tool,
     ToolBase,
+    ToolCallRequest,
     tool,
 )
 
@@ -318,8 +318,8 @@ class TestPydanticOutputSchema:
             """Greet someone."""
             return GreetOutput(message=f"Hello, {name}!")
 
-        request = InvokeRequest(input={"name": "World"})
-        response = await greet.execute(request)
+        request = ToolCallRequest(input={"name": "World"})
+        response = await greet.call(request)
 
         assert response.output.message == "Hello, World!"
 
@@ -376,8 +376,8 @@ class TestTypedDictOutputSchema:
             """Greet someone."""
             return {"message": f"Hello, {name}!"}
 
-        request = InvokeRequest(input={"name": "World"})
-        response = await greet.execute(request)
+        request = ToolCallRequest(input={"name": "World"})
+        response = await greet.call(request)
 
         assert response.output == {"message": "Hello, World!"}
 
@@ -482,8 +482,8 @@ class TestToolExecute:
             """Greet someone."""
             return {"message": f"Hello, {name}!"}
 
-        request = InvokeRequest(input={"name": "World"})
-        response = await greet.execute(request)
+        request = ToolCallRequest(input={"name": "World"})
+        response = await greet.call(request)
 
         assert response.output == {"message": "Hello, World!"}
 
@@ -496,8 +496,8 @@ class TestToolExecute:
             """Add two numbers."""
             return a + b
 
-        request = InvokeRequest(input={"a": 2, "b": 3})
-        response = await add.execute(request)
+        request = ToolCallRequest(input={"a": 2, "b": 3})
+        response = await add.call(request)
 
         assert response.output == 5
 
@@ -510,8 +510,8 @@ class TestToolExecute:
             """Greet someone."""
             return f"{greeting}, {name}!"
 
-        request = InvokeRequest(input={"name": "World"})
-        response = await greet.execute(request)
+        request = ToolCallRequest(input={"name": "World"})
+        response = await greet.call(request)
 
         assert response.output == "Hello, World!"
 
@@ -524,8 +524,8 @@ class TestToolExecute:
             """Greet someone."""
             return f"{greeting}, {name}!"
 
-        request = InvokeRequest(input={"name": "World", "greeting": "Hi"})
-        response = await greet.execute(request)
+        request = ToolCallRequest(input={"name": "World", "greeting": "Hi"})
+        response = await greet.call(request)
 
         assert response.output == "Hi, World!"
 
@@ -538,8 +538,8 @@ class TestToolExecute:
             """Test tool."""
             return {"param": param}
 
-        request = InvokeRequest(input={"param": "test"}, context={"user_id": "123"})
-        response = await my_tool.execute(request)
+        request = ToolCallRequest(input={"param": "test"}, context={"user_id": "123"})
+        response = await my_tool.call(request)
 
         assert response.output == {"param": "test"}
 
@@ -556,9 +556,9 @@ class TestToolErrorHandling:
             """A tool that fails."""
             raise ValueError("Something went wrong")
 
-        request = InvokeRequest(input={"param": "test"})
+        request = ToolCallRequest(input={"param": "test"})
         with pytest.raises(ValueError, match="Something went wrong"):
-            await failing_tool.execute(request)
+            await failing_tool.call(request)
 
     @pytest.mark.asyncio
     async def test_execute_propagates_missing_parameter_error(self):
@@ -569,9 +569,9 @@ class TestToolErrorHandling:
             """Test tool."""
             return {"result": required_param}
 
-        request = InvokeRequest(input={})
+        request = ToolCallRequest(input={})
         with pytest.raises(TypeError, match="required_param"):
-            await my_tool.execute(request)
+            await my_tool.call(request)
 
 
 class TestToolBase:

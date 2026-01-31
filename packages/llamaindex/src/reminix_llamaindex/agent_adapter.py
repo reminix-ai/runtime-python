@@ -6,8 +6,8 @@ from typing import Any, Protocol, runtime_checkable
 
 from reminix_runtime import (
     AgentAdapter,
-    InvokeRequest,
-    InvokeResponseDict,
+    AgentInvokeRequest,
+    AgentInvokeResponseDict,
     Message,
     serve,
 )
@@ -93,7 +93,7 @@ class LlamaIndexAgentAdapter(AgentAdapter):
         # Fallback to last message if no user message found
         return messages[-1].content or "" if messages else ""
 
-    def _extract_query(self, request: InvokeRequest) -> str:
+    def _extract_query(self, request: AgentInvokeRequest) -> str:
         """Extract query string from invoke request."""
         # Check if input contains messages (chat-style)
         if "messages" in request.input:
@@ -109,7 +109,7 @@ class LlamaIndexAgentAdapter(AgentAdapter):
         else:
             return str(request.input)
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
         """Handle an invoke request.
 
         For both task-oriented and chat-style operations. Expects input with 'messages',
@@ -131,7 +131,7 @@ class LlamaIndexAgentAdapter(AgentAdapter):
 
         return {"output": output}
 
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
         """Handle a streaming invoke request.
 
         Args:

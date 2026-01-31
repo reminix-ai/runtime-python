@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from .agent import AgentBase
-from .types import InvokeRequest
+from .types import AgentInvokeRequest
 
 # Adapter input schema - accepts both messages and prompt
 ADAPTER_INPUT: dict[str, Any] = {
@@ -49,7 +49,7 @@ class AgentAdapter(AgentBase):
             "adapter": self.adapter_name,
         }
 
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
         """Handle a streaming invoke request."""
         raise NotImplementedError("Streaming not implemented for this adapter")
         # Unreachable, but required to make this an async generator

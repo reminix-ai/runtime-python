@@ -22,25 +22,44 @@ class Message(BaseModel):
 
 
 class InvokeRequest(BaseModel):
-    """Request for agent/tool invoke endpoint."""
+    """Base request type for invoke/call operations."""
 
     input: dict[str, Any] = Field(default_factory=dict)
     stream: bool = False
     context: dict[str, Any] | None = None
 
 
+# Semantic type aliases for agent invoke operations
+AgentInvokeRequest = InvokeRequest
+"""Request type for agent invoke operations."""
+
+# Semantic type aliases for tool call operations
+ToolCallRequest = InvokeRequest
+"""Request type for tool call operations."""
+
+
 # === Response Types ===
 
 
 class InvokeResponse(BaseModel):
-    """Response from agent/tool invoke endpoint."""
+    """Base response type for invoke/call operations."""
 
     output: Any
     metadata: dict[str, Any] | None = None
 
 
+# Semantic type aliases for agent invoke operations
+AgentInvokeResponse = InvokeResponse
+"""Response type for agent invoke operations."""
+
+# Semantic type aliases for tool call operations
+ToolCallResponse = InvokeResponse
+"""Response type for tool call operations."""
+
 # InvokeResponse as a dict for flexibility
 InvokeResponseDict = dict[str, Any]
+AgentInvokeResponseDict = InvokeResponseDict
+ToolCallResponseDict = InvokeResponseDict
 
 
 # === Capabilities ===

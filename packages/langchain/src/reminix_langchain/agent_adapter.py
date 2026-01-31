@@ -16,8 +16,8 @@ from langchain_core.runnables import Runnable
 
 from reminix_runtime import (
     AgentAdapter,
-    InvokeRequest,
-    InvokeResponseDict,
+    AgentInvokeRequest,
+    AgentInvokeResponseDict,
     Message,
     serve,
 )
@@ -77,7 +77,7 @@ class LangChainAgentAdapter(AgentAdapter):
         content = message.content if isinstance(message.content, str) else str(message.content)
         return {"role": role, "content": content}
 
-    def _build_langchain_input(self, request: InvokeRequest) -> Any:
+    def _build_langchain_input(self, request: AgentInvokeRequest) -> Any:
         """Build LangChain input from invoke request."""
         # Check if input contains messages (chat-style)
         if "messages" in request.input:
@@ -93,7 +93,7 @@ class LangChainAgentAdapter(AgentAdapter):
             # Pass input directly to the runnable
             return request.input
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
         """Handle an invoke request.
 
         For both task-oriented and chat-style operations. Expects input with 'messages' key
@@ -121,7 +121,7 @@ class LangChainAgentAdapter(AgentAdapter):
 
         return {"output": output}
 
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
         """Handle a streaming invoke request.
 
         Streams chunks from the LangChain runnable.

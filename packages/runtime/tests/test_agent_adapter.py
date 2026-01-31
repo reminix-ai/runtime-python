@@ -2,7 +2,7 @@
 
 import pytest
 
-from reminix_runtime import AgentAdapter, InvokeRequest, InvokeResponse
+from reminix_runtime import AgentAdapter, AgentInvokeRequest, AgentInvokeResponse
 
 
 class TestAgentAdapterContract:
@@ -17,8 +17,8 @@ class TestAgentAdapterContract:
         """Subclass must implement the name property."""
 
         class IncompleteAdapter(AgentAdapter):
-            async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-                return InvokeResponse(output="")
+            async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponse:
+                return AgentInvokeResponse(output="")
 
         with pytest.raises(TypeError):
             IncompleteAdapter()  # type: ignore
@@ -46,7 +46,7 @@ class TestConcreteAdapter:
             def name(self) -> str:
                 return "test-agent"
 
-            async def invoke(self, request: InvokeRequest) -> InvokeResponse:
+            async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponse:
                 # Check if it's a chat-style request (has messages)
                 if "messages" in request.input:
                     user_msg = request.input["messages"][-1]["content"]
@@ -64,9 +64,9 @@ class TestConcreteAdapter:
 
     @pytest.mark.asyncio
     async def test_invoke_returns_response(self):
-        """Invoke should return an InvokeResponse (dict)."""
+        """Invoke should return an AgentInvokeResponse (dict)."""
         adapter = self._create_adapter()
-        request = InvokeRequest(input={"task": "summarize"})
+        request = AgentInvokeRequest(input={"task": "summarize"})
         response = await adapter.invoke(request)
 
         assert isinstance(response, dict)
@@ -74,9 +74,9 @@ class TestConcreteAdapter:
 
     @pytest.mark.asyncio
     async def test_invoke_with_messages_returns_response(self):
-        """Invoke with messages input should return an InvokeResponse (dict)."""
+        """Invoke with messages input should return an AgentInvokeResponse (dict)."""
         adapter = self._create_adapter()
-        request = InvokeRequest(input={"messages": [{"role": "user", "content": "hello"}]})
+        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "hello"}]})
         response = await adapter.invoke(request)
 
         assert isinstance(response, dict)
@@ -86,7 +86,7 @@ class TestConcreteAdapter:
     async def test_invoke_stream_not_implemented_by_default(self):
         """invoke_stream should raise NotImplementedError by default."""
         adapter = self._create_adapter()
-        request = InvokeRequest(input={"task": "test"})
+        request = AgentInvokeRequest(input={"task": "test"})
 
         with pytest.raises(NotImplementedError):
             async for _ in adapter.invoke_stream(request):

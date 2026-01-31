@@ -186,7 +186,7 @@ def create_app(
         )
 
         try:
-            return await tool.execute(request)
+            return await tool.call(request)
         except ValueError as e:
             return JSONResponse(
                 status_code=400,

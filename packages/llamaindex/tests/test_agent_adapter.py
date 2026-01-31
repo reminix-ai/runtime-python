@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from reminix_llamaindex import LlamaIndexAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, InvokeRequest
+from reminix_runtime import AgentAdapter, AgentInvokeRequest
 
 
 class TestWrap:
@@ -48,7 +48,7 @@ class TestLlamaIndexAgentAdapterInvoke:
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_engine)
-        request = InvokeRequest(input={"query": "What is AI?"})
+        request = AgentInvokeRequest(input={"query": "What is AI?"})
 
         response = await adapter.invoke(request)
 
@@ -62,7 +62,7 @@ class TestLlamaIndexAgentAdapterInvoke:
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_engine)
-        request = InvokeRequest(input={"query": "Hi"})
+        request = AgentInvokeRequest(input={"query": "Hi"})
 
         response = await adapter.invoke(request)
 
@@ -76,7 +76,7 @@ class TestLlamaIndexAgentAdapterInvoke:
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_engine)
-        request = InvokeRequest(input={"prompt": "Tell me about AI"})
+        request = AgentInvokeRequest(input={"prompt": "Tell me about AI"})
 
         response = await adapter.invoke(request)
 
@@ -90,7 +90,7 @@ class TestLlamaIndexAgentAdapterInvoke:
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_engine)
-        request = InvokeRequest(input={"message": "Hello there"})
+        request = AgentInvokeRequest(input={"message": "Hello there"})
 
         response = await adapter.invoke(request)
 
@@ -104,7 +104,7 @@ class TestLlamaIndexAgentAdapterInvoke:
         mock_engine.achat = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_engine)
-        request = InvokeRequest(
+        request = AgentInvokeRequest(
             input={
                 "messages": [
                     {"role": "user", "content": "First message"},

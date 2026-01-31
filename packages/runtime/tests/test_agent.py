@@ -4,8 +4,8 @@ import pytest
 
 from reminix_runtime import (
     Agent,
-    InvokeRequest,
-    InvokeResponse,
+    AgentInvokeRequest,
+    AgentInvokeResponse,
     Message,
     agent,
     chat_agent,
@@ -42,8 +42,8 @@ class TestAgentHandlerRegistration:
         test_agent = Agent("test-agent")
 
         @test_agent.handler
-        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
-            return InvokeResponse(output="test")
+        async def handle_invoke(request: AgentInvokeRequest) -> AgentInvokeResponse:
+            return AgentInvokeResponse(output="test")
 
         # Handler should be registered
         assert test_agent._invoke_handler is not None
@@ -53,7 +53,7 @@ class TestAgentHandlerRegistration:
         test_agent = Agent("test-agent")
 
         @test_agent.stream_handler
-        async def handle_stream(request: InvokeRequest):
+        async def handle_stream(request: AgentInvokeRequest):
             yield "test"
 
         # Handler should be registered
@@ -64,8 +64,8 @@ class TestAgentHandlerRegistration:
         test_agent = Agent("test-agent")
 
         @test_agent.handler
-        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
-            return InvokeResponse(output="test")
+        async def handle_invoke(request: AgentInvokeRequest) -> AgentInvokeResponse:
+            return AgentInvokeResponse(output="test")
 
         # The decorated function should be returned
         assert handle_invoke is not None
@@ -85,7 +85,7 @@ class TestAgentStreamingFlags:
         test_agent = Agent("test-agent")
 
         @test_agent.stream_handler
-        async def handle_stream(request: InvokeRequest):
+        async def handle_stream(request: AgentInvokeRequest):
             yield "test"
 
         assert test_agent.metadata["capabilities"]["streaming"] is True
@@ -100,11 +100,11 @@ class TestAgentInvoke:
         test_agent = Agent("test-agent")
 
         @test_agent.handler
-        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
+        async def handle_invoke(request: AgentInvokeRequest) -> AgentInvokeResponse:
             task = request.input.get("task", "unknown")
             return {"output": f"Completed: {task}"}
 
-        request = InvokeRequest(input={"task": "summarize"})
+        request = AgentInvokeRequest(input={"task": "summarize"})
         response = await test_agent.invoke(request)
 
         assert response["output"] == "Completed: summarize"
@@ -113,7 +113,7 @@ class TestAgentInvoke:
     async def test_invoke_without_handler_raises(self):
         """invoke raises NotImplementedError when no handler is registered."""
         test_agent = Agent("test-agent")
-        request = InvokeRequest(input={"task": "test"})
+        request = AgentInvokeRequest(input={"task": "test"})
 
         with pytest.raises(NotImplementedError) as exc_info:
             await test_agent.invoke(request)
@@ -131,11 +131,11 @@ class TestAgentInvokeStream:
         test_agent = Agent("test-agent")
 
         @test_agent.stream_handler
-        async def handle_stream(request: InvokeRequest):
+        async def handle_stream(request: AgentInvokeRequest):
             yield "Hello"
             yield " world"
 
-        request = InvokeRequest(input={"task": "test"})
+        request = AgentInvokeRequest(input={"task": "test"})
         chunks = []
         async for chunk in test_agent.invoke_stream(request):
             chunks.append(chunk)
@@ -146,7 +146,7 @@ class TestAgentInvokeStream:
     async def test_invoke_stream_without_handler_raises(self):
         """invoke_stream raises NotImplementedError when no handler is registered."""
         test_agent = Agent("test-agent")
-        request = InvokeRequest(input={"task": "test"})
+        request = AgentInvokeRequest(input={"task": "test"})
 
         with pytest.raises(NotImplementedError) as exc_info:
             async for _ in test_agent.invoke_stream(request):
@@ -166,12 +166,12 @@ class TestAgentWithContext:
         received_context = None
 
         @test_agent.handler
-        async def handle_invoke(request: InvokeRequest) -> InvokeResponse:
+        async def handle_invoke(request: AgentInvokeRequest) -> AgentInvokeResponse:
             nonlocal received_context
             received_context = request.context
-            return InvokeResponse(output="done")
+            return AgentInvokeResponse(output="done")
 
-        request = InvokeRequest(
+        request = AgentInvokeRequest(
             input={"task": "test"}, context={"user_id": "123", "session": "abc"}
         )
         await test_agent.invoke(request)
@@ -275,7 +275,7 @@ class TestAgentDecorator:
             """Add two numbers."""
             return a + b
 
-        request = InvokeRequest(input={"a": 3, "b": 4})
+        request = AgentInvokeRequest(input={"a": 3, "b": 4})
         response = await calculator.invoke(request)
 
         assert response["output"] == 7.0
@@ -289,7 +289,7 @@ class TestAgentDecorator:
             """Add two numbers."""
             return a + b
 
-        request = InvokeRequest(input={"a": 5, "b": 3})
+        request = AgentInvokeRequest(input={"a": 5, "b": 3})
         response = await calculator.invoke(request)
 
         assert response["output"] == 8.0
@@ -307,7 +307,7 @@ class TestAgentDecorator:
         # Test streaming
         assert streamer.metadata["capabilities"]["streaming"] is True
 
-        request = InvokeRequest(input={"text": "hello world"})
+        request = AgentInvokeRequest(input={"text": "hello world"})
         chunks = []
         async for chunk in streamer.invoke_stream(request):
             chunks.append(chunk)
@@ -324,7 +324,7 @@ class TestAgentDecorator:
             for word in text.split():
                 yield word + " "
 
-        request = InvokeRequest(input={"text": "hello world"})
+        request = AgentInvokeRequest(input={"text": "hello world"})
         response = await streamer.invoke(request)
 
         assert response["output"] == "hello world "
@@ -406,7 +406,7 @@ class TestChatAgentDecorator:
             last_msg = messages[-1].content if messages else ""
             return [Message(role="assistant", content=f"You said: {last_msg}")]
 
-        request = InvokeRequest(input={"messages": [{"role": "user", "content": "hello"}]})
+        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "hello"}]})
         response = await echo_bot.invoke(request)
 
         assert response["output"]["messages"][0]["role"] == "assistant"
@@ -424,7 +424,7 @@ class TestChatAgentDecorator:
             user_id = context.get("user_id") if context else "unknown"
             return [Message(role="assistant", content=f"Hello user {user_id}!")]
 
-        request = InvokeRequest(
+        request = AgentInvokeRequest(
             input={"messages": [{"role": "user", "content": "hi"}]},
             context={"user_id": "123"},
         )
@@ -441,7 +441,7 @@ class TestChatAgentDecorator:
             """Simple sync bot."""
             return [Message(role="assistant", content="Hello from sync!")]
 
-        request = InvokeRequest(input={"messages": [{"role": "user", "content": "hi"}]})
+        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "hi"}]})
         response = await simple_bot.invoke(request)
 
         assert response["output"]["messages"][0]["content"] == "Hello from sync!"
@@ -461,7 +461,7 @@ class TestChatAgentDecorator:
         # Test streaming flag
         assert streaming_bot.metadata["capabilities"]["streaming"] is True
 
-        request = InvokeRequest(input={"messages": [{"role": "user", "content": "hi"}]})
+        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "hi"}]})
         chunks = []
         async for chunk in streaming_bot.invoke_stream(request):
             chunks.append(chunk)
@@ -480,7 +480,7 @@ class TestChatAgentDecorator:
             yield "world"
             yield "!"
 
-        request = InvokeRequest(input={"messages": [{"role": "user", "content": "hi"}]})
+        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "hi"}]})
         response = await streaming_bot.invoke(request)
 
         assert response["output"]["messages"][0]["role"] == "assistant"

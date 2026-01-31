@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from reminix_openai import OpenAIAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, InvokeRequest
+from reminix_runtime import AgentAdapter, AgentInvokeRequest
 
 
 class TestWrap:
@@ -54,7 +54,7 @@ class TestOpenAIAgentAdapterInvoke:
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = InvokeRequest(input={"prompt": "Hi"})
+        request = AgentInvokeRequest(input={"prompt": "Hi"})
 
         response = await adapter.invoke(request)
 
@@ -69,7 +69,7 @@ class TestOpenAIAgentAdapterInvoke:
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = InvokeRequest(input={"prompt": "Hi"})
+        request = AgentInvokeRequest(input={"prompt": "Hi"})
 
         response = await adapter.invoke(request)
 
@@ -84,7 +84,7 @@ class TestOpenAIAgentAdapterInvoke:
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = InvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
+        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
         response = await adapter.invoke(request)
 
@@ -102,7 +102,7 @@ class TestOpenAIAgentAdapterInvoke:
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client, model="gpt-4o")
-        request = InvokeRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
+        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
         await adapter.invoke(request)
 

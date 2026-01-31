@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from reminix_runtime import Agent, InvokeRequest, InvokeResponse
+from reminix_runtime import Agent, AgentInvokeRequest, AgentInvokeResponse
 
 
 async def call_asgi(app, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
@@ -85,7 +85,7 @@ class TestToAsgi:
         test_agent = Agent("test-agent")
 
         @test_agent.handler
-        async def handle(request: InvokeRequest) -> InvokeResponse:
+        async def handle(request: AgentInvokeRequest) -> AgentInvokeResponse:
             prompt = request.input.get("prompt", "")
             return {"output": f"Received: {prompt}"}
 
@@ -105,7 +105,7 @@ class TestToAsgi:
         test_agent = Agent("test-agent")
 
         @test_agent.handler
-        async def handle(request: InvokeRequest) -> InvokeResponse:
+        async def handle(request: AgentInvokeRequest) -> AgentInvokeResponse:
             return {"output": "ok"}
 
         app = test_agent.to_asgi()

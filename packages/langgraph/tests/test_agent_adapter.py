@@ -6,7 +6,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from reminix_langgraph import LangGraphAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, InvokeRequest
+from reminix_runtime import AgentAdapter, AgentInvokeRequest
 
 
 class TestWrap:
@@ -45,7 +45,7 @@ class TestLangGraphAgentAdapterInvoke:
         mock_graph.ainvoke = AsyncMock(return_value={"messages": [AIMessage(content="Hello!")]})
 
         adapter = wrap_agent(mock_graph)
-        request = InvokeRequest(input={"query": "What is AI?"})
+        request = AgentInvokeRequest(input={"query": "What is AI?"})
 
         response = await adapter.invoke(request)
 
@@ -62,7 +62,7 @@ class TestLangGraphAgentAdapterInvoke:
         )
 
         adapter = wrap_agent(mock_graph)
-        request = InvokeRequest(input={"messages": []})
+        request = AgentInvokeRequest(input={"messages": []})
 
         response = await adapter.invoke(request)
 
@@ -75,7 +75,7 @@ class TestLangGraphAgentAdapterInvoke:
         mock_graph.ainvoke = AsyncMock(return_value={"result": "success"})
 
         adapter = wrap_agent(mock_graph)
-        request = InvokeRequest(input={"task": "compute"})
+        request = AgentInvokeRequest(input={"task": "compute"})
 
         response = await adapter.invoke(request)
 
@@ -88,7 +88,7 @@ class TestLangGraphAgentAdapterInvoke:
         mock_graph.ainvoke = AsyncMock(return_value={"messages": [AIMessage(content="Hello!")]})
 
         adapter = wrap_agent(mock_graph)
-        request = InvokeRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
+        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
         response = await adapter.invoke(request)
 
@@ -113,7 +113,7 @@ class TestLangGraphAgentAdapterInvoke:
         )
 
         adapter = wrap_agent(mock_graph)
-        request = InvokeRequest(
+        request = AgentInvokeRequest(
             input={
                 "messages": [
                     {"role": "system", "content": "You are helpful"},

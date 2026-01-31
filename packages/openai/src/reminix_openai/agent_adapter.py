@@ -8,8 +8,8 @@ from openai import AsyncOpenAI
 
 from reminix_runtime import (
     AgentAdapter,
-    InvokeRequest,
-    InvokeResponseDict,
+    AgentInvokeRequest,
+    AgentInvokeResponseDict,
     Message,
     serve,
 )
@@ -56,7 +56,7 @@ class OpenAIAgentAdapter(AgentAdapter):
             result["name"] = message.name
         return result
 
-    def _build_openai_messages(self, request: InvokeRequest) -> list[dict[str, Any]]:
+    def _build_openai_messages(self, request: AgentInvokeRequest) -> list[dict[str, Any]]:
         """Build OpenAI messages from invoke request input."""
         # Check if input contains messages (chat-style)
         if "messages" in request.input:
@@ -70,7 +70,7 @@ class OpenAIAgentAdapter(AgentAdapter):
             # Use input as a single user message
             return [{"role": "user", "content": str(request.input)}]
 
-    async def invoke(self, request: InvokeRequest) -> InvokeResponseDict:
+    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
         """Handle an invoke request.
 
         For both task-oriented and chat-style operations. Expects input with 'messages' key
@@ -95,7 +95,7 @@ class OpenAIAgentAdapter(AgentAdapter):
 
         return {"output": output}
 
-    async def invoke_stream(self, request: InvokeRequest) -> AsyncIterator[str]:
+    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
         """Handle a streaming invoke request.
 
         Args:
