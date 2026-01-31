@@ -16,7 +16,7 @@ from .types import AgentInvokeRequest, AgentInvokeResponseDict
 
 # Named agent templates with predefined input/output schemas.
 # The default template is 'prompt'; use it when no template or custom schema is provided.
-AgentTemplate = Literal["prompt", "chat", "task"]
+AgentTemplate = Literal["prompt", "chat", "task", "rag", "thread"]
 
 DEFAULT_AGENT_TEMPLATE: AgentTemplate = "prompt"
 
@@ -64,6 +64,62 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
             "description": "Structured JSON result (object, array, string, number, boolean, or null)",
             "type": "object",
             "additionalProperties": True,
+        },
+    },
+    "rag": {
+        "input": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "The question to answer from documents"},
+                "messages": {
+                    "type": "array",
+                    "description": "Optional prior conversation (chat-style RAG)",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "role": {"type": "string", "description": "Message role (user, assistant, system)"},
+                            "content": {"type": "string", "description": "Message content", "nullable": True},
+                        },
+                    },
+                },
+                "collectionIds": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional knowledge collection IDs to scope the search",
+                },
+            },
+            "required": ["query"],
+        },
+        "output": {"type": "string"},
+    },
+    "thread": {
+        "input": {
+            "type": "object",
+            "properties": {
+                "messages": {
+                    "type": "array",
+                    "description": "Chat messages with tool_calls and tool results (OpenAI-style)",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "role": {"type": "string", "description": "Message role (user, assistant, system)"},
+                            "content": {"type": "string", "description": "Message content", "nullable": True},
+                        },
+                    },
+                },
+            },
+            "required": ["messages"],
+        },
+        "output": {
+            "type": "array",
+            "description": "Updated message thread (OpenAI-style, may include assistant message and tool_calls)",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "role": {"type": "string", "description": "Message role (user, assistant, system)"},
+                    "content": {"type": "string", "description": "Message content", "nullable": True},
+                },
+            },
         },
     },
 }

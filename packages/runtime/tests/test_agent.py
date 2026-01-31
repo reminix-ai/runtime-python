@@ -421,3 +421,62 @@ class TestAgentTemplates:
         assert "a" in add.metadata["input"]["properties"]
         assert "b" in add.metadata["input"]["properties"]
         assert add.metadata["input"]["required"] == ["a", "b"]
+
+    def test_template_rag_metadata(self):
+        """template=rag sets query input and string output in metadata."""
+
+        @agent(template="rag")
+        async def rag_handler(query: str):
+            return f"Answer for: {query}"
+
+        assert rag_handler.metadata["template"] == "rag"
+        assert rag_handler.metadata["input"]["required"] == ["query"]
+        assert "query" in rag_handler.metadata["input"]["properties"]
+        assert rag_handler.metadata["output"]["type"] == "string"
+
+    @pytest.mark.asyncio
+    async def test_template_rag_invoke(self):
+        """template=rag agent handles invoke with query input."""
+
+        @agent(template="rag")
+        async def rag_handler(query: str):
+            return f"Answer for: {query}"
+
+        request = AgentInvokeRequest(input={"query": "What is X?"})
+        response = await rag_handler.invoke(request)
+        assert response["output"] == "Answer for: What is X?"
+
+    def test_template_thread_metadata(self):
+        """template=thread sets messages input and messages output (array) in metadata."""
+
+        @agent(template="thread")
+        async def thread_handler(messages: list):
+            return messages + [{"role": "assistant", "content": "ok"}]
+
+        assert thread_handler.metadata["template"] == "thread"
+        assert thread_handler.metadata["input"]["required"] == ["messages"]
+        assert "messages" in thread_handler.metadata["input"]["properties"]
+        assert thread_handler.metadata["output"]["type"] == "array"
+        assert "items" in thread_handler.metadata["output"]
+
+    @pytest.mark.asyncio
+    async def test_template_thread_invoke(self):
+        """template=thread agent returns updated message thread (output is messages)."""
+
+        @agent(template="thread")
+        async def thread_handler(messages: list):
+            last = messages[-1] if messages else {}
+            return messages + [
+                {"role": "assistant", "content": f"Reply: {last.get('content', '')}"}
+            ]
+
+        request = AgentInvokeRequest(
+            input={"messages": [{"role": "user", "content": "Hello"}]}
+        )
+        response = await thread_handler.invoke(request)
+        output = response["output"]
+        assert isinstance(output, list)
+        assert len(output) == 2
+        assert output[0] == {"role": "user", "content": "Hello"}
+        assert output[1]["role"] == "assistant"
+        assert output[1]["content"] == "Reply: Hello"
