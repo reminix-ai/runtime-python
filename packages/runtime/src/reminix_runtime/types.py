@@ -1,11 +1,11 @@
 """Reminix Runtime Types."""
 
-from typing import Any, Literal
+from typing import Annotated, Any, Literal, Union
 
 from pydantic import BaseModel, Field
 
-# Valid message roles
-Role = Literal["user", "assistant", "system", "tool"]
+# Valid message roles (OpenAI current; no legacy function role)
+Role = Literal["developer", "system", "user", "assistant", "tool"]
 
 
 class ToolCall(BaseModel):
@@ -16,11 +16,92 @@ class ToolCall(BaseModel):
     function: dict[str, Any]  # {"name": str, "arguments": str}
 
 
+# --- Content parts (discriminated by type) ---
+
+
+class TextContentPart(BaseModel):
+    """Content part: text."""
+
+    type: Literal["text"] = "text"
+    text: str
+
+
+class ImageUrlPart(BaseModel):
+    """Image URL with optional detail."""
+
+    url: str
+    detail: Literal["auto", "low", "high"] = "auto"
+
+
+class ImageUrlContentPart(BaseModel):
+    """Content part: image URL."""
+
+    type: Literal["image_url"] = "image_url"
+    image_url: ImageUrlPart
+
+
+class InputAudioPart(BaseModel):
+    """Input audio (base64 + format)."""
+
+    data: str
+    format: Literal["wav", "mp3"]
+
+
+class InputAudioContentPart(BaseModel):
+    """Content part: input audio."""
+
+    type: Literal["input_audio"] = "input_audio"
+    input_audio: InputAudioPart
+
+
+class FilePart(BaseModel):
+    """File (file_id or filename/file_data)."""
+
+    file_id: str | None = None
+    filename: str | None = None
+    file_data: str | None = None
+
+
+class FileContentPart(BaseModel):
+    """Content part: file."""
+
+    type: Literal["file"] = "file"
+    file: FilePart
+
+
+class RefusalContentPart(BaseModel):
+    """Content part: refusal (assistant)."""
+
+    type: Literal["refusal"] = "refusal"
+    refusal: str
+
+
+ContentPart = Annotated[
+    Union[
+        TextContentPart,
+        ImageUrlContentPart,
+        InputAudioContentPart,
+        FileContentPart,
+        RefusalContentPart,
+    ],
+    Field(discriminator="type"),
+]
+
+# Type for list of content parts (used in Message.content)
+ContentPartList = list[
+    TextContentPart
+    | ImageUrlContentPart
+    | InputAudioContentPart
+    | FileContentPart
+    | RefusalContentPart
+]
+
+
 class Message(BaseModel):
-    """A message in the conversation (OpenAI-style; supports tool_calls and tool results)."""
+    """A message in the conversation (OpenAI-style; input and output)."""
 
     role: Role
-    content: str | None = None
+    content: str | ContentPartList | None = None
     tool_calls: list[ToolCall] | None = None
     tool_call_id: str | None = None
     name: str | None = None
