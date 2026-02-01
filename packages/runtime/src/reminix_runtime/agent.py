@@ -21,7 +21,7 @@ AgentTemplate = Literal["prompt", "chat", "task", "rag", "thread"]
 DEFAULT_AGENT_TEMPLATE: AgentTemplate = "prompt"
 
 # JSON schema for a single tool call (OpenAI-style)
-TOOL_CALL_ITEM_SCHEMA: dict[str, Any] = {
+TOOL_CALL_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "id": {"type": "string", "description": "Tool call id"},
@@ -38,22 +38,94 @@ TOOL_CALL_ITEM_SCHEMA: dict[str, Any] = {
     "required": ["id", "type", "function"],
 }
 
-# JSON schema for a message item (OpenAI-style; supports tool_calls and tool results)
-MESSAGE_ITEM_SCHEMA: dict[str, Any] = {
+# Content part schema (text, image_url, input_audio, file, refusal)
+CONTENT_PART_SCHEMA: dict[str, Any] = {
+    "oneOf": [
+        {
+            "type": "object",
+            "properties": {"type": {"const": "text"}, "text": {"type": "string"}},
+            "required": ["type", "text"],
+        },
+        {
+            "type": "object",
+            "properties": {
+                "type": {"const": "image_url"},
+                "image_url": {
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string"},
+                        "detail": {"type": "string", "enum": ["auto", "low", "high"]},
+                    },
+                    "required": ["url"],
+                },
+            },
+            "required": ["type", "image_url"],
+        },
+        {
+            "type": "object",
+            "properties": {
+                "type": {"const": "input_audio"},
+                "input_audio": {
+                    "type": "object",
+                    "properties": {
+                        "data": {"type": "string", "description": "Base64 encoded audio data"},
+                        "format": {"type": "string", "enum": ["wav", "mp3"]},
+                    },
+                    "required": ["data", "format"],
+                },
+            },
+            "required": ["type", "input_audio"],
+        },
+        {
+            "type": "object",
+            "properties": {
+                "type": {"const": "file"},
+                "file": {
+                    "type": "object",
+                    "properties": {
+                        "file_id": {"type": "string"},
+                        "filename": {"type": "string"},
+                        "file_data": {"type": "string", "description": "Base64 encoded file data"},
+                    },
+                },
+            },
+            "required": ["type", "file"],
+        },
+        {
+            "type": "object",
+            "properties": {"type": {"const": "refusal"}, "refusal": {"type": "string"}},
+            "required": ["type", "refusal"],
+        },
+    ],
+}
+
+# JSON schema for a message (OpenAI-style; input and output)
+MESSAGE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
-        "role": {"type": "string", "description": "Message role (user, assistant, system, tool)"},
-        "content": {"type": "string", "description": "Message content", "nullable": True},
-        "tool_calls": {
-            "type": "array",
-            "description": "Tool calls requested by the model (assistant messages)",
-            "items": TOOL_CALL_ITEM_SCHEMA,
+        "role": {
+            "type": "string",
+            "enum": ["developer", "system", "user", "assistant", "tool"],
+            "description": "Message role",
         },
+        "content": {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "array", "items": CONTENT_PART_SCHEMA, "minItems": 1},
+                {"type": "null"},
+            ],
+            "description": "Message content: string, array of content parts, or null when tool_calls present",
+        },
+        "name": {"type": "string", "description": "Optional participant name"},
         "tool_call_id": {
             "type": "string",
-            "description": "Id of the tool call this message is a result for (tool messages)",
+            "description": "Tool call ID (required when role is \"tool\")",
         },
-        "name": {"type": "string", "description": "Tool name (tool messages)"},
+        "tool_calls": {
+            "type": "array",
+            "description": "Tool calls (assistant role only)",
+            "items": TOOL_CALL_SCHEMA,
+        },
     },
 }
 
@@ -75,7 +147,7 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
                 "messages": {
                     "type": "array",
                     "description": "Chat messages (OpenAI-style)",
-                    "items": MESSAGE_ITEM_SCHEMA,
+                    "items": MESSAGE_SCHEMA,
                 },
             },
             "required": ["messages"],
@@ -105,7 +177,7 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
                 "messages": {
                     "type": "array",
                     "description": "Optional prior conversation (chat-style RAG)",
-                    "items": MESSAGE_ITEM_SCHEMA,
+                    "items": MESSAGE_SCHEMA,
                 },
                 "collectionIds": {
                     "type": "array",
@@ -124,7 +196,7 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
                 "messages": {
                     "type": "array",
                     "description": "Chat messages with tool_calls and tool results (OpenAI-style)",
-                    "items": MESSAGE_ITEM_SCHEMA,
+                    "items": MESSAGE_SCHEMA,
                 },
             },
             "required": ["messages"],
@@ -132,7 +204,7 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
         "output": {
             "type": "array",
             "description": "Updated message thread (OpenAI-style, may include assistant message and tool_calls)",
-            "items": MESSAGE_ITEM_SCHEMA,
+            "items": MESSAGE_SCHEMA,
         },
     },
 }
