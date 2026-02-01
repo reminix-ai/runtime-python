@@ -11,6 +11,7 @@ from reminix_runtime import (
     AgentInvokeRequest,
     AgentInvokeResponseDict,
     Message,
+    message_content_to_text,
     serve,
 )
 
@@ -47,7 +48,13 @@ class OpenAIAgentAdapter(AgentAdapter):
 
     def _to_openai_message(self, message: Message) -> dict[str, Any]:
         """Convert a Reminix message to OpenAI format."""
-        result: dict[str, Any] = {"role": message.role, "content": message.content}
+        role = "system" if message.role == "developer" else message.role
+        if role not in ("user", "assistant", "system"):
+            role = "user"
+        result: dict[str, Any] = {
+            "role": role,
+            "content": message_content_to_text(message.content) or "",
+        }
         if message.tool_calls:
             result["tool_calls"] = message.tool_calls
         if message.tool_call_id:

@@ -19,6 +19,7 @@ from reminix_runtime import (
     AgentInvokeRequest,
     AgentInvokeResponseDict,
     Message,
+    message_content_to_text,
     serve,
 )
 
@@ -45,13 +46,13 @@ class LangChainAgentAdapter(AgentAdapter):
     def _to_langchain_message(self, message: Message) -> BaseMessage:
         """Convert a Reminix message to a LangChain message."""
         role = message.role
-        content = message.content or ""
+        content = message_content_to_text(message.content)
 
         if role == "user":
             return HumanMessage(content=content)
         elif role == "assistant":
             return AIMessage(content=content)
-        elif role == "system":
+        elif role == "system" or role == "developer":
             return SystemMessage(content=content)
         elif role == "tool":
             # Tool messages require a tool_call_id

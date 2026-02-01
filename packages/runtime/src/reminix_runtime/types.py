@@ -1,6 +1,6 @@
 """Reminix Runtime Types."""
 
-from typing import Annotated, Any, Literal, Union
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -77,13 +77,11 @@ class RefusalContentPart(BaseModel):
 
 
 ContentPart = Annotated[
-    Union[
-        TextContentPart,
-        ImageUrlContentPart,
-        InputAudioContentPart,
-        FileContentPart,
-        RefusalContentPart,
-    ],
+    TextContentPart
+    | ImageUrlContentPart
+    | InputAudioContentPart
+    | FileContentPart
+    | RefusalContentPart,
     Field(discriminator="type"),
 ]
 

@@ -11,6 +11,7 @@ from reminix_runtime import (
     AgentInvokeRequest,
     AgentInvokeResponseDict,
     Message,
+    message_content_to_text,
     serve,
 )
 
@@ -62,16 +63,18 @@ class AnthropicAgentAdapter(AgentAdapter):
         anthropic_messages: list[dict[str, Any]] = []
 
         for message in messages:
-            if message.role == "system":
+            text = message_content_to_text(message.content)
+            if message.role == "system" or message.role == "developer":
                 # Anthropic only supports one system message, use the last one
-                system_message = message.content
-            else:
+                system_message = text
+            elif message.role in ("user", "assistant"):
                 anthropic_messages.append(
                     {
                         "role": message.role,
-                        "content": message.content or "",
+                        "content": text,
                     }
                 )
+            # skip tool for Anthropic messages format
 
         return system_message, anthropic_messages
 

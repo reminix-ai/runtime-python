@@ -9,6 +9,7 @@ from reminix_runtime import (
     AgentInvokeRequest,
     AgentInvokeResponseDict,
     Message,
+    message_content_to_text,
     serve,
 )
 
@@ -89,9 +90,9 @@ class LlamaIndexAgentAdapter(AgentAdapter):
         """Get the last user message from the conversation."""
         for message in reversed(messages):
             if message.role == "user":
-                return message.content or ""
+                return message_content_to_text(message.content)
         # Fallback to last message if no user message found
-        return messages[-1].content or "" if messages else ""
+        return message_content_to_text(messages[-1].content) if messages else ""
 
     def _extract_query(self, request: AgentInvokeRequest) -> str:
         """Extract query string from invoke request."""

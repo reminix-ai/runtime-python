@@ -119,7 +119,7 @@ MESSAGE_SCHEMA: dict[str, Any] = {
         "name": {"type": "string", "description": "Optional participant name"},
         "tool_call_id": {
             "type": "string",
-            "description": "Tool call ID (required when role is \"tool\")",
+            "description": 'Tool call ID (required when role is "tool")',
         },
         "tool_calls": {
             "type": "array",

@@ -2,6 +2,7 @@ __version__ = "0.0.17"
 
 from .agent import Agent, AgentBase, ASGIApp, agent
 from .agent_adapter import AgentAdapter
+from .content import message_content_to_text
 from .server import create_app, serve
 from .tool import Tool, ToolBase, tool
 from .types import (
@@ -26,6 +27,7 @@ __all__ = [
     "__version__",
     "serve",
     "create_app",
+    "message_content_to_text",
     # Base types
     "Role",
     "Message",
