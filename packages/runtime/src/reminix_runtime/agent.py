@@ -659,6 +659,14 @@ def agent(
         An Agent instance that handles invoke requests.
     """
 
+    def _call_with_request(f: Callable[..., Any], request: AgentInvokeRequest) -> dict[str, Any]:
+        """Build kwargs for f: **request.input and optionally context=request.context."""
+        kwargs = dict(request.input)
+        sig = inspect.signature(f)
+        if "context" in sig.parameters:
+            kwargs["context"] = request.context
+        return kwargs
+
     def decorator(f: Callable[..., Any]) -> Agent:
         agent_name = name or f.__name__
         agent_description = description or (f.__doc__ or "").strip().split("\n\n")[0].strip()
@@ -694,7 +702,8 @@ def agent(
         if is_streaming:
             # Register streaming invoke handler
             async def invoke_stream_handler(request: AgentInvokeRequest) -> AsyncIterator[str]:
-                async for chunk in f(**request.input):
+                kwargs = _call_with_request(f, request)
+                async for chunk in f(**kwargs):
                     # Convert to string if not already
                     if isinstance(chunk, str):
                         yield chunk
@@ -705,8 +714,9 @@ def agent(
 
             # Also register non-streaming handler that collects chunks
             async def invoke_handler(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
+                kwargs = _call_with_request(f, request)
                 chunks: list[str] = []
-                async for chunk in f(**request.input):
+                async for chunk in f(**kwargs):
                     if isinstance(chunk, str):
                         chunks.append(chunk)
                     else:
@@ -717,10 +727,11 @@ def agent(
         else:
             # Register regular invoke handler
             async def invoke_handler(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
+                kwargs = _call_with_request(f, request)
                 if inspect.iscoroutinefunction(f):
-                    result = await f(**request.input)
+                    result = await f(**kwargs)
                 else:
-                    result = f(**request.input)
+                    result = f(**kwargs)
                 return {"output": result}
 
             agent_instance.handler(invoke_handler)

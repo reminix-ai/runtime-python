@@ -251,12 +251,14 @@ class Tool(ToolBase):
         Exceptions are not caught here - they propagate to the server
         which returns appropriate HTTP error codes.
         """
-        # Check if function is async
+        kwargs = dict(request.input)
+        sig = inspect.signature(self._func)
+        if "context" in sig.parameters:
+            kwargs["context"] = request.context
         if inspect.iscoroutinefunction(self._func):
-            result = await self._func(**request.input)
+            result = await self._func(**kwargs)
         else:
-            result = self._func(**request.input)
-
+            result = self._func(**kwargs)
         return ToolCallResponse(output=result)
 
 

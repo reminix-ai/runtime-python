@@ -327,6 +327,56 @@ class TestAgentDecorator:
 
         assert response["output"] == "hello world "
 
+    @pytest.mark.asyncio
+    async def test_agent_decorator_receives_context(self):
+        """@agent decorated function with context param receives request context."""
+
+        @agent
+        async def with_context(prompt: str, context: dict | None = None) -> str:
+            """Echo prompt with user from context."""
+            user = (context or {}).get("user_id", "anonymous")
+            return f"{user}: {prompt}"
+
+        request = AgentInvokeRequest(
+            input={"prompt": "hello"},
+            context={"user_id": "u-123", "tenant": "acme"},
+        )
+        response = await with_context.invoke(request)
+        assert response["output"] == "u-123: hello"
+
+    @pytest.mark.asyncio
+    async def test_agent_decorator_context_optional(self):
+        """@agent with context param works when context is not in request."""
+
+        @agent
+        async def with_context(prompt: str, context: dict | None = None) -> str:
+            user = (context or {}).get("user_id", "anonymous")
+            return f"{user}: {prompt}"
+
+        request = AgentInvokeRequest(input={"prompt": "hi"})
+        response = await with_context.invoke(request)
+        assert response["output"] == "anonymous: hi"
+
+    @pytest.mark.asyncio
+    async def test_agent_decorator_streaming_with_context(self):
+        """@agent streaming with context param receives request context."""
+
+        @agent
+        async def stream_with_context(text: str, context: dict | None = None):
+            """Stream with prefix from context."""
+            prefix = (context or {}).get("prefix", "")
+            for word in text.split():
+                yield prefix + word + " "
+
+        request = AgentInvokeRequest(
+            input={"text": "a b"},
+            context={"prefix": ">"},
+        )
+        chunks = []
+        async for chunk in stream_with_context.invoke_stream(request):
+            chunks.append(chunk)
+        assert chunks == [">a ", ">b "]
+
 
 class TestAgentTemplates:
     """Tests for @agent(template=...) templates (prompt, chat, task)."""

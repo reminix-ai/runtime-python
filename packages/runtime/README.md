@@ -409,6 +409,8 @@ async def streaming_agent(text: str):
         yield word + " "
 ```
 
+To receive request context (e.g. `user_id` from the request body), add an optional `context` parameter: `async def my_agent(param: str, context: dict | None = None) -> str:`.
+
 ### `@tool`
 
 Decorator to create a tool from a function.
@@ -437,6 +439,11 @@ async def my_tool(param: str, optional_param: int = 10) -> MyOutput:
 @tool(name="custom_name", description="Custom description")
 def another_tool(x: int) -> int:
     return x * 2
+
+# With context (optional parameter receives request context)
+@tool
+async def my_tool(param: str, context: dict | None = None) -> dict:
+    return {"param": param, "user_id": (context or {}).get("user_id", "anonymous")}
 ```
 
 ### Request/Response Types

@@ -531,16 +531,41 @@ class TestToolExecute:
 
     @pytest.mark.asyncio
     async def test_execute_with_context(self):
-        """Execute passes context to function if needed."""
+        """Execute passes context to function when it has a context parameter."""
 
         @tool
-        async def my_tool(param: str) -> dict:
-            """Test tool."""
-            return {"param": param}
+        async def my_tool(param: str, context: dict | None = None) -> dict:
+            """Test tool with context."""
+            user_id = (context or {}).get("user_id", "anonymous")
+            return {"param": param, "user_id": user_id}
 
         request = ToolCallRequest(input={"param": "test"}, context={"user_id": "123"})
         response = await my_tool.call(request)
 
+        assert response.output == {"param": "test", "user_id": "123"}
+
+    @pytest.mark.asyncio
+    async def test_execute_context_optional(self):
+        """Tool with context param receives None when request has no context."""
+
+        @tool
+        async def my_tool(x: str, context: dict | None = None) -> dict:
+            return {"x": x, "user": (context or {}).get("user", "anonymous")}
+
+        request = ToolCallRequest(input={"x": "hi"})
+        response = await my_tool.call(request)
+        assert response.output == {"x": "hi", "user": "anonymous"}
+
+    @pytest.mark.asyncio
+    async def test_execute_without_context_param_ignores_context(self):
+        """Tool without context param still works when request has context."""
+
+        @tool
+        async def my_tool(param: str) -> dict:
+            return {"param": param}
+
+        request = ToolCallRequest(input={"param": "test"}, context={"user_id": "123"})
+        response = await my_tool.call(request)
         assert response.output == {"param": "test"}
 
 
