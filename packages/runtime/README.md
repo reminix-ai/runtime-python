@@ -60,7 +60,7 @@ Returns runtime information, available agents, and tools:
 {
   "runtime": {
     "name": "reminix-runtime",
-    "version": "0.0.18",
+    "version": "0.0.19",
     "language": "python",
     "framework": "fastapi"
   },
