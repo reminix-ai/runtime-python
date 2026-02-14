@@ -2643,7 +2643,7 @@ wheels = [
 
 [[package]]
 name = "reminix-anthropic"
-version = "0.0.18"
+version = "0.0.19"
 source = { editable = "packages/anthropic" }
 dependencies = [
     { name = "anthropic" },
@@ -2667,7 +2667,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "reminix-langchain"
-version = "0.0.18"
+version = "0.0.19"
 source = { editable = "packages/langchain" }
 dependencies = [
     { name = "langchain-core" },
@@ -2691,7 +2691,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "reminix-langgraph"
-version = "0.0.18"
+version = "0.0.19"
 source = { editable = "packages/langgraph" }
 dependencies = [
     { name = "langgraph" },
@@ -2717,7 +2717,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "reminix-llamaindex"
-version = "0.0.18"
+version = "0.0.19"
 source = { editable = "packages/llamaindex" }
 dependencies = [
     { name = "llama-index" },
@@ -2741,7 +2741,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "reminix-openai"
-version = "0.0.18"
+version = "0.0.19"
 source = { editable = "packages/openai" }
 dependencies = [
     { name = "openai" },
@@ -2765,7 +2765,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "reminix-runtime"
-version = "0.0.18"
+version = "0.0.19"
 source = { editable = "packages/runtime" }
 dependencies = [
     { name = "docstring-parser" },

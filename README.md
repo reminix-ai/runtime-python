@@ -11,7 +11,7 @@ A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framewor
 **Features:**
 - **REST API Server**: Execute endpoint powered by [FastAPI](https://fastapi.tiangolo.com)
 - **Streaming Support**: Server-Sent Events (SSE) out of the box
-- **Agent Templates**: Standard patterns (prompt, chat, task, rag, thread) for common agent I/O
+- **Agent Templates**: Standard patterns (prompt, chat, task, rag, thread, workflow) for common agent I/O
 - **Framework Adapters**: Pre-built integrations for LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex
 
 ## Packages

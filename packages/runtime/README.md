@@ -2,7 +2,7 @@
 
 The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `@agent` and `@tool` decorators, agent templates (prompt, chat, task, rag, thread), and types `Message` and `ToolCall` for OpenAI-style conversations.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `@agent` and `@tool` decorators, agent templates (prompt, chat, task, rag, thread, workflow), and types `Message` and `ToolCall` for OpenAI-style conversations.
 
 Built on [FastAPI](https://fastapi.tiangolo.com) with full async support.
 
@@ -166,9 +166,10 @@ You can use a **template** to get standard input/output schemas without defining
 |----------|--------|--------|----------|
 | `prompt` (default) | `{ prompt: str }` | `str` | Single prompt in, text out |
 | `chat` | `{ messages: list[Message] }` | `str` | Multi-turn chat, final reply as string |
-| `task` | `{ task: str, ... }` | JSON | Task name + params, structured result |
+| `task` | `{ task: str, ... }` | JSON | Stateless, single-shot execution with structured result |
 | `rag` | `{ query: str, messages?: list[Message], collectionIds?: list[str] }` | `str` | RAG query, optional history and collections |
 | `thread` | `{ messages: list[Message] }` | `list[Message]` | Multi-turn with tool calls; returns updated thread |
+| `workflow` | `{ task: str, steps?: list, resume?: object, ... }` | `{ status, steps, result?, pendingAction? }` | Multi-step orchestration with branching, approvals, and parallel execution |
 
 Messages are OpenAI-style: `role`, `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the exported types `Message` and `ToolCall` from `reminix_runtime` for type-safe handlers. `Message.tool_calls` is `list[ToolCall] | None`.
 
@@ -380,7 +381,7 @@ Decorator to create an agent from a function. Use `template` for standard I/O sh
 
 | Parameter | Description |
 |-----------|-------------|
-| `template` | `"prompt"` \| `"chat"` \| `"task"` \| `"rag"` \| `"thread"`. Standard input/output schema (default: `"prompt"` when no custom input/output). |
+| `template` | `"prompt"` \| `"chat"` \| `"task"` \| `"rag"` \| `"thread"` \| `"workflow"`. Standard input/output schema (default: `"prompt"` when no custom input/output). |
 | `name` | Agent name (default: function name) |
 | `description` | Human-readable description (default: from docstring) |
 

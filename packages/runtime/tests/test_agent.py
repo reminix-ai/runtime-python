@@ -441,7 +441,7 @@ class TestAgentTemplates:
         assert task_handler.metadata["input"]["required"] == ["task"]
         assert "task" in task_handler.metadata["input"]["properties"]
         assert "description" in task_handler.metadata["output"]
-        assert "Structured JSON" in task_handler.metadata["output"]["description"]
+        assert "stateless, single-shot" in task_handler.metadata["output"]["description"]
 
     @pytest.mark.asyncio
     async def test_template_task_invoke(self):
@@ -454,6 +454,67 @@ class TestAgentTemplates:
         request = AgentInvokeRequest(input={"task": "summarize", "text": "Some content"})
         response = await task_handler.invoke(request)
         assert response["output"] == 'Task "summarize" on: Some content'
+
+    def test_template_workflow_metadata(self):
+        """template=workflow sets workflow input/output schemas with status and steps."""
+
+        @agent(template="workflow")
+        async def workflow_handler(task: str, steps: list | None = None):
+            return {
+                "status": "completed",
+                "steps": [{"name": "step1", "status": "completed", "output": "done"}],
+                "result": {"summary": "All steps completed"},
+            }
+
+        assert workflow_handler.metadata["template"] == "workflow"
+        input_schema = workflow_handler.metadata["input"]
+        assert input_schema["required"] == ["task"]
+        assert "task" in input_schema["properties"]
+        assert "steps" in input_schema["properties"]
+        assert "resume" in input_schema["properties"]
+        assert input_schema["additionalProperties"] is True
+
+        output_schema = workflow_handler.metadata["output"]
+        assert output_schema["required"] == ["status", "steps"]
+        assert "status" in output_schema["properties"]
+        assert output_schema["properties"]["status"]["enum"] == [
+            "completed",
+            "failed",
+            "paused",
+            "running",
+        ]
+        assert "steps" in output_schema["properties"]
+        assert "result" in output_schema["properties"]
+        assert "pendingAction" in output_schema["properties"]
+
+    @pytest.mark.asyncio
+    async def test_template_workflow_invoke(self):
+        """template=workflow agent handles invoke with task+steps and returns structured output."""
+
+        @agent(template="workflow")
+        async def workflow_handler(task: str, steps: list | None = None):
+            executed = []
+            for s in steps or []:
+                executed.append({"name": s["name"], "status": "completed", "output": "ok"})
+            return {
+                "status": "completed",
+                "steps": executed,
+                "result": {"summary": f"Ran {len(executed)} steps for: {task}"},
+            }
+
+        request = AgentInvokeRequest(
+            input={
+                "task": "process-data",
+                "steps": [{"name": "fetch"}, {"name": "transform"}],
+            }
+        )
+        response = await workflow_handler.invoke(request)
+        output = response["output"]
+        assert output["status"] == "completed"
+        assert len(output["steps"]) == 2
+        assert output["steps"][0]["name"] == "fetch"
+        assert output["steps"][1]["name"] == "transform"
+        assert output["result"]["summary"] == "Ran 2 steps for: process-data"
 
     def test_no_template_derives_from_function(self):
         """Without template, input/output are derived from function signature."""

@@ -16,7 +16,7 @@ from .types import AgentInvokeRequest, AgentInvokeResponseDict
 
 # Named agent templates with predefined input/output schemas.
 # The default template is 'prompt'; use it when no template or custom schema is provided.
-AgentTemplate = Literal["prompt", "chat", "task", "rag", "thread"]
+AgentTemplate = Literal["prompt", "chat", "task", "rag", "thread", "workflow"]
 
 DEFAULT_AGENT_TEMPLATE: AgentTemplate = "prompt"
 
@@ -158,13 +158,16 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
         "input": {
             "type": "object",
             "properties": {
-                "task": {"type": "string", "description": "Task name or description"},
+                "task": {
+                    "type": "string",
+                    "description": "Task name or description for stateless, single-shot execution",
+                },
             },
             "required": ["task"],
             "additionalProperties": True,
         },
         "output": {
-            "description": "Structured JSON result (object, array, string, number, boolean, or null)",
+            "description": "Structured JSON result of stateless, single-shot execution",
             "type": "object",
             "additionalProperties": True,
         },
@@ -205,6 +208,109 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
             "type": "array",
             "description": "Updated message thread (OpenAI-style, may include assistant message and tool_calls)",
             "items": MESSAGE_SCHEMA,
+        },
+    },
+    "workflow": {
+        "input": {
+            "type": "object",
+            "properties": {
+                "task": {
+                    "type": "string",
+                    "description": "Workflow task or description",
+                },
+                "steps": {
+                    "type": "array",
+                    "description": "Optional sequence of named steps to execute",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string", "description": "Step name"},
+                            "input": {
+                                "type": "object",
+                                "description": "Optional step input",
+                                "additionalProperties": True,
+                            },
+                        },
+                        "required": ["name"],
+                    },
+                },
+                "resume": {
+                    "type": "object",
+                    "description": "Resume a paused workflow from a specific step",
+                    "properties": {
+                        "step": {
+                            "type": "string",
+                            "description": "Step name to resume from",
+                        },
+                        "input": {
+                            "type": "object",
+                            "description": "Optional input for the resumed step",
+                            "additionalProperties": True,
+                        },
+                    },
+                    "required": ["step"],
+                },
+            },
+            "required": ["task"],
+            "additionalProperties": True,
+        },
+        "output": {
+            "type": "object",
+            "description": "Workflow execution result with step-level status tracking",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": ["completed", "failed", "paused", "running"],
+                    "description": "Overall workflow status",
+                },
+                "steps": {
+                    "type": "array",
+                    "description": "Step-level execution results",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string", "description": "Step name"},
+                            "status": {
+                                "type": "string",
+                                "enum": ["completed", "failed", "paused", "skipped", "pending"],
+                                "description": "Step execution status",
+                            },
+                            "output": {"description": "Step output (any JSON value)"},
+                        },
+                        "required": ["name", "status"],
+                    },
+                },
+                "result": {
+                    "type": "object",
+                    "description": "Final workflow result",
+                    "additionalProperties": True,
+                },
+                "pendingAction": {
+                    "type": "object",
+                    "description": "Action required to continue (present when status is paused)",
+                    "properties": {
+                        "step": {
+                            "type": "string",
+                            "description": "Step awaiting action",
+                        },
+                        "type": {
+                            "type": "string",
+                            "description": "Action type (e.g. approval, input, decision)",
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Human-readable description of the required action",
+                        },
+                        "options": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Available choices (for decision-type actions)",
+                        },
+                    },
+                    "required": ["step", "type", "message"],
+                },
+            },
+            "required": ["status", "steps"],
         },
     },
 }
