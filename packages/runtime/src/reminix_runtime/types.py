@@ -105,48 +105,38 @@ class Message(BaseModel):
     name: str | None = None
 
 
-# === Request Types ===
+# === Agent Request/Response ===
 
 
-class InvokeRequest(BaseModel):
-    """Base request type for invoke/call operations."""
+class AgentRequest(BaseModel):
+    """Request type for agent invoke operations."""
 
     input: dict[str, Any] = Field(default_factory=dict)
     stream: bool = False
     context: dict[str, Any] | None = None
 
 
-# Semantic type aliases for agent invoke operations
-AgentInvokeRequest = InvokeRequest
-"""Request type for agent invoke operations."""
-
-# Semantic type aliases for tool call operations
-ToolCallRequest = InvokeRequest
-"""Request type for tool call operations."""
-
-
-# === Response Types ===
-
-
-class InvokeResponse(BaseModel):
-    """Base response type for invoke/call operations."""
+class AgentResponse(BaseModel):
+    """Response type for agent invoke operations."""
 
     output: Any
     metadata: dict[str, Any] | None = None
 
 
-# Semantic type aliases for agent invoke operations
-AgentInvokeResponse = InvokeResponse
-"""Response type for agent invoke operations."""
+# === Tool Request/Response ===
 
-# Semantic type aliases for tool call operations
-ToolCallResponse = InvokeResponse
-"""Response type for tool call operations."""
 
-# InvokeResponse as a dict for flexibility
-InvokeResponseDict = dict[str, Any]
-AgentInvokeResponseDict = InvokeResponseDict
-ToolCallResponseDict = InvokeResponseDict
+class ToolRequest(BaseModel):
+    """Request type for tool call operations."""
+
+    input: dict[str, Any] = Field(default_factory=dict)
+    context: dict[str, Any] | None = None
+
+
+class ToolResponse(BaseModel):
+    """Response type for tool call operations."""
+
+    output: Any
 
 
 # === Capabilities ===
@@ -156,9 +146,6 @@ class Capabilities(BaseModel):
     """Agent/tool capabilities."""
 
     streaming: bool | None = None
-    # batch: bool | None = None      # Process multiple inputs in one call
-    # async_: bool | None = None     # Fire-and-forget with webhook callback
-    # retry: bool | None = None      # Built-in retry with backoff
 
 
 # === Error Types ===

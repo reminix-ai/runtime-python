@@ -1,719 +1,76 @@
-"""Agent classes for Reminix Runtime."""
-# ruff: noqa: ARG002  # abstract methods have unused args in interface definitions
+"""Agent for Reminix Runtime."""
 
 import inspect
-import json
-import re
-from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import Any, Literal, TypeVar, get_type_hints
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
-from docstring_parser import parse as parse_docstring
-
-from . import __version__
-from .tool import _python_type_to_json_schema
-from .types import AgentInvokeRequest, AgentInvokeResponseDict
-
-# Named agent templates with predefined input/output schemas.
-# The default template is 'prompt'; use it when no template or custom schema is provided.
-AgentTemplate = Literal["prompt", "chat", "task", "rag", "thread", "workflow"]
-
-DEFAULT_AGENT_TEMPLATE: AgentTemplate = "prompt"
-
-# JSON schema for a single tool call (OpenAI-style)
-TOOL_CALL_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "id": {"type": "string", "description": "Tool call id"},
-        "type": {"type": "string", "enum": ["function"], "description": "Tool call type"},
-        "function": {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string", "description": "Function/tool name"},
-                "arguments": {"type": "string", "description": "JSON string of arguments"},
-            },
-            "required": ["name", "arguments"],
-        },
-    },
-    "required": ["id", "type", "function"],
-}
-
-# Content part schema (text, image_url, input_audio, file, refusal)
-CONTENT_PART_SCHEMA: dict[str, Any] = {
-    "oneOf": [
-        {
-            "type": "object",
-            "properties": {"type": {"const": "text"}, "text": {"type": "string"}},
-            "required": ["type", "text"],
-        },
-        {
-            "type": "object",
-            "properties": {
-                "type": {"const": "image_url"},
-                "image_url": {
-                    "type": "object",
-                    "properties": {
-                        "url": {"type": "string"},
-                        "detail": {"type": "string", "enum": ["auto", "low", "high"]},
-                    },
-                    "required": ["url"],
-                },
-            },
-            "required": ["type", "image_url"],
-        },
-        {
-            "type": "object",
-            "properties": {
-                "type": {"const": "input_audio"},
-                "input_audio": {
-                    "type": "object",
-                    "properties": {
-                        "data": {"type": "string", "description": "Base64 encoded audio data"},
-                        "format": {"type": "string", "enum": ["wav", "mp3"]},
-                    },
-                    "required": ["data", "format"],
-                },
-            },
-            "required": ["type", "input_audio"],
-        },
-        {
-            "type": "object",
-            "properties": {
-                "type": {"const": "file"},
-                "file": {
-                    "type": "object",
-                    "properties": {
-                        "file_id": {"type": "string"},
-                        "filename": {"type": "string"},
-                        "file_data": {"type": "string", "description": "Base64 encoded file data"},
-                    },
-                },
-            },
-            "required": ["type", "file"],
-        },
-        {
-            "type": "object",
-            "properties": {"type": {"const": "refusal"}, "refusal": {"type": "string"}},
-            "required": ["type", "refusal"],
-        },
-    ],
-}
-
-# JSON schema for a message (OpenAI-style; input and output)
-MESSAGE_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "role": {
-            "type": "string",
-            "enum": ["developer", "system", "user", "assistant", "tool"],
-            "description": "Message role",
-        },
-        "content": {
-            "oneOf": [
-                {"type": "string"},
-                {"type": "array", "items": CONTENT_PART_SCHEMA, "minItems": 1},
-                {"type": "null"},
-            ],
-            "description": "Message content: string, array of content parts, or null when tool_calls present",
-        },
-        "name": {"type": "string", "description": "Optional participant name"},
-        "tool_call_id": {
-            "type": "string",
-            "description": 'Tool call ID (required when role is "tool")',
-        },
-        "tool_calls": {
-            "type": "array",
-            "description": "Tool calls (assistant role only)",
-            "items": TOOL_CALL_SCHEMA,
-        },
-    },
-}
-
-AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
-    "prompt": {
-        "input": {
-            "type": "object",
-            "properties": {
-                "prompt": {"type": "string", "description": "The prompt or task for the agent"},
-            },
-            "required": ["prompt"],
-        },
-        "output": {"type": "string"},
-    },
-    "chat": {
-        "input": {
-            "type": "object",
-            "properties": {
-                "messages": {
-                    "type": "array",
-                    "description": "Chat messages (OpenAI-style)",
-                    "items": MESSAGE_SCHEMA,
-                },
-            },
-            "required": ["messages"],
-        },
-        "output": {"type": "string"},
-    },
-    "task": {
-        "input": {
-            "type": "object",
-            "properties": {
-                "task": {
-                    "type": "string",
-                    "description": "Task name or description for stateless, single-shot execution",
-                },
-            },
-            "required": ["task"],
-            "additionalProperties": True,
-        },
-        "output": {
-            "description": "Structured JSON result of stateless, single-shot execution",
-            "type": "object",
-            "additionalProperties": True,
-        },
-    },
-    "rag": {
-        "input": {
-            "type": "object",
-            "properties": {
-                "query": {"type": "string", "description": "The question to answer from documents"},
-                "messages": {
-                    "type": "array",
-                    "description": "Optional prior conversation (chat-style RAG)",
-                    "items": MESSAGE_SCHEMA,
-                },
-                "collectionIds": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Optional knowledge collection IDs to scope the search",
-                },
-            },
-            "required": ["query"],
-        },
-        "output": {"type": "string"},
-    },
-    "thread": {
-        "input": {
-            "type": "object",
-            "properties": {
-                "messages": {
-                    "type": "array",
-                    "description": "Chat messages with tool_calls and tool results (OpenAI-style)",
-                    "items": MESSAGE_SCHEMA,
-                },
-            },
-            "required": ["messages"],
-        },
-        "output": {
-            "type": "array",
-            "description": "Updated message thread (OpenAI-style, may include assistant message and tool_calls)",
-            "items": MESSAGE_SCHEMA,
-        },
-    },
-    "workflow": {
-        "input": {
-            "type": "object",
-            "properties": {
-                "task": {
-                    "type": "string",
-                    "description": "Workflow task or description",
-                },
-                "steps": {
-                    "type": "array",
-                    "description": "Optional sequence of named steps to execute",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string", "description": "Step name"},
-                            "input": {
-                                "type": "object",
-                                "description": "Optional step input",
-                                "additionalProperties": True,
-                            },
-                        },
-                        "required": ["name"],
-                    },
-                },
-                "resume": {
-                    "type": "object",
-                    "description": "Resume a paused workflow from a specific step",
-                    "properties": {
-                        "step": {
-                            "type": "string",
-                            "description": "Step name to resume from",
-                        },
-                        "input": {
-                            "type": "object",
-                            "description": "Optional input for the resumed step",
-                            "additionalProperties": True,
-                        },
-                    },
-                    "required": ["step"],
-                },
-            },
-            "required": ["task"],
-            "additionalProperties": True,
-        },
-        "output": {
-            "type": "object",
-            "description": "Workflow execution result with step-level status tracking",
-            "properties": {
-                "status": {
-                    "type": "string",
-                    "enum": ["completed", "failed", "paused", "running"],
-                    "description": "Overall workflow status",
-                },
-                "steps": {
-                    "type": "array",
-                    "description": "Step-level execution results",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string", "description": "Step name"},
-                            "status": {
-                                "type": "string",
-                                "enum": ["completed", "failed", "paused", "skipped", "pending"],
-                                "description": "Step execution status",
-                            },
-                            "output": {"description": "Step output (any JSON value)"},
-                        },
-                        "required": ["name", "status"],
-                    },
-                },
-                "result": {
-                    "type": "object",
-                    "description": "Final workflow result",
-                    "additionalProperties": True,
-                },
-                "pendingAction": {
-                    "type": "object",
-                    "description": "Action required to continue (present when status is paused)",
-                    "properties": {
-                        "step": {
-                            "type": "string",
-                            "description": "Step awaiting action",
-                        },
-                        "type": {
-                            "type": "string",
-                            "description": "Action type (e.g. approval, input, decision)",
-                        },
-                        "message": {
-                            "type": "string",
-                            "description": "Human-readable description of the required action",
-                        },
-                        "options": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Available choices (for decision-type actions)",
-                        },
-                    },
-                    "required": ["step", "type", "message"],
-                },
-            },
-            "required": ["status", "steps"],
-        },
-    },
-}
-
-# Default input/output schemas (same as prompt template). Used by AgentBase and custom agents.
-DEFAULT_AGENT_INPUT: dict[str, Any] = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE]["input"]
-DEFAULT_AGENT_OUTPUT: dict[str, Any] = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE]["output"]
-
-# ASGI type aliases
-Scope = dict[str, Any]
-Receive = Callable[[], Awaitable[dict[str, Any]]]
-Send = Callable[[dict[str, Any]], Awaitable[None]]
-ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
-
-# Type aliases for handlers
-InvokeHandler = Callable[[AgentInvokeRequest], Awaitable[AgentInvokeResponseDict]]
-InvokeStreamHandler = Callable[[AgentInvokeRequest], AsyncIterator[str]]
+from .schemas import AGENT_TEMPLATES, DEFAULT_AGENT_OUTPUT, AgentTemplate
+from .tool import _extract_schema_from_function
+from .types import AgentRequest
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-class AgentBase(ABC):
-    """Abstract base class defining the agent interface.
+# === AgentLike Protocol ===
 
-    This is the core contract that all agents must fulfill.
-    Use `Agent` for decorator-based registration or extend
-    `AgentAdapter` for framework adapters.
-    """
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Return the agent name."""
-        ...
+@runtime_checkable
+class AgentLike(Protocol):
+    """Protocol defining what the server accepts as an agent."""
 
     @property
-    def metadata(self) -> dict[str, Any]:
-        """Return agent metadata for discovery.
+    def name(self) -> str: ...
 
-        Override this to provide custom metadata.
-        """
-        return {
-            "capabilities": {"streaming": False},
-            "input": DEFAULT_AGENT_INPUT,
-            "output": DEFAULT_AGENT_OUTPUT,
-        }
+    @property
+    def metadata(self) -> dict[str, Any]: ...
 
-    @abstractmethod
-    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
-        """Handle an invoke request."""
-        ...
+    async def invoke(self, request: AgentRequest) -> dict[str, Any]: ...
 
-    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request."""
-        raise NotImplementedError("Streaming not implemented for this agent")
-        # Unreachable, but required to make this an async generator
-        yield  # type: ignore[misc]
-
-    def to_asgi(self) -> ASGIApp:
-        """Create an ASGI application for this agent.
-
-        Works with any ASGI server (uvicorn, hypercorn, daphne) or serverless
-        platforms that support ASGI (AWS Lambda with Mangum, etc.).
-
-        Example:
-            ```python
-            from mangum import Mangum
-
-            agent = Agent("my-agent")
-
-            @agent.handler
-            async def handle(request):
-                return {"output": "Hello!"}
-
-            # AWS Lambda handler
-            handler = Mangum(agent.to_asgi())
-            ```
-        """
-        agent = self
-
-        async def asgi_app(scope: Scope, receive: Receive, send: Send) -> None:
-            if scope["type"] != "http":
-                return
-
-            path = scope["path"]
-            method = scope["method"]
-
-            # Helper to send JSON response
-            async def json_response(data: Any, status: int = 200) -> None:
-                body = json.dumps(data).encode("utf-8")
-                await send(
-                    {
-                        "type": "http.response.start",
-                        "status": status,
-                        "headers": [
-                            [b"content-type", b"application/json"],
-                            [b"access-control-allow-origin", b"*"],
-                            [b"access-control-allow-methods", b"GET, POST, OPTIONS"],
-                            [b"access-control-allow-headers", b"content-type"],
-                        ],
-                    }
-                )
-                await send(
-                    {
-                        "type": "http.response.body",
-                        "body": body,
-                    }
-                )
-
-            # Helper to send SSE stream
-            async def sse_response(stream: AsyncIterator[str]) -> None:
-                await send(
-                    {
-                        "type": "http.response.start",
-                        "status": 200,
-                        "headers": [
-                            [b"content-type", b"text/event-stream"],
-                            [b"cache-control", b"no-cache"],
-                            [b"connection", b"keep-alive"],
-                            [b"access-control-allow-origin", b"*"],
-                        ],
-                    }
-                )
-                try:
-                    async for chunk in stream:
-                        data = json.dumps({"delta": chunk})
-                        await send(
-                            {
-                                "type": "http.response.body",
-                                "body": f"data: {data}\n\n".encode(),
-                                "more_body": True,
-                            }
-                        )
-                    await send(
-                        {
-                            "type": "http.response.body",
-                            "body": f"data: {json.dumps({'done': True})}\n\n".encode(),
-                            "more_body": False,
-                        }
-                    )
-                except NotImplementedError as e:
-                    error_data = {"error": {"type": "NotImplementedError", "message": str(e)}}
-                    await send(
-                        {
-                            "type": "http.response.body",
-                            "body": f"data: {json.dumps(error_data)}\n\n".encode(),
-                            "more_body": False,
-                        }
-                    )
-
-            # Helper to read request body
-            async def read_body() -> bytes:
-                body = b""
-                while True:
-                    message = await receive()
-                    body += message.get("body", b"")
-                    if not message.get("more_body", False):
-                        break
-                return body
-
-            # Handle CORS preflight
-            if method == "OPTIONS":
-                await send(
-                    {
-                        "type": "http.response.start",
-                        "status": 204,
-                        "headers": [
-                            [b"access-control-allow-origin", b"*"],
-                            [b"access-control-allow-methods", b"GET, POST, OPTIONS"],
-                            [b"access-control-allow-headers", b"content-type"],
-                        ],
-                    }
-                )
-                await send({"type": "http.response.body", "body": b""})
-                return
-
-            try:
-                # GET /health
-                if method == "GET" and path == "/health":
-                    await json_response({"status": "ok"})
-                    return
-
-                # GET /info
-                if method == "GET" and path == "/info":
-                    await json_response(
-                        {
-                            "runtime": {
-                                "name": "reminix-runtime",
-                                "version": __version__,
-                                "language": "python",
-                                "framework": "asgi",
-                            },
-                            "agents": [
-                                {
-                                    "name": agent.name,
-                                    **agent.metadata,
-                                }
-                            ],
-                        }
-                    )
-                    return
-
-                # POST /agents/{name}/invoke
-                invoke_match = re.match(r"^/agents/([^/]+)/invoke$", path)
-                if method == "POST" and invoke_match:
-                    agent_name = invoke_match.group(1)
-                    if agent_name != agent.name:
-                        await json_response(
-                            {
-                                "error": {
-                                    "type": "NotFoundError",
-                                    "message": f"Agent '{agent_name}' not found",
-                                }
-                            },
-                            404,
-                        )
-                        return
-
-                    body_bytes = await read_body()
-                    body = json.loads(body_bytes)
-
-                    request = AgentInvokeRequest(
-                        input=body.get("input", {}),
-                        context=body.get("context"),
-                        stream=body.get("stream", False),
-                    )
-
-                    if request.stream:
-                        await sse_response(agent.invoke_stream(request))
-                        return
-
-                    response = await agent.invoke(request)
-                    await json_response(response)
-                    return
-
-                # Not found
-                await json_response(
-                    {"error": {"type": "NotFoundError", "message": "Not found"}},
-                    404,
-                )
-
-            except Exception as e:
-                await json_response(
-                    {"error": {"type": type(e).__name__, "message": str(e)}},
-                    500,
-                )
-
-        return asgi_app
+    def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]: ...
 
 
-class Agent(AgentBase):
-    """Concrete agent with decorator-based handler registration.
+# === RuntimeAgent ===
 
-    Use this class to create custom agents by registering handlers
-    with decorators:
 
-        agent = Agent("my-agent")
+class RuntimeAgent:
+    """Agent object produced by @agent decorator and adapter wrap_agent().
 
-        @agent.handler
-        async def handle_invoke(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
-            return {"output": "Hello!"}
-
-        serve(agents=[agent], port=8080)
+    This is the concrete implementation that both the @agent decorator
+    and framework adapters produce. The server accepts anything matching
+    the AgentLike protocol.
     """
 
-    def __init__(self, name: str, *, metadata: dict[str, Any] | None = None):
-        """Create a new agent.
-
-        Args:
-            name: The agent name (used in URLs like /agents/{name}/invoke)
-            metadata: Optional metadata for discovery
-        """
+    def __init__(
+        self,
+        name: str,
+        metadata: dict[str, Any],
+        invoke_fn: Callable[[AgentRequest], Awaitable[dict[str, Any]]],
+        invoke_stream_fn: Callable[[AgentRequest], AsyncIterator[str]] | None = None,
+    ):
         self._name = name
-        self._metadata = metadata or {}
-
-        # Handler storage
-        self._invoke_handler: InvokeHandler | None = None
-        self._invoke_stream_handler: InvokeStreamHandler | None = None
+        self._metadata = metadata
+        self._invoke_fn = invoke_fn
+        self._invoke_stream_fn = invoke_stream_fn
 
     @property
     def name(self) -> str:
-        """Return the agent name."""
         return self._name
 
     @property
     def metadata(self) -> dict[str, Any]:
-        """Return agent metadata for discovery."""
-        return {
-            "capabilities": {
-                "streaming": self._invoke_stream_handler is not None,
-                **self._metadata.get("capabilities", {}),
-            },
-            "input": self._metadata.get("input", DEFAULT_AGENT_INPUT),
-            "output": self._metadata.get("output", DEFAULT_AGENT_OUTPUT),
-            **{
-                k: v
-                for k, v in self._metadata.items()
-                if k not in ("capabilities", "input", "output")
-            },
-        }
+        return self._metadata
 
-    # Decorator methods for handler registration
+    async def invoke(self, request: AgentRequest) -> dict[str, Any]:
+        return await self._invoke_fn(request)
 
-    def handler(self, fn: InvokeHandler) -> InvokeHandler:
-        """Register a handler.
-
-        Example:
-            @agent.handler
-            async def handle(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
-                return {"output": "Hello!"}
-        """
-        self._invoke_handler = fn
-        return fn
-
-    def stream_handler(self, fn: InvokeStreamHandler) -> InvokeStreamHandler:
-        """Register a streaming handler.
-
-        Example:
-            @agent.stream_handler
-            async def handle(request: AgentInvokeRequest):
-                yield "Hello"
-                yield " world!"
-        """
-        self._invoke_stream_handler = fn
-        return fn
-
-    # Implementation of abstract methods
-
-    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
-        """Handle an invoke request."""
-        if self._invoke_handler is None:
-            raise NotImplementedError(f"No invoke handler registered for agent '{self._name}'")
-        return await self._invoke_handler(request)
-
-    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request."""
-        if self._invoke_stream_handler is None:
-            raise NotImplementedError(
-                f"No streaming invoke handler registered for agent '{self._name}'"
-            )
-        async for chunk in self._invoke_stream_handler(request):
+    async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
+        if self._invoke_stream_fn is None:
+            raise NotImplementedError(f"Streaming not supported for agent '{self._name}'")
+        async for chunk in self._invoke_stream_fn(request):
             yield chunk
 
 
-def _extract_input_from_function(
-    func: Callable[..., Any],
-) -> tuple[dict[str, Any], dict[str, Any] | None]:
-    """Extract JSON Schema input and output from function signature.
-
-    Parses docstrings (Google, NumPy, or Sphinx style) to extract:
-    - Parameter descriptions from Args section
-    - Return description from Returns section
-
-    Returns:
-        A tuple of (input_schema, output_schema).
-        input_schema is a dict with 'type', 'properties', and 'required' keys.
-        output_schema is the JSON schema for the return type, or None if not specified.
-    """
-    # Parse docstring for parameter descriptions
-    docstring = func.__doc__ or ""
-    parsed_doc = parse_docstring(docstring)
-
-    # Build parameter descriptions lookup from docstring Args section
-    param_descriptions: dict[str, str] = {}
-    for param in parsed_doc.params:
-        if param.description:
-            param_descriptions[param.arg_name] = param.description
-
-    hints = get_type_hints(func)
-    return_type = hints.pop("return", None)  # Extract return type hint
-    output_schema = _python_type_to_json_schema(return_type) if return_type else None
-
-    # Add return description to output schema if available
-    if output_schema and parsed_doc.returns and parsed_doc.returns.description:
-        output_schema["description"] = parsed_doc.returns.description
-
-    sig = inspect.signature(func)
-
-    properties: dict[str, Any] = {}
-    required: list[str] = []
-
-    for param_name, param in sig.parameters.items():
-        # Skip special parameters
-        if param_name in ("self", "cls", "messages", "context"):
-            continue
-
-        # Get type hint
-        param_type = hints.get(param_name, str)
-        schema = _python_type_to_json_schema(param_type)
-
-        # Add description from docstring if available
-        if param_name in param_descriptions:
-            schema["description"] = param_descriptions[param_name]
-
-        properties[param_name] = schema
-
-        # Check if required (no default value)
-        if param.default is inspect.Parameter.empty:
-            required.append(param_name)
-        else:
-            properties[param_name]["default"] = param.default
-
-    return {"type": "object", "properties": properties, "required": required}, output_schema
+# === @agent decorator ===
 
 
 def agent(
@@ -722,7 +79,7 @@ def agent(
     name: str | None = None,
     description: str | None = None,
     template: AgentTemplate | None = None,
-) -> Agent | Callable[[Callable[..., Any]], Agent]:
+) -> RuntimeAgent | Callable[[Callable[..., Any]], RuntimeAgent]:
     """Decorator to create an agent from a function.
 
     The function parameters become the agent's input schema (like @tool),
@@ -758,14 +115,15 @@ def agent(
         func: The function to wrap (when used without parentheses).
         name: Optional name override. Defaults to function name.
         description: Optional description override. Defaults to docstring.
-        template: Optional template (prompt, chat, task). When set, uses that template's
-            input/output schema instead of deriving from the function signature.
+        template: Optional template (prompt, chat, task, rag, thread, workflow).
+            When set, uses that template's input/output schema instead of
+            deriving from the function signature.
 
     Returns:
-        An Agent instance that handles invoke requests.
+        A RuntimeAgent instance that handles invoke requests.
     """
 
-    def _call_with_request(f: Callable[..., Any], request: AgentInvokeRequest) -> dict[str, Any]:
+    def _call_with_request(f: Callable[..., Any], request: AgentRequest) -> dict[str, Any]:
         """Build kwargs for f: **request.input and optionally context=request.context."""
         kwargs = dict(request.input)
         sig = inspect.signature(f)
@@ -773,7 +131,7 @@ def agent(
             kwargs["context"] = request.context
         return kwargs
 
-    def decorator(f: Callable[..., Any]) -> Agent:
+    def decorator(f: Callable[..., Any]) -> RuntimeAgent:
         agent_name = name or f.__name__
         agent_description = description or (f.__doc__ or "").strip().split("\n\n")[0].strip()
 
@@ -786,7 +144,9 @@ def agent(
             input_schema = t["input"]
             output_schema = t["output"]
         else:
-            input_schema, output_schema = _extract_input_from_function(f)
+            _, input_schema, output_schema = _extract_schema_from_function(
+                f, skip_params={"messages", "context"}
+            )
             output_schema = output_schema or DEFAULT_AGENT_OUTPUT
 
         # Build metadata
@@ -799,40 +159,30 @@ def agent(
         if template is not None:
             metadata["template"] = template
 
-        # Create agent instance
-        agent_instance = Agent(
-            agent_name,
-            metadata=metadata,
-        )
+        # Build handler functions
+        invoke_fn: Callable[[AgentRequest], Awaitable[dict[str, Any]]]
+        invoke_stream_fn: Callable[[AgentRequest], AsyncIterator[str]] | None = None
 
         if is_streaming:
-            # Register streaming invoke handler
-            async def invoke_stream_handler(request: AgentInvokeRequest) -> AsyncIterator[str]:
+
+            async def _invoke_stream(request: AgentRequest) -> AsyncIterator[str]:
                 kwargs = _call_with_request(f, request)
                 async for chunk in f(**kwargs):
-                    # Convert to string if not already
-                    if isinstance(chunk, str):
-                        yield chunk
-                    else:
-                        yield json.dumps(chunk)
+                    yield str(chunk) if not isinstance(chunk, str) else chunk
 
-            agent_instance.stream_handler(invoke_stream_handler)
+            invoke_stream_fn = _invoke_stream
 
-            # Also register non-streaming handler that collects chunks
-            async def invoke_handler(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
+            async def _invoke_collecting(request: AgentRequest) -> dict[str, Any]:
                 kwargs = _call_with_request(f, request)
                 chunks: list[str] = []
                 async for chunk in f(**kwargs):
-                    if isinstance(chunk, str):
-                        chunks.append(chunk)
-                    else:
-                        chunks.append(str(chunk))
+                    chunks.append(str(chunk) if not isinstance(chunk, str) else chunk)
                 return {"output": "".join(chunks)}
 
-            agent_instance.handler(invoke_handler)
+            invoke_fn = _invoke_collecting
         else:
-            # Register regular invoke handler
-            async def invoke_handler(request: AgentInvokeRequest) -> AgentInvokeResponseDict:
+
+            async def _invoke(request: AgentRequest) -> dict[str, Any]:
                 kwargs = _call_with_request(f, request)
                 if inspect.iscoroutinefunction(f):
                     result = await f(**kwargs)
@@ -840,7 +190,14 @@ def agent(
                     result = f(**kwargs)
                 return {"output": result}
 
-            agent_instance.handler(invoke_handler)
+            invoke_fn = _invoke
+
+        agent_instance = RuntimeAgent(
+            name=agent_name,
+            metadata=metadata,
+            invoke_fn=invoke_fn,
+            invoke_stream_fn=invoke_stream_fn,
+        )
 
         # Preserve function metadata
         agent_instance.__doc__ = f.__doc__

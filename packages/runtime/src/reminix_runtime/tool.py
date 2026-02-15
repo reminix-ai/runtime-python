@@ -1,63 +1,16 @@
 """Reminix Runtime Tool definitions."""
 
 import inspect
-from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Any, get_args, get_origin, get_type_hints, is_typeddict
+from typing import Any, Protocol, get_args, get_origin, get_type_hints, is_typeddict, runtime_checkable
 
 from docstring_parser import parse as parse_docstring
 from pydantic import BaseModel
 
-from .types import ToolCallRequest, ToolCallResponse
-
-# Default output schema for tools
-# Response: { "output": "..." }
-DEFAULT_TOOL_OUTPUT: dict[str, Any] = {
-    "type": "string",
-}
+from .types import ToolRequest, ToolResponse
 
 
-class ToolBase(ABC):
-    """Abstract base class for all tools."""
-
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Unique tool identifier."""
-        ...
-
-    @property
-    @abstractmethod
-    def description(self) -> str:
-        """Human-readable description of what the tool does."""
-        ...
-
-    @property
-    @abstractmethod
-    def input(self) -> dict[str, Any]:
-        """JSON Schema for the tool's input."""
-        ...
-
-    @property
-    def output(self) -> dict[str, Any] | None:
-        """Optional JSON Schema for the tool's output."""
-        return None
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        """Metadata for runtime discovery."""
-        meta = {
-            "description": self.description,
-            "input": self.input,
-        }
-        if self.output:
-            meta["output"] = self.output
-        return meta
-
-    @abstractmethod
-    async def call(self, request: ToolCallRequest) -> ToolCallResponse:
-        """Call the tool with the given input."""
-        ...
+# === Shared Schema Utilities ===
 
 
 # Type mapping from Python types to JSON Schema types
@@ -142,17 +95,26 @@ def _python_type_to_json_schema(python_type: type) -> dict[str, Any]:
 
 def _extract_schema_from_function(
     func: Callable[..., Any],
+    *,
+    skip_params: set[str] | None = None,
 ) -> tuple[str, dict[str, Any], dict[str, Any] | None]:
-    """Extract tool schema from function signature and docstring.
+    """Extract description, input schema, and output schema from a function.
 
     Parses docstrings (Google, NumPy, or Sphinx style) to extract:
     - Short description (first line/paragraph)
     - Parameter descriptions from Args section
     - Return description from Returns section
 
+    Args:
+        func: The function to extract schema from.
+        skip_params: Additional parameter names to skip (beyond self, cls).
+
     Returns:
-        Tuple of (description, input_schema, output_schema)
+        Tuple of (description, input_schema, output_schema).
     """
+    always_skip = {"self", "cls"}
+    skip = always_skip | (skip_params or set())
+
     # Parse docstring using docstring-parser (supports Google, NumPy, Sphinx styles)
     docstring = func.__doc__ or ""
     parsed_doc = parse_docstring(docstring)
@@ -182,8 +144,7 @@ def _extract_schema_from_function(
     required: list[str] = []
 
     for param_name, param in sig.parameters.items():
-        # Skip self, cls, request, context parameters
-        if param_name in ("self", "cls", "request", "context"):
+        if param_name in skip:
             continue
 
         # Get type hint
@@ -207,59 +168,51 @@ def _extract_schema_from_function(
     return description, input_schema, output_schema
 
 
-class Tool(ToolBase):
+# === ToolLike Protocol ===
+
+
+@runtime_checkable
+class ToolLike(Protocol):
+    """Protocol defining what the server accepts as a tool."""
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def metadata(self) -> dict[str, Any]: ...
+
+    async def call(self, request: ToolRequest) -> dict[str, Any]: ...
+
+
+# === Tool ===
+
+
+class Tool:
     """A tool created from a function using the @tool decorator."""
 
     def __init__(
         self,
-        func: Callable[..., Any],
-        *,
-        name: str | None = None,
-        description: str | None = None,
+        name: str,
+        metadata: dict[str, Any],
+        call_fn: Callable[[ToolRequest], Any],
     ):
-        """Create a tool from a function.
-
-        Args:
-            func: The function to wrap as a tool.
-            name: Optional name override. Defaults to function name.
-            description: Optional description override. Defaults to docstring.
-        """
-        self._func = func
-        self._name = name or func.__name__
-        extracted_desc, self._input, self._output = _extract_schema_from_function(func)
-        self._description = description or extracted_desc
+        self._name = name
+        self._metadata = metadata
+        self._call_fn = call_fn
 
     @property
     def name(self) -> str:
         return self._name
 
     @property
-    def description(self) -> str:
-        return self._description
+    def metadata(self) -> dict[str, Any]:
+        return self._metadata
 
-    @property
-    def input(self) -> dict[str, Any]:
-        return self._input
+    async def call(self, request: ToolRequest) -> dict[str, Any]:
+        return await self._call_fn(request)
 
-    @property
-    def output(self) -> dict[str, Any] | None:
-        return self._output or DEFAULT_TOOL_OUTPUT
 
-    async def call(self, request: ToolCallRequest) -> ToolCallResponse:
-        """Call the tool by invoking the wrapped function.
-
-        Exceptions are not caught here - they propagate to the server
-        which returns appropriate HTTP error codes.
-        """
-        kwargs = dict(request.input)
-        sig = inspect.signature(self._func)
-        if "context" in sig.parameters:
-            kwargs["context"] = request.context
-        if inspect.iscoroutinefunction(self._func):
-            result = await self._func(**kwargs)
-        else:
-            result = self._func(**kwargs)
-        return ToolCallResponse(output=result)
+# === @tool decorator ===
 
 
 def tool(
@@ -292,11 +245,36 @@ def tool(
     """
 
     def decorator(f: Callable[..., Any]) -> Tool:
-        tool_instance = Tool(f, name=name, description=description)
+        tool_name = name or f.__name__
+        extracted_desc, input_schema, output_schema = _extract_schema_from_function(
+            f, skip_params={"context"}
+        )
+        tool_description = description or extracted_desc
+
+        metadata = {
+            "description": tool_description,
+            "input": input_schema,
+            "output": output_schema or {"type": "string"},
+        }
+
+        async def call_fn(request: ToolRequest) -> dict[str, Any]:
+            kwargs = dict(request.input)
+            sig = inspect.signature(f)
+            if "context" in sig.parameters:
+                kwargs["context"] = request.context
+            if inspect.iscoroutinefunction(f):
+                result = await f(**kwargs)
+            else:
+                result = f(**kwargs)
+            return {"output": result}
+
+        tool_instance = Tool(name=tool_name, metadata=metadata, call_fn=call_fn)
+
         # Preserve function metadata
         tool_instance.__doc__ = f.__doc__
         tool_instance.__name__ = f.__name__  # type: ignore[attr-defined]
         tool_instance.__module__ = f.__module__
+
         return tool_instance
 
     # Handle both @tool and @tool(...) syntax

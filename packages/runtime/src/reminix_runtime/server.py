@@ -10,13 +10,9 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from . import __version__
-from .agent import AgentBase
-from .tool import ToolBase
-from .types import (
-    InvokeRequest,
-    InvokeResponse,
-    InvokeResponseDict,
-)
+from .agent import AgentLike
+from .tool import ToolLike
+from .types import AgentRequest, AgentResponse, ToolRequest, ToolResponse
 
 # Enable debug mode via environment variable to include stack traces in error responses
 REMINIX_CLOUD = os.getenv("REMINIX_CLOUD", "").lower() in ("true", "1", "yes")
@@ -66,8 +62,8 @@ async def _sse_generator(stream: AsyncIterator[str]) -> AsyncIterator[bytes]:
 
 def create_app(
     *,
-    agents: list[AgentBase] | None = None,
-    tools: list[ToolBase] | None = None,
+    agents: list[AgentLike] | None = None,
+    tools: list[ToolLike] | None = None,
 ) -> FastAPI:
     """Create a FastAPI application with agent and tool endpoints.
 
@@ -80,6 +76,7 @@ def create_app(
 
     Raises:
         ValueError: If no agents or tools are provided.
+        ValueError: If duplicate agent or tool names are found.
     """
     agents = agents or []
     tools = tools or []
@@ -87,9 +84,18 @@ def create_app(
     if not agents and not tools:
         raise ValueError("At least one agent or tool is required")
 
-    # Build lookup dicts by name
-    agent_map: dict[str, AgentBase] = {agent.name: agent for agent in agents}
-    tool_map: dict[str, ToolBase] = {tool.name: tool for tool in tools}
+    # Build lookup dicts by name (with duplicate detection)
+    agent_map: dict[str, AgentLike] = {}
+    for a in agents:
+        if a.name in agent_map:
+            raise ValueError(f"Duplicate agent name: '{a.name}'")
+        agent_map[a.name] = a
+
+    tool_map: dict[str, ToolLike] = {}
+    for t in tools:
+        if t.name in tool_map:
+            raise ValueError(f"Duplicate tool name: '{t.name}'")
+        tool_map[t.name] = t
 
     app = FastAPI(title="Reminix Runtime")
 
@@ -110,24 +116,24 @@ def create_app(
             },
             "agents": [
                 {
-                    "name": agent.name,
-                    **agent.metadata,
+                    "name": a.name,
+                    **a.metadata,
                 }
-                for agent in agents
+                for a in agents
             ],
             "tools": [
                 {
-                    "name": tool.name,
-                    **tool.metadata,
+                    "name": t.name,
+                    **t.metadata,
                 }
-                for tool in tools
+                for t in tools
             ],
         }
 
     @app.post("/agents/{agent_name}/invoke", response_model=None)
     async def invoke(
         agent_name: str, body: dict[str, Any]
-    ) -> InvokeResponseDict | StreamingResponse | JSONResponse:
+    ) -> dict[str, Any] | StreamingResponse | JSONResponse:
         """Invoke an agent."""
         agent = agent_map.get(agent_name)
         if agent is None:
@@ -138,7 +144,7 @@ def create_app(
                 },
             )
 
-        request = InvokeRequest(
+        request = AgentRequest(
             input=body.get("input", {}),
             context=body.get("context"),
             stream=body.get("stream", False),
@@ -169,7 +175,7 @@ def create_app(
             )
 
     @app.post("/tools/{tool_name}/call", response_model=None)
-    async def call_tool(tool_name: str, body: dict[str, Any]) -> InvokeResponse | JSONResponse:
+    async def call_tool(tool_name: str, body: dict[str, Any]) -> dict[str, Any] | JSONResponse:
         """Call a tool."""
         tool = tool_map.get(tool_name)
         if tool is None:
@@ -180,7 +186,7 @@ def create_app(
                 },
             )
 
-        request = InvokeRequest(
+        request = ToolRequest(
             input=body.get("input", {}),
             context=body.get("context"),
         )
@@ -203,8 +209,8 @@ def create_app(
 
 def serve(
     *,
-    agents: list[AgentBase] | None = None,
-    tools: list[ToolBase] | None = None,
+    agents: list[AgentLike] | None = None,
+    tools: list[ToolLike] | None = None,
     port: int | None = None,
     host: str | None = None,
 ) -> None:
