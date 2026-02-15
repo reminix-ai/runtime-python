@@ -1,4 +1,4 @@
-"""Anthropic agent adapter for Reminix Runtime."""
+"""Anthropic chat adapter for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -7,17 +7,16 @@ from typing import Any
 from anthropic import AsyncAnthropic
 
 from reminix_runtime import (
-    ADAPTER_INPUT,
+    AGENT_TEMPLATES,
     AgentRequest,
     Message,
     build_messages_from_input,
     message_content_to_text,
-    serve,
 )
 
 
-class AnthropicAgentAdapter:
-    """Agent adapter for Anthropic messages API."""
+class AnthropicChat:
+    """Chat agent adapter for Anthropic messages API."""
 
     def __init__(
         self,
@@ -44,9 +43,10 @@ class AnthropicAgentAdapter:
         return {
             "description": "anthropic adapter",
             "capabilities": {"streaming": True},
-            "input": ADAPTER_INPUT,
-            "output": {"type": "string"},
+            "input": AGENT_TEMPLATES["chat"]["input"],
+            "output": AGENT_TEMPLATES["chat"]["output"],
             "adapter": "anthropic",
+            "template": "chat",
         }
 
     def _extract_system_and_messages(
@@ -103,38 +103,3 @@ class AnthropicAgentAdapter:
         async with self._client.messages.stream(**kwargs) as stream:
             async for text in stream.text_stream:
                 yield json.dumps({"chunk": text})
-
-
-def wrap_agent(
-    client: AsyncAnthropic,
-    name: str = "anthropic-agent",
-    model: str = "claude-sonnet-4-20250514",
-    max_tokens: int = 4096,
-) -> AnthropicAgentAdapter:
-    """Wrap an Anthropic client for use with Reminix Runtime.
-
-    Example:
-        ```python
-        from anthropic import AsyncAnthropic
-        from reminix_anthropic import wrap_agent
-        from reminix_runtime import serve
-
-        client = AsyncAnthropic()
-        agent = wrap_agent(client, name="my-agent", model="claude-sonnet-4-20250514")
-        serve(agents=[agent])
-        ```
-    """
-    return AnthropicAgentAdapter(client, name=name, model=model, max_tokens=max_tokens)
-
-
-def serve_agent(
-    client: AsyncAnthropic,
-    name: str = "anthropic-agent",
-    model: str = "claude-sonnet-4-20250514",
-    max_tokens: int = 4096,
-    port: int = 8080,
-    host: str = "0.0.0.0",
-) -> None:
-    """Wrap an Anthropic client and serve it immediately."""
-    agent = wrap_agent(client, name=name, model=model, max_tokens=max_tokens)
-    serve(agents=[agent], port=port, host=host)

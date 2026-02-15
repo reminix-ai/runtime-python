@@ -5,7 +5,7 @@ import pytest
 from httpx import ASGITransport
 from openai import AsyncOpenAI
 
-from reminix_openai import wrap_agent
+from reminix_openai import OpenAIChat
 from reminix_runtime import create_app
 
 
@@ -16,7 +16,7 @@ class TestOpenAIAdapter:
     @pytest.fixture
     def agent(self, openai_api_key):
         client = AsyncOpenAI(api_key=openai_api_key)
-        return wrap_agent(client, name="test-openai", model="gpt-4.1-nano")
+        return OpenAIChat(client, name="test-openai", model="gpt-4.1-nano")
 
     @pytest.fixture
     def app(self, agent):

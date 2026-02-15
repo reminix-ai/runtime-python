@@ -5,7 +5,7 @@ import pytest
 from anthropic import AsyncAnthropic
 from httpx import ASGITransport
 
-from reminix_anthropic import wrap_agent
+from reminix_anthropic import AnthropicChat
 from reminix_runtime import create_app
 
 
@@ -16,7 +16,7 @@ class TestAnthropicAdapter:
     @pytest.fixture
     def agent(self, anthropic_api_key):
         client = AsyncAnthropic(api_key=anthropic_api_key)
-        return wrap_agent(
+        return AnthropicChat(
             client,
             name="test-anthropic",
             model="claude-3-haiku-20240307",

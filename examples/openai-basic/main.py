@@ -36,7 +36,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from reminix_openai import serve_agent
+from reminix_openai import OpenAIChat
+from reminix_runtime import serve
 
 # Load environment variables from root .env file
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
@@ -44,11 +45,13 @@ load_dotenv(Path(__file__).parent.parent.parent / ".env")
 # Create an OpenAI client
 client = AsyncOpenAI()
 
-# Serve the agent
+# Create and serve the agent
+agent = OpenAIChat(client, name="openai-basic", model="gpt-4o-mini")
+
 if __name__ == "__main__":
     print("Server running on http://localhost:8080")
     print("\nEndpoints:")
     print("  GET  /health")
     print("  GET  /info")
     print("  POST /agents/openai-basic/invoke")
-    serve_agent(client, name="openai-basic", model="gpt-4o-mini")
+    serve(agents=[agent])

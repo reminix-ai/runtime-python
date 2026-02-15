@@ -17,24 +17,12 @@ This will also install `reminix-runtime` as a dependency.
 ```python
 from llama_index.core.chat_engine import SimpleChatEngine
 from llama_index.llms.openai import OpenAI
-from reminix_llamaindex import serve_agent
-
-llm = OpenAI(model="gpt-4o")
-engine = SimpleChatEngine.from_defaults(llm=llm)
-serve_agent(engine, name="my-chatbot")
-```
-
-For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
-
-```python
-from llama_index.core.chat_engine import SimpleChatEngine
-from llama_index.llms.openai import OpenAI
-from reminix_llamaindex import wrap_agent
+from reminix_llamaindex import LlamaIndexRag
 from reminix_runtime import serve
 
 llm = OpenAI(model="gpt-4o")
 engine = SimpleChatEngine.from_defaults(llm=llm)
-agent = wrap_agent(engine, name="my-chatbot")
+agent = LlamaIndexRag(engine, name="my-chatbot")
 serve(agents=[agent])
 ```
 
@@ -43,34 +31,23 @@ Your agent is now available at:
 
 ## API Reference
 
-### `serve_agent(engine, name, port, host)`
+### `LlamaIndexRag(engine, name)`
 
-Wrap a LlamaIndex chat engine and serve it immediately. Combines `wrap_agent` and `serve` for single-agent setups.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `engine` | `BaseChatEngine` | required | A LlamaIndex chat engine |
-| `name` | `str` | `"llamaindex-agent"` | Name for the agent (used in URL path) |
-| `port` | `int` | `8080` | Port to serve on |
-| `host` | `str` | `"0.0.0.0"` | Host to bind to |
-
-### `wrap_agent(engine, name)`
-
-Wrap a LlamaIndex chat engine for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
+Create a LlamaIndex RAG agent.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `engine` | `BaseChatEngine` | required | A LlamaIndex chat engine |
 | `name` | `str` | `"llamaindex-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LlamaIndexAgentAdapter` - A Reminix adapter instance
+**Returns:** `LlamaIndexRag` - A Reminix agent instance
 
 ### Example with RAG
 
 ```python
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.llms.openai import OpenAI
-from reminix_llamaindex import wrap_agent
+from reminix_llamaindex import LlamaIndexRag
 from reminix_runtime import serve
 
 # Load documents and create index
@@ -80,8 +57,8 @@ index = VectorStoreIndex.from_documents(documents)
 # Create a chat engine with the index
 engine = index.as_chat_engine(llm=OpenAI(model="gpt-4o"))
 
-# Wrap and serve
-agent = wrap_agent(engine, name="rag-chatbot")
+# Create and serve
+agent = LlamaIndexRag(engine, name="rag-chatbot")
 serve(agents=[agent])
 ```
 

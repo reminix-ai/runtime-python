@@ -1,41 +1,48 @@
-"""Tests for the LangGraph adapter."""
+"""Tests for the LangGraph thread adapter."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from reminix_langgraph import LangGraphAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, AgentInvokeRequest
+from reminix_langgraph import LangGraphThread
+from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
-class TestWrap:
-    """Tests for the wrap_agent() function."""
+class TestLangGraphThread:
+    """Tests for the LangGraphThread class."""
 
-    def test_wrap_returns_adapter(self):
-        """wrap_agent() should return a LangGraphAgentAdapter."""
+    def test_instantiation(self):
+        """LangGraphThread should be instantiable."""
         mock_graph = MagicMock()
-        adapter = wrap_agent(mock_graph)
+        agent = LangGraphThread(mock_graph)
 
-        assert isinstance(adapter, LangGraphAgentAdapter)
-        assert isinstance(adapter, AgentAdapter)
+        assert isinstance(agent, LangGraphThread)
 
-    def test_wrap_with_custom_name(self):
-        """wrap_agent() should accept a custom name."""
+    def test_custom_name(self):
+        """LangGraphThread should accept a custom name."""
         mock_graph = MagicMock()
-        adapter = wrap_agent(mock_graph, name="my-custom-agent")
+        agent = LangGraphThread(mock_graph, name="my-custom-agent")
 
-        assert adapter.name == "my-custom-agent"
+        assert agent.name == "my-custom-agent"
 
-    def test_wrap_default_name(self):
-        """wrap_agent() should use default name if not provided."""
+    def test_default_name(self):
+        """LangGraphThread should use default name if not provided."""
         mock_graph = MagicMock()
-        adapter = wrap_agent(mock_graph)
+        agent = LangGraphThread(mock_graph)
 
-        assert adapter.name == "langgraph-agent"
+        assert agent.name == "langgraph-agent"
+
+    def test_thread_template_metadata(self):
+        """LangGraphThread should have thread template metadata."""
+        mock_graph = MagicMock()
+        agent = LangGraphThread(mock_graph)
+
+        assert agent.metadata["template"] == "thread"
+        assert agent.metadata["input"] == AGENT_TEMPLATES["thread"]["input"]
 
 
-class TestLangGraphAgentAdapterInvoke:
+class TestLangGraphThreadInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
@@ -44,10 +51,10 @@ class TestLangGraphAgentAdapterInvoke:
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(return_value={"messages": [AIMessage(content="Hello!")]})
 
-        adapter = wrap_agent(mock_graph)
-        request = AgentInvokeRequest(input={"query": "What is AI?"})
+        agent = LangGraphThread(mock_graph)
+        request = AgentRequest(input={"query": "What is AI?"})
 
-        response = await adapter.invoke(request)
+        await agent.invoke(request)
 
         mock_graph.ainvoke.assert_called_once_with({"query": "What is AI?"})
 
@@ -61,10 +68,10 @@ class TestLangGraphAgentAdapterInvoke:
             }
         )
 
-        adapter = wrap_agent(mock_graph)
-        request = AgentInvokeRequest(input={"messages": []})
+        agent = LangGraphThread(mock_graph)
+        request = AgentRequest(input={"messages": []})
 
-        response = await adapter.invoke(request)
+        response = await agent.invoke(request)
 
         assert response["output"] == "Hi there!"
 
@@ -74,10 +81,10 @@ class TestLangGraphAgentAdapterInvoke:
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(return_value={"result": "success"})
 
-        adapter = wrap_agent(mock_graph)
-        request = AgentInvokeRequest(input={"task": "compute"})
+        agent = LangGraphThread(mock_graph)
+        request = AgentRequest(input={"task": "compute"})
 
-        response = await adapter.invoke(request)
+        response = await agent.invoke(request)
 
         assert response["output"] == {"result": "success"}
 
@@ -87,12 +94,11 @@ class TestLangGraphAgentAdapterInvoke:
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(return_value={"messages": [AIMessage(content="Hello!")]})
 
-        adapter = wrap_agent(mock_graph)
-        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
+        agent = LangGraphThread(mock_graph)
+        request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
-        response = await adapter.invoke(request)
+        await agent.invoke(request)
 
-        # Should be called with {"messages": [...]}
         call_args = mock_graph.ainvoke.call_args[0][0]
         assert "messages" in call_args
         assert len(call_args["messages"]) == 1
@@ -112,8 +118,8 @@ class TestLangGraphAgentAdapterInvoke:
             }
         )
 
-        adapter = wrap_agent(mock_graph)
-        request = AgentInvokeRequest(
+        agent = LangGraphThread(mock_graph)
+        request = AgentRequest(
             input={
                 "messages": [
                     {"role": "system", "content": "You are helpful"},
@@ -122,41 +128,6 @@ class TestLangGraphAgentAdapterInvoke:
             }
         )
 
-        response = await adapter.invoke(request)
+        response = await agent.invoke(request)
 
-        # Output should be extracted from last AI message
         assert response["output"] == "Hi!"
-
-
-class TestWrapAndServe:
-    """Tests for the serve_agent() function."""
-
-    def test_serve_agent_is_callable(self):
-        """serve_agent() should be callable."""
-        assert callable(serve_agent)
-
-    @patch("reminix_langgraph.agent_adapter.serve")
-    def test_serve_agent_calls_serve(self, mock_serve):
-        """serve_agent() should call serve with wrapped adapter."""
-        mock_graph = MagicMock()
-
-        serve_agent(mock_graph, name="test-agent")
-
-        mock_serve.assert_called_once()
-        call_args = mock_serve.call_args
-        agents = call_args.kwargs["agents"]
-        assert len(agents) == 1
-        assert isinstance(agents[0], LangGraphAgentAdapter)
-        assert agents[0].name == "test-agent"
-
-    @patch("reminix_langgraph.agent_adapter.serve")
-    def test_serve_agent_passes_serve_options(self, mock_serve):
-        """serve_agent() should pass port and host to serve."""
-        mock_graph = MagicMock()
-
-        serve_agent(mock_graph, name="test-agent", port=3000, host="localhost")
-
-        mock_serve.assert_called_once()
-        call_kwargs = mock_serve.call_args[1]
-        assert call_kwargs["port"] == 3000
-        assert call_kwargs["host"] == "localhost"

@@ -1,42 +1,49 @@
-"""Tests for the LangChain adapter."""
+"""Tests for the LangChain chat adapter."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import Runnable
 
-from reminix_langchain import LangChainAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, AgentInvokeRequest
+from reminix_langchain import LangChainChat
+from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
-class TestWrap:
-    """Tests for the wrap_agent() function."""
+class TestLangChainChat:
+    """Tests for the LangChainChat class."""
 
-    def test_wrap_returns_adapter(self):
-        """wrap_agent() should return a LangChainAgentAdapter."""
+    def test_instantiation(self):
+        """LangChainChat should be instantiable."""
         mock_runnable = MagicMock(spec=Runnable)
-        adapter = wrap_agent(mock_runnable)
+        agent = LangChainChat(mock_runnable)
 
-        assert isinstance(adapter, LangChainAgentAdapter)
-        assert isinstance(adapter, AgentAdapter)
+        assert isinstance(agent, LangChainChat)
 
-    def test_wrap_with_custom_name(self):
-        """wrap_agent() should accept a custom name."""
+    def test_custom_name(self):
+        """LangChainChat should accept a custom name."""
         mock_runnable = MagicMock(spec=Runnable)
-        adapter = wrap_agent(mock_runnable, name="my-custom-agent")
+        agent = LangChainChat(mock_runnable, name="my-custom-agent")
 
-        assert adapter.name == "my-custom-agent"
+        assert agent.name == "my-custom-agent"
 
-    def test_wrap_default_name(self):
-        """wrap_agent() should use default name if not provided."""
+    def test_default_name(self):
+        """LangChainChat should use default name if not provided."""
         mock_runnable = MagicMock(spec=Runnable)
-        adapter = wrap_agent(mock_runnable)
+        agent = LangChainChat(mock_runnable)
 
-        assert adapter.name == "langchain-agent"
+        assert agent.name == "langchain-agent"
+
+    def test_chat_template_metadata(self):
+        """LangChainChat should have chat template metadata."""
+        mock_runnable = MagicMock(spec=Runnable)
+        agent = LangChainChat(mock_runnable)
+
+        assert agent.metadata["template"] == "chat"
+        assert agent.metadata["input"] == AGENT_TEMPLATES["chat"]["input"]
 
 
-class TestLangChainAgentAdapterInvoke:
+class TestLangChainChatInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
@@ -45,10 +52,10 @@ class TestLangChainAgentAdapterInvoke:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello!"))
 
-        adapter = wrap_agent(mock_runnable)
-        request = AgentInvokeRequest(input={"query": "What is AI?"})
+        agent = LangChainChat(mock_runnable)
+        request = AgentRequest(input={"query": "What is AI?"})
 
-        response = await adapter.invoke(request)
+        await agent.invoke(request)
 
         mock_runnable.ainvoke.assert_called_once_with({"query": "What is AI?"})
 
@@ -58,10 +65,10 @@ class TestLangChainAgentAdapterInvoke:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello from LangChain!"))
 
-        adapter = wrap_agent(mock_runnable)
-        request = AgentInvokeRequest(input={"query": "Hi"})
+        agent = LangChainChat(mock_runnable)
+        request = AgentRequest(input={"query": "Hi"})
 
-        response = await adapter.invoke(request)
+        response = await agent.invoke(request)
 
         assert response["output"] == "Hello from LangChain!"
 
@@ -71,10 +78,10 @@ class TestLangChainAgentAdapterInvoke:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value={"result": "success", "value": 42})
 
-        adapter = wrap_agent(mock_runnable)
-        request = AgentInvokeRequest(input={"task": "compute"})
+        agent = LangChainChat(mock_runnable)
+        request = AgentRequest(input={"task": "compute"})
 
-        response = await adapter.invoke(request)
+        response = await agent.invoke(request)
 
         assert response["output"] == {"result": "success", "value": 42}
 
@@ -84,10 +91,10 @@ class TestLangChainAgentAdapterInvoke:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value="Simple string result")
 
-        adapter = wrap_agent(mock_runnable)
-        request = AgentInvokeRequest(input={"query": "test"})
+        agent = LangChainChat(mock_runnable)
+        request = AgentRequest(input={"query": "test"})
 
-        response = await adapter.invoke(request)
+        response = await agent.invoke(request)
 
         assert response["output"] == "Simple string result"
 
@@ -97,8 +104,8 @@ class TestLangChainAgentAdapterInvoke:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Response"))
 
-        adapter = wrap_agent(mock_runnable)
-        request = AgentInvokeRequest(
+        agent = LangChainChat(mock_runnable)
+        request = AgentRequest(
             input={
                 "messages": [
                     {"role": "system", "content": "You are helpful"},
@@ -109,9 +116,8 @@ class TestLangChainAgentAdapterInvoke:
             }
         )
 
-        await adapter.invoke(request)
+        await agent.invoke(request)
 
-        # Check that messages were converted correctly
         call_args = mock_runnable.ainvoke.call_args[0][0]
         assert len(call_args) == 4
         assert isinstance(call_args[0], SystemMessage)
@@ -129,8 +135,8 @@ class TestMessageConversion:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Response"))
 
-        adapter = wrap_agent(mock_runnable)
-        request = AgentInvokeRequest(
+        agent = LangChainChat(mock_runnable)
+        request = AgentRequest(
             input={
                 "messages": [
                     {"role": "user", "content": "Use a tool"},
@@ -139,40 +145,5 @@ class TestMessageConversion:
             }
         )
 
-        # Should not raise an error
-        response = await adapter.invoke(request)
+        response = await agent.invoke(request)
         assert response["output"] == "Response"
-
-
-class TestWrapAndServe:
-    """Tests for the serve_agent() function."""
-
-    def test_serve_agent_is_callable(self):
-        """serve_agent() should be callable."""
-        assert callable(serve_agent)
-
-    @patch("reminix_langchain.agent_adapter.serve")
-    def test_serve_agent_calls_serve(self, mock_serve):
-        """serve_agent() should call serve with wrapped adapter."""
-        mock_runnable = MagicMock(spec=Runnable)
-
-        serve_agent(mock_runnable, name="test-agent")
-
-        mock_serve.assert_called_once()
-        call_args = mock_serve.call_args
-        agents = call_args.kwargs["agents"]
-        assert len(agents) == 1
-        assert isinstance(agents[0], LangChainAgentAdapter)
-        assert agents[0].name == "test-agent"
-
-    @patch("reminix_langchain.agent_adapter.serve")
-    def test_serve_agent_passes_serve_options(self, mock_serve):
-        """serve_agent() should pass port and host to serve."""
-        mock_runnable = MagicMock(spec=Runnable)
-
-        serve_agent(mock_runnable, name="test-agent", port=3000, host="localhost")
-
-        mock_serve.assert_called_once()
-        call_kwargs = mock_serve.call_args[1]
-        assert call_kwargs["port"] == 3000
-        assert call_kwargs["host"] == "localhost"

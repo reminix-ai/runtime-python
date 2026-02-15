@@ -17,24 +17,12 @@ This will also install `reminix-runtime` as a dependency.
 ```python
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
-from reminix_langgraph import serve_agent
-
-llm = ChatOpenAI(model="gpt-4o")
-graph = create_react_agent(llm, tools=[])
-serve_agent(graph, name="my-agent")
-```
-
-For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
-
-```python
-from langgraph.prebuilt import create_react_agent
-from langchain_openai import ChatOpenAI
-from reminix_langgraph import wrap_agent
+from reminix_langgraph import LangGraphThread
 from reminix_runtime import serve
 
 llm = ChatOpenAI(model="gpt-4o")
 graph = create_react_agent(llm, tools=[])
-agent = wrap_agent(graph, name="my-agent")
+agent = LangGraphThread(graph, name="my-agent")
 serve(agents=[agent])
 ```
 
@@ -43,27 +31,16 @@ Your agent is now available at:
 
 ## API Reference
 
-### `serve_agent(graph, name, port, host)`
+### `LangGraphThread(graph, name)`
 
-Wrap a LangGraph graph and serve it immediately. Combines `wrap_agent` and `serve` for single-agent setups.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
-| `name` | `str` | `"langgraph-agent"` | Name for the agent (used in URL path) |
-| `port` | `int` | `8080` | Port to serve on |
-| `host` | `str` | `"0.0.0.0"` | Host to bind to |
-
-### `wrap_agent(graph, name)`
-
-Wrap a LangGraph compiled graph for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
+Create a LangGraph thread agent.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
 | `name` | `str` | `"langgraph-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LangGraphAgentAdapter` - A Reminix adapter instance
+**Returns:** `LangGraphThread` - A Reminix agent instance
 
 ### How It Works
 

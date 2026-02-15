@@ -35,7 +35,6 @@ Once running, the following endpoints are available:
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
 | `/agents/anthropic-basic/invoke` | POST | Execute agent |
-| `/agents/anthropic-basic/invoke` | POST | Execute agent |
 
 ## Testing
 
@@ -60,13 +59,14 @@ curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
 ## How it works
 
 1. Create an Anthropic client using `anthropic`
-2. Serve it with `reminix-anthropic`
+2. Create an `AnthropicChat` agent and serve it with `reminix-runtime`
 
 ```python
 from anthropic import AsyncAnthropic
-from reminix_anthropic import serve_agent
+from reminix_anthropic import AnthropicChat
+from reminix_runtime import serve
 
 client = AsyncAnthropic()
-
-serve_agent(client, name="anthropic-basic", model="claude-3-haiku-20240307")
+agent = AnthropicChat(client, name="anthropic-basic", model="claude-3-haiku-20240307")
+serve(agents=[agent])
 ```

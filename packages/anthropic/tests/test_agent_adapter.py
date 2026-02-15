@@ -1,47 +1,55 @@
-"""Tests for the Anthropic adapter."""
+"""Tests for the Anthropic chat adapter."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from reminix_anthropic import AnthropicAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentRequest
+from reminix_anthropic import AnthropicChat
+from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
-class TestWrap:
-    """Tests for the wrap_agent() function."""
+class TestAnthropicChat:
+    """Tests for the AnthropicChat class."""
 
-    def test_wrap_returns_adapter(self):
-        """wrap_agent() should return an AnthropicAgentAdapter."""
+    def test_instantiation(self):
+        """AnthropicChat should be instantiable."""
         mock_client = MagicMock()
-        adapter = wrap_agent(mock_client)
+        agent = AnthropicChat(mock_client)
 
-        assert isinstance(adapter, AnthropicAgentAdapter)
+        assert isinstance(agent, AnthropicChat)
 
-    def test_wrap_with_custom_name(self):
-        """wrap_agent() should accept a custom name."""
+    def test_custom_name(self):
+        """AnthropicChat should accept a custom name."""
         mock_client = MagicMock()
-        adapter = wrap_agent(mock_client, name="my-custom-agent")
+        agent = AnthropicChat(mock_client, name="my-custom-agent")
 
-        assert adapter.name == "my-custom-agent"
+        assert agent.name == "my-custom-agent"
 
-    def test_wrap_with_custom_model(self):
-        """wrap_agent() should accept a custom model."""
+    def test_custom_model(self):
+        """AnthropicChat should accept a custom model."""
         mock_client = MagicMock()
-        adapter = wrap_agent(mock_client, model="claude-opus-4-20250514")
+        agent = AnthropicChat(mock_client, model="claude-opus-4-20250514")
 
-        assert adapter.model == "claude-opus-4-20250514"
+        assert agent.model == "claude-opus-4-20250514"
 
-    def test_wrap_default_values(self):
-        """wrap_agent() should use default values if not provided."""
+    def test_default_values(self):
+        """AnthropicChat should use default values if not provided."""
         mock_client = MagicMock()
-        adapter = wrap_agent(mock_client)
+        agent = AnthropicChat(mock_client)
 
-        assert adapter.name == "anthropic-agent"
-        assert adapter.model == "claude-sonnet-4-20250514"
+        assert agent.name == "anthropic-agent"
+        assert agent.model == "claude-sonnet-4-20250514"
+
+    def test_chat_template_metadata(self):
+        """AnthropicChat should have chat template metadata."""
+        mock_client = MagicMock()
+        agent = AnthropicChat(mock_client)
+
+        assert agent.metadata["template"] == "chat"
+        assert agent.metadata["input"] == AGENT_TEMPLATES["chat"]["input"]
 
 
-class TestAnthropicAgentAdapterInvoke:
+class TestAnthropicChatInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
@@ -52,10 +60,10 @@ class TestAnthropicAgentAdapterInvoke:
         mock_response.content = [MagicMock(type="text", text="Hello!")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        adapter = wrap_agent(mock_client)
+        agent = AnthropicChat(mock_client)
         request = AgentRequest(input={"prompt": "Hi"})
 
-        response = await adapter.invoke(request)
+        await agent.invoke(request)
 
         mock_client.messages.create.assert_called_once()
 
@@ -67,10 +75,10 @@ class TestAnthropicAgentAdapterInvoke:
         mock_response.content = [MagicMock(type="text", text="Hello from Anthropic!")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        adapter = wrap_agent(mock_client)
+        agent = AnthropicChat(mock_client)
         request = AgentRequest(input={"prompt": "Hi"})
 
-        response = await adapter.invoke(request)
+        response = await agent.invoke(request)
 
         assert response["output"] == "Hello from Anthropic!"
 
@@ -82,10 +90,10 @@ class TestAnthropicAgentAdapterInvoke:
         mock_response.content = [MagicMock(type="text", text="Response")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        adapter = wrap_agent(mock_client)
+        agent = AnthropicChat(mock_client)
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
-        response = await adapter.invoke(request)
+        response = await agent.invoke(request)
 
         assert response["output"] == "Response"
 
@@ -97,7 +105,7 @@ class TestAnthropicAgentAdapterInvoke:
         mock_response.content = [MagicMock(type="text", text="Response")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        adapter = wrap_agent(mock_client)
+        agent = AnthropicChat(mock_client)
         request = AgentRequest(
             input={
                 "messages": [
@@ -107,43 +115,8 @@ class TestAnthropicAgentAdapterInvoke:
             }
         )
 
-        await adapter.invoke(request)
+        await agent.invoke(request)
 
         call_kwargs = mock_client.messages.create.call_args[1]
         assert call_kwargs["system"] == "You are helpful"
-        # Messages should not include system message
         assert all(m["role"] != "system" for m in call_kwargs["messages"])
-
-
-class TestWrapAndServe:
-    """Tests for the serve_agent() function."""
-
-    def test_serve_agent_is_callable(self):
-        """serve_agent() should be callable."""
-        assert callable(serve_agent)
-
-    @patch("reminix_anthropic.agent_adapter.serve")
-    def test_serve_agent_calls_serve(self, mock_serve):
-        """serve_agent() should call serve with wrapped adapter."""
-        mock_client = MagicMock()
-
-        serve_agent(mock_client, name="test-agent")
-
-        mock_serve.assert_called_once()
-        call_args = mock_serve.call_args
-        agents = call_args.kwargs["agents"]
-        assert len(agents) == 1
-        assert isinstance(agents[0], AnthropicAgentAdapter)
-        assert agents[0].name == "test-agent"
-
-    @patch("reminix_anthropic.agent_adapter.serve")
-    def test_serve_agent_passes_serve_options(self, mock_serve):
-        """serve_agent() should pass port and host to serve."""
-        mock_client = MagicMock()
-
-        serve_agent(mock_client, name="test-agent", port=3000, host="localhost")
-
-        mock_serve.assert_called_once()
-        call_kwargs = mock_serve.call_args[1]
-        assert call_kwargs["port"] == 3000
-        assert call_kwargs["host"] == "localhost"

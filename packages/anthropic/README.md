@@ -16,21 +16,11 @@ This will also install `reminix-runtime` as a dependency.
 
 ```python
 from anthropic import AsyncAnthropic
-from reminix_anthropic import serve_agent
-
-client = AsyncAnthropic()
-serve_agent(client, name="my-claude", model="claude-sonnet-4-20250514")
-```
-
-For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
-
-```python
-from anthropic import AsyncAnthropic
-from reminix_anthropic import wrap_agent
+from reminix_anthropic import AnthropicChat
 from reminix_runtime import serve
 
 client = AsyncAnthropic()
-agent = wrap_agent(client, name="my-claude", model="claude-sonnet-4-20250514")
+agent = AnthropicChat(client, name="my-claude", model="claude-sonnet-4-20250514")
 serve(agents=[agent])
 ```
 
@@ -39,22 +29,9 @@ Your agent is now available at:
 
 ## API Reference
 
-### `serve_agent(client, name, model, max_tokens, port, host)`
+### `AnthropicChat(client, name, model, max_tokens)`
 
-Wrap an Anthropic client and serve it immediately. Combines `wrap_agent` and `serve` for single-agent setups.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `client` | `AsyncAnthropic` | required | An Anthropic async client |
-| `name` | `str` | `"anthropic-agent"` | Name for the agent (used in URL path) |
-| `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
-| `max_tokens` | `int` | `4096` | Maximum tokens in response |
-| `port` | `int` | `8080` | Port to serve on |
-| `host` | `str` | `"0.0.0.0"` | Host to bind to |
-
-### `wrap_agent(client, name, model, max_tokens)`
-
-Wrap an Anthropic client for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
+Create an Anthropic chat agent.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -63,7 +40,7 @@ Wrap an Anthropic client for use with Reminix Runtime. Use this with `serve` fro
 | `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
 | `max_tokens` | `int` | `4096` | Maximum tokens in response |
 
-**Returns:** `AnthropicAgentAdapter` - A Reminix adapter instance
+**Returns:** `AnthropicChat` - A Reminix agent instance
 
 ### System Messages
 

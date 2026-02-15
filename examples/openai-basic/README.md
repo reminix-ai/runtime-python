@@ -35,7 +35,6 @@ Once running, the following endpoints are available:
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
 | `/agents/openai-basic/invoke` | POST | Execute agent |
-| `/agents/openai-basic/invoke` | POST | Execute agent |
 
 ## Testing
 
@@ -60,13 +59,14 @@ curl -X POST http://localhost:8080/agents/openai-basic/invoke \
 ## How it works
 
 1. Create an OpenAI client using `openai`
-2. Serve it with `reminix-openai`
+2. Create an `OpenAIChat` agent and serve it with `reminix-runtime`
 
 ```python
 from openai import AsyncOpenAI
-from reminix_openai import serve_agent
+from reminix_openai import OpenAIChat
+from reminix_runtime import serve
 
 client = AsyncOpenAI()
-
-serve_agent(client, name="openai-basic", model="gpt-4o-mini")
+agent = OpenAIChat(client, name="openai-basic", model="gpt-4o-mini")
+serve(agents=[agent])
 ```

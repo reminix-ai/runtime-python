@@ -1,15 +1,15 @@
-"""LlamaIndex agent adapter for Reminix Runtime."""
+"""LlamaIndex RAG adapter for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
 from typing import Any, Protocol, runtime_checkable
 
 from reminix_runtime import (
+    AGENT_TEMPLATES,
     AgentRequest,
     Message,
     build_messages_from_input,
     message_content_to_text,
-    serve,
 )
 
 
@@ -21,20 +21,8 @@ class ChatEngine(Protocol):
     async def astream_chat(self, message: str) -> Any: ...
 
 
-# LlamaIndex extends the standard adapter input with query and message fields
-LLAMAINDEX_INPUT: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "messages": {"type": "array", "description": "Chat-style messages input"},
-        "prompt": {"type": "string", "description": "Simple prompt input"},
-        "query": {"type": "string", "description": "Query input"},
-        "message": {"type": "string", "description": "Message input"},
-    },
-}
-
-
-class LlamaIndexAgentAdapter:
-    """Agent adapter for LlamaIndex chat engines."""
+class LlamaIndexRag:
+    """RAG agent adapter for LlamaIndex chat engines."""
 
     def __init__(self, engine: ChatEngine, name: str = "llamaindex-agent") -> None:
         self._engine = engine
@@ -49,9 +37,10 @@ class LlamaIndexAgentAdapter:
         return {
             "description": "llamaindex adapter",
             "capabilities": {"streaming": True},
-            "input": LLAMAINDEX_INPUT,
+            "input": AGENT_TEMPLATES["rag"]["input"],
             "output": {"type": "string"},
             "adapter": "llamaindex",
+            "template": "rag",
         }
 
     def _get_last_user_message(self, messages: list[Message]) -> str:
@@ -86,33 +75,3 @@ class LlamaIndexAgentAdapter:
         response = await self._engine.astream_chat(query)
         async for token in response.async_response_gen():
             yield json.dumps({"chunk": token})
-
-
-def wrap_agent(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndexAgentAdapter:
-    """Wrap a LlamaIndex chat engine for use with Reminix Runtime.
-
-    Example:
-        ```python
-        from llama_index.core.chat_engine import SimpleChatEngine
-        from llama_index.llms.openai import OpenAI
-        from reminix_llamaindex import wrap_agent
-        from reminix_runtime import serve
-
-        llm = OpenAI(model="gpt-4")
-        engine = SimpleChatEngine.from_defaults(llm=llm)
-        agent = wrap_agent(engine, name="my-agent")
-        serve(agents=[agent])
-        ```
-    """
-    return LlamaIndexAgentAdapter(engine, name=name)
-
-
-def serve_agent(
-    engine: ChatEngine,
-    name: str = "llamaindex-agent",
-    port: int = 8080,
-    host: str = "0.0.0.0",
-) -> None:
-    """Wrap a LlamaIndex chat engine and serve it immediately."""
-    agent = wrap_agent(engine, name=name)
-    serve(agents=[agent], port=port, host=host)

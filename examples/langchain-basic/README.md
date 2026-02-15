@@ -1,6 +1,6 @@
 # LangChain Basic Example
 
-A simple example showing how to serve a LangChain agent via Reminix Runtime.
+A simple example showing how to serve a LangChain chat agent via Reminix Runtime.
 
 ## Setup
 
@@ -35,7 +35,6 @@ Once running, the following endpoints are available:
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
 | `/agents/langchain-basic/invoke` | POST | Execute agent |
-| `/agents/langchain-basic/invoke` | POST | Execute agent |
 
 ## Testing
 
@@ -60,13 +59,14 @@ curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
 ## How it works
 
 1. Create a LangChain chat model using `langchain-openai`
-2. Serve it with `reminix-langchain`
+2. Create a `LangChainChat` agent and serve it with `reminix-runtime`
 
 ```python
 from langchain_openai import ChatOpenAI
-from reminix_langchain import serve_agent
+from reminix_langchain import LangChainChat
+from reminix_runtime import serve
 
 model = ChatOpenAI(model="gpt-4o-mini")
-
-serve_agent(model, name="langchain-basic")
+agent = LangChainChat(model, name="langchain-basic")
+serve(agents=[agent])
 ```

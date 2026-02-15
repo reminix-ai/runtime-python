@@ -1,4 +1,4 @@
-"""LangGraph agent adapter for Reminix Runtime."""
+"""LangGraph thread adapter for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -8,15 +8,14 @@ from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
 
 from reminix_langchain import to_langchain_message
 from reminix_runtime import (
-    ADAPTER_INPUT,
+    AGENT_TEMPLATES,
     AgentRequest,
     build_messages_from_input,
-    serve,
 )
 
 
-class LangGraphAgentAdapter:
-    """Agent adapter for LangGraph compiled graphs."""
+class LangGraphThread:
+    """Thread agent adapter for LangGraph compiled graphs."""
 
     def __init__(self, graph: Any, name: str = "langgraph-agent") -> None:
         self._graph = graph
@@ -31,9 +30,10 @@ class LangGraphAgentAdapter:
         return {
             "description": "langgraph adapter",
             "capabilities": {"streaming": True},
-            "input": ADAPTER_INPUT,
+            "input": AGENT_TEMPLATES["thread"]["input"],
             "output": {"type": "string"},
             "adapter": "langgraph",
+            "template": "thread",
         }
 
     def _get_last_ai_content(self, messages: list[BaseMessage]) -> str:
@@ -86,33 +86,3 @@ class LangGraphAgentAdapter:
                         yield json.dumps({"chunk": json.dumps(node_output)})
             else:
                 yield json.dumps({"chunk": str(chunk)})
-
-
-def wrap_agent(graph: Any, name: str = "langgraph-agent") -> LangGraphAgentAdapter:
-    """Wrap a LangGraph compiled graph for use with Reminix Runtime.
-
-    Example:
-        ```python
-        from langgraph.prebuilt import create_react_agent
-        from langchain_openai import ChatOpenAI
-        from reminix_langgraph import wrap_agent
-        from reminix_runtime import serve
-
-        llm = ChatOpenAI(model="gpt-4")
-        graph = create_react_agent(llm, tools=[])
-        agent = wrap_agent(graph, name="my-agent")
-        serve(agents=[agent])
-        ```
-    """
-    return LangGraphAgentAdapter(graph, name=name)
-
-
-def serve_agent(
-    graph: Any,
-    name: str = "langgraph-agent",
-    port: int = 8080,
-    host: str = "0.0.0.0",
-) -> None:
-    """Wrap a LangGraph graph and serve it immediately."""
-    agent = wrap_agent(graph, name=name)
-    serve(agents=[agent], port=port, host=host)

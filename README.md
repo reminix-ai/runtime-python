@@ -38,11 +38,12 @@ pip install reminix-langchain
 
 ```python
 from langchain_openai import ChatOpenAI
-from reminix_langchain import serve_agent
+from reminix_langchain import LangChainChat
+from reminix_runtime import serve
 
-agent = ChatOpenAI(model="gpt-4o")
-
-serve_agent(agent, name="my-agent")
+llm = ChatOpenAI(model="gpt-4o")
+agent = LangChainChat(llm, name="my-agent")
+serve(agents=[agent])
 ```
 
 ### With Decorators (No Framework)

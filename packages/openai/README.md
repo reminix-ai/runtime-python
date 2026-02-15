@@ -16,21 +16,11 @@ This will also install `reminix-runtime` as a dependency.
 
 ```python
 from openai import AsyncOpenAI
-from reminix_openai import serve_agent
-
-client = AsyncOpenAI()
-serve_agent(client, name="my-chatbot", model="gpt-4o")
-```
-
-For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
-
-```python
-from openai import AsyncOpenAI
-from reminix_openai import wrap_agent
+from reminix_openai import OpenAIChat
 from reminix_runtime import serve
 
 client = AsyncOpenAI()
-agent = wrap_agent(client, name="my-chatbot", model="gpt-4o")
+agent = OpenAIChat(client, name="my-chatbot", model="gpt-4o")
 serve(agents=[agent])
 ```
 
@@ -39,21 +29,9 @@ Your agent is now available at:
 
 ## API Reference
 
-### `serve_agent(client, name, model, port, host)`
+### `OpenAIChat(client, name, model)`
 
-Wrap an OpenAI client and serve it immediately. Combines `wrap_agent` and `serve` for single-agent setups.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `client` | `AsyncOpenAI` | required | An OpenAI async client |
-| `name` | `str` | `"openai-agent"` | Name for the agent (used in URL path) |
-| `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
-| `port` | `int` | `8080` | Port to serve on |
-| `host` | `str` | `"0.0.0.0"` | Host to bind to |
-
-### `wrap_agent(client, name, model)`
-
-Wrap an OpenAI client for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
+Create an OpenAI chat agent.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -61,13 +39,13 @@ Wrap an OpenAI client for use with Reminix Runtime. Use this with `serve` from `
 | `name` | `str` | `"openai-agent"` | Name for the agent (used in URL path) |
 | `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
 
-**Returns:** `OpenAIAgentAdapter` - A Reminix adapter instance
+**Returns:** `OpenAIChat` - A Reminix agent instance
 
 ### Example with Custom Configuration
 
 ```python
 from openai import AsyncOpenAI
-from reminix_openai import wrap_agent
+from reminix_openai import OpenAIChat
 from reminix_runtime import serve
 
 client = AsyncOpenAI(
@@ -75,7 +53,7 @@ client = AsyncOpenAI(
     base_url="https://your-proxy.com/v1"  # Optional: custom endpoint
 )
 
-agent = wrap_agent(
+agent = OpenAIChat(
     client,
     name="gpt4-agent",
     model="gpt-4o"

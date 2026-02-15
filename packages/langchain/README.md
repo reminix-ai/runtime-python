@@ -16,21 +16,11 @@ This will also install `reminix-runtime` as a dependency.
 
 ```python
 from langchain_openai import ChatOpenAI
-from reminix_langchain import serve_agent
-
-llm = ChatOpenAI(model="gpt-4o")
-serve_agent(llm, name="my-chatbot")
-```
-
-For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
-
-```python
-from langchain_openai import ChatOpenAI
-from reminix_langchain import wrap_agent
+from reminix_langchain import LangChainChat
 from reminix_runtime import serve
 
 llm = ChatOpenAI(model="gpt-4o")
-agent = wrap_agent(llm, name="my-chatbot")
+agent = LangChainChat(llm, name="my-chatbot")
 serve(agents=[agent])
 ```
 
@@ -39,34 +29,23 @@ Your agent is now available at:
 
 ## API Reference
 
-### `serve_agent(runnable, name, port, host)`
+### `LangChainChat(runnable, name)`
 
-Wrap a LangChain runnable and serve it immediately. Combines `wrap_agent` and `serve` for single-agent setups.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `runnable` | `Runnable` | required | Any LangChain runnable (LLM, chain, agent, etc.) |
-| `name` | `str` | `"langchain-agent"` | Name for the agent (used in URL path) |
-| `port` | `int` | `8080` | Port to serve on |
-| `host` | `str` | `"0.0.0.0"` | Host to bind to |
-
-### `wrap_agent(runnable, name)`
-
-Wrap a LangChain runnable for use with Reminix Runtime. Use this with `serve` from `reminix_runtime` for multi-agent setups.
+Create a LangChain chat agent.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `runnable` | `Runnable` | required | Any LangChain runnable (LLM, chain, agent, etc.) |
 | `name` | `str` | `"langchain-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LangChainAgentAdapter` - A Reminix adapter instance
+**Returns:** `LangChainChat` - A Reminix agent instance
 
 ### Example with a Chain
 
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from reminix_langchain import wrap_agent
+from reminix_langchain import LangChainChat
 from reminix_runtime import serve
 
 # Create a chain
@@ -77,8 +56,8 @@ prompt = ChatPromptTemplate.from_messages([
 llm = ChatOpenAI(model="gpt-4o")
 chain = prompt | llm
 
-# Wrap and serve
-agent = wrap_agent(chain, name="my-chain")
+# Create and serve
+agent = LangChainChat(chain, name="my-chain")
 serve(agents=[agent])
 ```
 

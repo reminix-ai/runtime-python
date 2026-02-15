@@ -1,4 +1,4 @@
-"""OpenAI agent adapter for Reminix Runtime."""
+"""OpenAI chat adapter for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -7,17 +7,16 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from reminix_runtime import (
-    ADAPTER_INPUT,
+    AGENT_TEMPLATES,
     AgentRequest,
     Message,
     build_messages_from_input,
     message_content_to_text,
-    serve,
 )
 
 
-class OpenAIAgentAdapter:
-    """Agent adapter for OpenAI chat completions."""
+class OpenAIChat:
+    """Chat agent adapter for OpenAI chat completions."""
 
     def __init__(
         self,
@@ -42,9 +41,10 @@ class OpenAIAgentAdapter:
         return {
             "description": "openai adapter",
             "capabilities": {"streaming": True},
-            "input": ADAPTER_INPUT,
-            "output": {"type": "string"},
+            "input": AGENT_TEMPLATES["chat"]["input"],
+            "output": AGENT_TEMPLATES["chat"]["output"],
             "adapter": "openai",
+            "template": "chat",
         }
 
     def _to_openai_message(self, message: Message) -> dict[str, Any]:
@@ -90,36 +90,3 @@ class OpenAIAgentAdapter:
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
                 yield json.dumps({"chunk": content})
-
-
-def wrap_agent(
-    client: AsyncOpenAI,
-    name: str = "openai-agent",
-    model: str = "gpt-4o-mini",
-) -> OpenAIAgentAdapter:
-    """Wrap an OpenAI client for use with Reminix Runtime.
-
-    Example:
-        ```python
-        from openai import AsyncOpenAI
-        from reminix_openai import wrap_agent
-        from reminix_runtime import serve
-
-        client = AsyncOpenAI()
-        agent = wrap_agent(client, name="my-agent", model="gpt-4o")
-        serve(agents=[agent])
-        ```
-    """
-    return OpenAIAgentAdapter(client, name=name, model=model)
-
-
-def serve_agent(
-    client: AsyncOpenAI,
-    name: str = "openai-agent",
-    model: str = "gpt-4o-mini",
-    port: int = 8080,
-    host: str = "0.0.0.0",
-) -> None:
-    """Wrap an OpenAI client and serve it immediately."""
-    agent = wrap_agent(client, name=name, model=model)
-    serve(agents=[agent], port=port, host=host)

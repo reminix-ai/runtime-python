@@ -1,48 +1,55 @@
-"""Tests for the OpenAI agent adapter."""
+"""Tests for the OpenAI chat adapter."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from reminix_openai import OpenAIAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, AgentInvokeRequest
+from reminix_openai import OpenAIChat
+from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
-class TestWrap:
-    """Tests for the wrap_agent() function."""
+class TestOpenAIChat:
+    """Tests for the OpenAIChat class."""
 
-    def test_wrap_returns_adapter(self):
-        """wrap_agent() should return an OpenAIAgentAdapter."""
+    def test_instantiation(self):
+        """OpenAIChat should be instantiable."""
         mock_client = MagicMock()
-        adapter = wrap_agent(mock_client)
+        agent = OpenAIChat(mock_client)
 
-        assert isinstance(adapter, OpenAIAgentAdapter)
-        assert isinstance(adapter, AgentAdapter)
+        assert isinstance(agent, OpenAIChat)
 
-    def test_wrap_with_custom_name(self):
-        """wrap_agent() should accept a custom name."""
+    def test_custom_name(self):
+        """OpenAIChat should accept a custom name."""
         mock_client = MagicMock()
-        adapter = wrap_agent(mock_client, name="my-custom-agent")
+        agent = OpenAIChat(mock_client, name="my-custom-agent")
 
-        assert adapter.name == "my-custom-agent"
+        assert agent.name == "my-custom-agent"
 
-    def test_wrap_with_custom_model(self):
-        """wrap_agent() should accept a custom model."""
+    def test_custom_model(self):
+        """OpenAIChat should accept a custom model."""
         mock_client = MagicMock()
-        adapter = wrap_agent(mock_client, model="gpt-4o")
+        agent = OpenAIChat(mock_client, model="gpt-4o")
 
-        assert adapter.model == "gpt-4o"
+        assert agent.model == "gpt-4o"
 
-    def test_wrap_default_values(self):
-        """wrap_agent() should use default values if not provided."""
+    def test_default_values(self):
+        """OpenAIChat should use default values if not provided."""
         mock_client = MagicMock()
-        adapter = wrap_agent(mock_client)
+        agent = OpenAIChat(mock_client)
 
-        assert adapter.name == "openai-agent"
-        assert adapter.model == "gpt-4o-mini"
+        assert agent.name == "openai-agent"
+        assert agent.model == "gpt-4o-mini"
+
+    def test_chat_template_metadata(self):
+        """OpenAIChat should have chat template metadata."""
+        mock_client = MagicMock()
+        agent = OpenAIChat(mock_client)
+
+        assert agent.metadata["template"] == "chat"
+        assert agent.metadata["input"] == AGENT_TEMPLATES["chat"]["input"]
 
 
-class TestOpenAIAgentAdapterInvoke:
+class TestOpenAIChatInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
@@ -53,10 +60,10 @@ class TestOpenAIAgentAdapterInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="Hello!"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        adapter = wrap_agent(mock_client)
-        request = AgentInvokeRequest(input={"prompt": "Hi"})
+        agent = OpenAIChat(mock_client)
+        request = AgentRequest(input={"prompt": "Hi"})
 
-        response = await adapter.invoke(request)
+        await agent.invoke(request)
 
         mock_client.chat.completions.create.assert_called_once()
 
@@ -68,10 +75,10 @@ class TestOpenAIAgentAdapterInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="Hello from OpenAI!"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        adapter = wrap_agent(mock_client)
-        request = AgentInvokeRequest(input={"prompt": "Hi"})
+        agent = OpenAIChat(mock_client)
+        request = AgentRequest(input={"prompt": "Hi"})
 
-        response = await adapter.invoke(request)
+        response = await agent.invoke(request)
 
         assert response["output"] == "Hello from OpenAI!"
 
@@ -83,12 +90,11 @@ class TestOpenAIAgentAdapterInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        adapter = wrap_agent(mock_client)
-        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
+        agent = OpenAIChat(mock_client)
+        request = AgentRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
-        response = await adapter.invoke(request)
+        await agent.invoke(request)
 
-        # Should pass messages directly
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         assert call_kwargs["messages"][0]["role"] == "user"
         assert call_kwargs["messages"][0]["content"] == "Hello"
@@ -101,44 +107,10 @@ class TestOpenAIAgentAdapterInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        adapter = wrap_agent(mock_client, model="gpt-4o")
-        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
+        agent = OpenAIChat(mock_client, model="gpt-4o")
+        request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
-        await adapter.invoke(request)
+        await agent.invoke(request)
 
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         assert call_kwargs["model"] == "gpt-4o"
-
-
-class TestWrapAndServe:
-    """Tests for the serve_agent() function."""
-
-    def test_serve_agent_is_callable(self):
-        """serve_agent() should be callable."""
-        assert callable(serve_agent)
-
-    @patch("reminix_openai.agent_adapter.serve")
-    def test_serve_agent_calls_serve(self, mock_serve):
-        """serve_agent() should call serve with wrapped adapter."""
-        mock_client = MagicMock()
-
-        serve_agent(mock_client, name="test-agent")
-
-        mock_serve.assert_called_once()
-        call_args = mock_serve.call_args
-        agents = call_args.kwargs["agents"]
-        assert len(agents) == 1
-        assert isinstance(agents[0], OpenAIAgentAdapter)
-        assert agents[0].name == "test-agent"
-
-    @patch("reminix_openai.agent_adapter.serve")
-    def test_serve_agent_passes_serve_options(self, mock_serve):
-        """serve_agent() should pass port and host to serve."""
-        mock_client = MagicMock()
-
-        serve_agent(mock_client, name="test-agent", port=3000, host="localhost")
-
-        mock_serve.assert_called_once()
-        call_kwargs = mock_serve.call_args[1]
-        assert call_kwargs["port"] == 3000
-        assert call_kwargs["host"] == "localhost"

@@ -1,4 +1,4 @@
-"""LangChain agent adapter for Reminix Runtime."""
+"""LangChain chat adapter for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -15,12 +15,11 @@ from langchain_core.messages import (
 from langchain_core.runnables import Runnable
 
 from reminix_runtime import (
-    ADAPTER_INPUT,
+    AGENT_TEMPLATES,
     AgentRequest,
     Message,
     build_messages_from_input,
     message_content_to_text,
-    serve,
 )
 
 
@@ -45,8 +44,8 @@ def to_langchain_message(message: Message) -> BaseMessage:
         return HumanMessage(content=content)
 
 
-class LangChainAgentAdapter:
-    """Agent adapter for LangChain agents and runnables."""
+class LangChainChat:
+    """Chat agent adapter for LangChain agents and runnables."""
 
     def __init__(self, agent: Runnable, name: str = "langchain-agent") -> None:
         self._agent = agent
@@ -61,9 +60,10 @@ class LangChainAgentAdapter:
         return {
             "description": "langchain adapter",
             "capabilities": {"streaming": True},
-            "input": ADAPTER_INPUT,
-            "output": {"type": "string"},
+            "input": AGENT_TEMPLATES["chat"]["input"],
+            "output": AGENT_TEMPLATES["chat"]["output"],
             "adapter": "langchain",
+            "template": "chat",
         }
 
     def _build_langchain_input(self, request: AgentRequest) -> Any:
@@ -104,31 +104,3 @@ class LangChainAgentAdapter:
             else:
                 content = str(chunk)
             yield json.dumps({"chunk": content})
-
-
-def wrap_agent(agent: Runnable, name: str = "langchain-agent") -> LangChainAgentAdapter:
-    """Wrap a LangChain agent for use with Reminix Runtime.
-
-    Example:
-        ```python
-        from langchain_openai import ChatOpenAI
-        from reminix_langchain import wrap_agent
-        from reminix_runtime import serve
-
-        llm = ChatOpenAI(model="gpt-4")
-        agent = wrap_agent(llm, name="my-agent")
-        serve(agents=[agent])
-        ```
-    """
-    return LangChainAgentAdapter(agent, name=name)
-
-
-def serve_agent(
-    agent: Runnable,
-    name: str = "langchain-agent",
-    port: int = 8080,
-    host: str = "0.0.0.0",
-) -> None:
-    """Wrap a LangChain runnable and serve it immediately."""
-    wrapped_agent = wrap_agent(agent, name=name)
-    serve(agents=[wrapped_agent], port=port, host=host)
