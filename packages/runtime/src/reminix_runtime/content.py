@@ -1,6 +1,8 @@
 """Helpers for message content (str | ContentPartList | None)."""
 
-from .types import ContentPartList
+from __future__ import annotations
+
+from .types import AgentRequest, ContentPartList, Message
 
 
 def message_content_to_text(
@@ -25,3 +27,20 @@ def message_content_to_text(
             ptype = getattr(p, "type", None) if not isinstance(p, dict) else p.get("type")
             parts.append(f"[{ptype or 'part'}]")
     return " ".join(parts)
+
+
+def build_messages_from_input(request: AgentRequest) -> list[Message]:
+    """Extract a list of Messages from an AgentRequest's input dict.
+
+    Handles three input shapes that all adapters accept:
+    - ``{ "messages": [...] }`` — chat-style, returned as Message list
+    - ``{ "prompt": "..." }`` — single prompt, wrapped as a user message
+    - anything else — stringified and wrapped as a user message
+    """
+    if "messages" in request.input:
+        messages_data = request.input["messages"]
+        return [Message(**m) if isinstance(m, dict) else m for m in messages_data]
+    elif "prompt" in request.input:
+        return [Message(role="user", content=str(request.input["prompt"]))]
+    else:
+        return [Message(role="user", content=str(request.input))]

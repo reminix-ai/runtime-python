@@ -15,27 +15,40 @@ from langchain_core.messages import (
 from langchain_core.runnables import Runnable
 
 from reminix_runtime import (
-    AgentAdapter,
-    AgentInvokeRequest,
-    AgentInvokeResponseDict,
+    ADAPTER_INPUT,
+    AgentRequest,
     Message,
+    build_messages_from_input,
     message_content_to_text,
     serve,
 )
 
 
-class LangChainAgentAdapter(AgentAdapter):
+def to_langchain_message(message: Message) -> BaseMessage:
+    """Convert a Reminix message to a LangChain message.
+
+    This is exported for reuse by the langgraph adapter.
+    """
+    role = message.role
+    content = message_content_to_text(message.content)
+
+    if role == "user":
+        return HumanMessage(content=content)
+    elif role == "assistant":
+        return AIMessage(content=content)
+    elif role == "system" or role == "developer":
+        return SystemMessage(content=content)
+    elif role == "tool":
+        tool_call_id = getattr(message, "tool_call_id", None) or "unknown"
+        return ToolMessage(content=content, tool_call_id=tool_call_id)
+    else:
+        return HumanMessage(content=content)
+
+
+class LangChainAgentAdapter:
     """Agent adapter for LangChain agents and runnables."""
 
-    adapter_name = "langchain"
-
     def __init__(self, agent: Runnable, name: str = "langchain-agent") -> None:
-        """Initialize the adapter.
-
-        Args:
-            agent: A LangChain runnable (e.g., ChatModel, chain, agent).
-            name: Name for the agent.
-        """
         self._agent = agent
         self._name = name
 
@@ -43,74 +56,32 @@ class LangChainAgentAdapter(AgentAdapter):
     def name(self) -> str:
         return self._name
 
-    def _to_langchain_message(self, message: Message) -> BaseMessage:
-        """Convert a Reminix message to a LangChain message."""
-        role = message.role
-        content = message_content_to_text(message.content)
+    @property
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "description": "langchain adapter",
+            "capabilities": {"streaming": True},
+            "input": ADAPTER_INPUT,
+            "output": {"type": "string"},
+            "adapter": "langchain",
+        }
 
-        if role == "user":
-            return HumanMessage(content=content)
-        elif role == "assistant":
-            return AIMessage(content=content)
-        elif role == "system" or role == "developer":
-            return SystemMessage(content=content)
-        elif role == "tool":
-            # Tool messages require a tool_call_id
-            tool_call_id = getattr(message, "tool_call_id", None) or "unknown"
-            return ToolMessage(content=content, tool_call_id=tool_call_id)
-        else:
-            # Fallback to HumanMessage for unknown roles
-            return HumanMessage(content=content)
-
-    def _to_reminix_message(self, message: BaseMessage) -> dict[str, Any]:
-        """Convert a LangChain message to a Reminix message dict."""
-        if isinstance(message, HumanMessage):
-            role = "user"
-        elif isinstance(message, AIMessage):
-            role = "assistant"
-        elif isinstance(message, SystemMessage):
-            role = "system"
-        elif isinstance(message, ToolMessage):
-            role = "tool"
-        else:
-            role = "assistant"
-
-        content = message.content if isinstance(message.content, str) else str(message.content)
-        return {"role": role, "content": content}
-
-    def _build_langchain_input(self, request: AgentInvokeRequest) -> Any:
+    def _build_langchain_input(self, request: AgentRequest) -> Any:
         """Build LangChain input from invoke request."""
-        # Check if input contains messages (chat-style)
+        messages = build_messages_from_input(request)
+
+        # If input had messages, convert to LangChain format
         if "messages" in request.input:
-            # Convert message dicts to LangChain messages
-            lc_messages = []
-            for m in request.input["messages"]:
-                msg = Message(role=m.get("role", "user"), content=m.get("content", ""))
-                lc_messages.append(self._to_langchain_message(msg))
-            return lc_messages
+            return [to_langchain_message(m) for m in messages]
         elif "prompt" in request.input:
             return request.input["prompt"]
         else:
-            # Pass input directly to the runnable
             return request.input
 
-    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
-        """Handle an invoke request.
-
-        For both task-oriented and chat-style operations. Expects input with 'messages' key
-        or a 'prompt' key for simple text generation.
-
-        Args:
-            request: The invoke request with input data.
-
-        Returns:
-            The invoke response with the output.
-        """
+    async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         invoke_input = self._build_langchain_input(request)
-
         response = await self._agent.ainvoke(invoke_input)
 
-        # Extract output from response
         if isinstance(response, BaseMessage):
             output = (
                 response.content if isinstance(response.content, str) else str(response.content)
@@ -122,17 +93,7 @@ class LangChainAgentAdapter(AgentAdapter):
 
         return {"output": output}
 
-    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request.
-
-        Streams chunks from the LangChain runnable.
-
-        Args:
-            request: The invoke request with input data.
-
-        Yields:
-            JSON-encoded chunks from the stream.
-        """
+    async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
         stream_input = self._build_langchain_input(request)
 
         async for chunk in self._agent.astream(stream_input):
@@ -147,13 +108,6 @@ class LangChainAgentAdapter(AgentAdapter):
 
 def wrap_agent(agent: Runnable, name: str = "langchain-agent") -> LangChainAgentAdapter:
     """Wrap a LangChain agent for use with Reminix Runtime.
-
-    Args:
-        agent: A LangChain runnable (e.g., ChatModel, chain, agent).
-        name: Name for the agent.
-
-    Returns:
-        A LangChainAgentAdapter instance.
 
     Example:
         ```python
@@ -175,24 +129,6 @@ def serve_agent(
     port: int = 8080,
     host: str = "0.0.0.0",
 ) -> None:
-    """Wrap a LangChain runnable and serve it immediately.
-
-    This is a convenience function that combines `wrap` and `serve` for single-agent setups.
-
-    Args:
-        agent: A LangChain runnable (e.g., ChatModel, chain, agent).
-        name: Name for the agent.
-        port: Port to serve on.
-        host: Host to bind to.
-
-    Example:
-        ```python
-        from langchain_openai import ChatOpenAI
-        from reminix_langchain import serve_agent
-
-        llm = ChatOpenAI(model="gpt-4")
-        serve_agent(llm, name="my-agent", port=8080)
-        ```
-    """
+    """Wrap a LangChain runnable and serve it immediately."""
     wrapped_agent = wrap_agent(agent, name=name)
     serve(agents=[wrapped_agent], port=port, host=host)

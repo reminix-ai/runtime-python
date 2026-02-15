@@ -309,3 +309,12 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
 # Default input/output schemas (same as prompt template)
 DEFAULT_AGENT_INPUT: dict[str, Any] = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE]["input"]
 DEFAULT_AGENT_OUTPUT: dict[str, Any] = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE]["output"]
+
+# Shared input schema for adapters (accepts messages or prompt)
+ADAPTER_INPUT: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "messages": {"type": "array", "description": "Chat-style messages input"},
+        "prompt": {"type": "string", "description": "Simple prompt input"},
+    },
+}

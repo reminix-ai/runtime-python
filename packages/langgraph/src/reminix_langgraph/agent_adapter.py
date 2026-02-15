@@ -4,37 +4,21 @@ import json
 from collections.abc import AsyncIterator
 from typing import Any
 
-from langchain_core.messages import (
-    AIMessage,
-    AIMessageChunk,
-    BaseMessage,
-    HumanMessage,
-    SystemMessage,
-    ToolMessage,
-)
+from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
 
+from reminix_langchain import to_langchain_message
 from reminix_runtime import (
-    AgentAdapter,
-    AgentInvokeRequest,
-    AgentInvokeResponseDict,
-    Message,
-    message_content_to_text,
+    ADAPTER_INPUT,
+    AgentRequest,
+    build_messages_from_input,
     serve,
 )
 
 
-class LangGraphAgentAdapter(AgentAdapter):
+class LangGraphAgentAdapter:
     """Agent adapter for LangGraph compiled graphs."""
 
-    adapter_name = "langgraph"
-
     def __init__(self, graph: Any, name: str = "langgraph-agent") -> None:
-        """Initialize the adapter.
-
-        Args:
-            graph: A LangGraph compiled graph.
-            name: Name for the agent.
-        """
         self._graph = graph
         self._name = name
 
@@ -42,38 +26,15 @@ class LangGraphAgentAdapter(AgentAdapter):
     def name(self) -> str:
         return self._name
 
-    def _to_langchain_message(self, message: Message) -> BaseMessage:
-        """Convert a Reminix message to a LangChain message."""
-        role = message.role
-        content = message_content_to_text(message.content)
-
-        if role == "user":
-            return HumanMessage(content=content)
-        elif role == "assistant":
-            return AIMessage(content=content)
-        elif role == "system" or role == "developer":
-            return SystemMessage(content=content)
-        elif role == "tool":
-            tool_call_id = getattr(message, "tool_call_id", None) or "unknown"
-            return ToolMessage(content=content, tool_call_id=tool_call_id)
-        else:
-            return HumanMessage(content=content)
-
-    def _to_reminix_message(self, message: BaseMessage) -> dict[str, Any]:
-        """Convert a LangChain message to a Reminix message dict."""
-        if isinstance(message, HumanMessage):
-            role = "user"
-        elif isinstance(message, AIMessage):
-            role = "assistant"
-        elif isinstance(message, SystemMessage):
-            role = "system"
-        elif isinstance(message, ToolMessage):
-            role = "tool"
-        else:
-            role = "assistant"
-
-        content = message.content if isinstance(message.content, str) else str(message.content)
-        return {"role": role, "content": content}
+    @property
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "description": "langgraph adapter",
+            "capabilities": {"streaming": True},
+            "input": ADAPTER_INPUT,
+            "output": {"type": "string"},
+            "adapter": "langgraph",
+        }
 
     def _get_last_ai_content(self, messages: list[BaseMessage]) -> str:
         """Extract content from the last AI message."""
@@ -82,35 +43,19 @@ class LangGraphAgentAdapter(AgentAdapter):
                 return message.content if isinstance(message.content, str) else str(message.content)
         return ""
 
-    def _build_graph_input(self, request: AgentInvokeRequest) -> Any:
+    def _build_graph_input(self, request: AgentRequest) -> Any:
         """Build LangGraph input from invoke request."""
-        # Check if input contains messages (chat-style)
         if "messages" in request.input:
-            messages_data = request.input["messages"]
-            messages = [Message(**m) if isinstance(m, dict) else m for m in messages_data]
-            lc_messages = [self._to_langchain_message(m) for m in messages]
+            messages = build_messages_from_input(request)
+            lc_messages = [to_langchain_message(m) for m in messages]
             return {"messages": lc_messages}
         else:
-            # Pass input directly to the graph
             return request.input
 
-    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
-        """Handle an invoke request.
-
-        For both task-oriented and chat-style operations.
-
-        Args:
-            request: The invoke request with input data.
-
-        Returns:
-            The invoke response with the output.
-        """
+    async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         graph_input = self._build_graph_input(request)
-
-        # Call the graph
         result = await self._graph.ainvoke(graph_input)
 
-        # Extract output from result
         if isinstance(result, dict) and "messages" in result:
             messages = result.get("messages", [])
             output = self._get_last_ai_content(messages)
@@ -121,19 +66,10 @@ class LangGraphAgentAdapter(AgentAdapter):
 
         return {"output": output}
 
-    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request.
-
-        Args:
-            request: The invoke request with input data.
-
-        Yields:
-            JSON-encoded chunks from the stream.
-        """
+    async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
         graph_input = self._build_graph_input(request)
 
         async for chunk in self._graph.astream(graph_input):
-            # LangGraph streams dicts with node outputs
             if isinstance(chunk, dict):
                 for _node_name, node_output in chunk.items():
                     if isinstance(node_output, dict) and "messages" in node_output:
@@ -154,13 +90,6 @@ class LangGraphAgentAdapter(AgentAdapter):
 
 def wrap_agent(graph: Any, name: str = "langgraph-agent") -> LangGraphAgentAdapter:
     """Wrap a LangGraph compiled graph for use with Reminix Runtime.
-
-    Args:
-        graph: A LangGraph compiled graph.
-        name: Name for the agent.
-
-    Returns:
-        A LangGraphAgentAdapter instance.
 
     Example:
         ```python
@@ -184,26 +113,6 @@ def serve_agent(
     port: int = 8080,
     host: str = "0.0.0.0",
 ) -> None:
-    """Wrap a LangGraph graph and serve it immediately.
-
-    This is a convenience function that combines `wrap` and `serve` for single-agent setups.
-
-    Args:
-        graph: A LangGraph compiled graph.
-        name: Name for the agent.
-        port: Port to serve on.
-        host: Host to bind to.
-
-    Example:
-        ```python
-        from langgraph.prebuilt import create_react_agent
-        from langchain_openai import ChatOpenAI
-        from reminix_langgraph import serve_agent
-
-        llm = ChatOpenAI(model="gpt-4")
-        graph = create_react_agent(llm, tools=[])
-        serve_agent(graph, name="my-agent", port=8080)
-        ```
-    """
+    """Wrap a LangGraph graph and serve it immediately."""
     agent = wrap_agent(graph, name=name)
     serve(agents=[agent], port=port, host=host)

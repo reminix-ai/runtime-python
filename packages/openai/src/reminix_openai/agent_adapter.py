@@ -7,19 +7,17 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from reminix_runtime import (
-    AgentAdapter,
-    AgentInvokeRequest,
-    AgentInvokeResponseDict,
+    ADAPTER_INPUT,
+    AgentRequest,
     Message,
+    build_messages_from_input,
     message_content_to_text,
     serve,
 )
 
 
-class OpenAIAgentAdapter(AgentAdapter):
+class OpenAIAgentAdapter:
     """Agent adapter for OpenAI chat completions."""
-
-    adapter_name = "openai"
 
     def __init__(
         self,
@@ -27,13 +25,6 @@ class OpenAIAgentAdapter(AgentAdapter):
         name: str = "openai-agent",
         model: str = "gpt-4o-mini",
     ) -> None:
-        """Initialize the adapter.
-
-        Args:
-            client: An OpenAI async client.
-            name: Name for the agent.
-            model: The model to use for completions.
-        """
         self._client = client
         self._name = name
         self._model = model
@@ -45,6 +36,16 @@ class OpenAIAgentAdapter(AgentAdapter):
     @property
     def model(self) -> str:
         return self._model
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "description": "openai adapter",
+            "capabilities": {"streaming": True},
+            "input": ADAPTER_INPUT,
+            "output": {"type": "string"},
+            "adapter": "openai",
+        }
 
     def _to_openai_message(self, message: Message) -> dict[str, Any]:
         """Convert a Reminix message to OpenAI format."""
@@ -63,60 +64,25 @@ class OpenAIAgentAdapter(AgentAdapter):
             result["name"] = message.name
         return result
 
-    def _build_openai_messages(self, request: AgentInvokeRequest) -> list[dict[str, Any]]:
-        """Build OpenAI messages from invoke request input."""
-        # Check if input contains messages (chat-style)
-        if "messages" in request.input:
-            messages_data = request.input["messages"]
-            # Convert to Message objects if needed, then to OpenAI format
-            messages = [Message(**m) if isinstance(m, dict) else m for m in messages_data]
-            return [self._to_openai_message(m) for m in messages]
-        elif "prompt" in request.input:
-            return [{"role": "user", "content": request.input["prompt"]}]
-        else:
-            # Use input as a single user message
-            return [{"role": "user", "content": str(request.input)}]
+    async def invoke(self, request: AgentRequest) -> dict[str, Any]:
+        messages = build_messages_from_input(request)
+        openai_messages = [self._to_openai_message(m) for m in messages]
 
-    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponseDict:
-        """Handle an invoke request.
-
-        For both task-oriented and chat-style operations. Expects input with 'messages' key
-        or a 'prompt' key for simple text generation.
-
-        Args:
-            request: The invoke request with input data.
-
-        Returns:
-            The invoke response with the output.
-        """
-        messages = self._build_openai_messages(request)
-
-        # Call OpenAI API
         response = await self._client.chat.completions.create(
             model=self._model,
-            messages=messages,  # type: ignore
+            messages=openai_messages,  # type: ignore
         )
 
-        # Extract content from response
         output = response.choices[0].message.content or ""
-
         return {"output": output}
 
-    async def invoke_stream(self, request: AgentInvokeRequest) -> AsyncIterator[str]:
-        """Handle a streaming invoke request.
+    async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
+        messages = build_messages_from_input(request)
+        openai_messages = [self._to_openai_message(m) for m in messages]
 
-        Args:
-            request: The invoke request with input data.
-
-        Yields:
-            JSON-encoded chunks from the stream.
-        """
-        messages = self._build_openai_messages(request)
-
-        # Stream from OpenAI API
         stream = await self._client.chat.completions.create(
             model=self._model,
-            messages=messages,  # type: ignore
+            messages=openai_messages,  # type: ignore
             stream=True,
         )
 
@@ -132,14 +98,6 @@ def wrap_agent(
     model: str = "gpt-4o-mini",
 ) -> OpenAIAgentAdapter:
     """Wrap an OpenAI client for use with Reminix Runtime.
-
-    Args:
-        client: An OpenAI async client.
-        name: Name for the agent.
-        model: The model to use for completions.
-
-    Returns:
-        An OpenAIAgentAdapter instance.
 
     Example:
         ```python
@@ -162,25 +120,6 @@ def serve_agent(
     port: int = 8080,
     host: str = "0.0.0.0",
 ) -> None:
-    """Wrap an OpenAI client and serve it immediately.
-
-    This is a convenience function that combines `wrap` and `serve` for single-agent setups.
-
-    Args:
-        client: An OpenAI async client.
-        name: Name for the agent.
-        model: The model to use for completions.
-        port: Port to serve on.
-        host: Host to bind to.
-
-    Example:
-        ```python
-        from openai import AsyncOpenAI
-        from reminix_openai import serve_agent
-
-        client = AsyncOpenAI()
-        serve_agent(client, name="my-agent", model="gpt-4o", port=8080)
-        ```
-    """
+    """Wrap an OpenAI client and serve it immediately."""
     agent = wrap_agent(client, name=name, model=model)
     serve(agents=[agent], port=port, host=host)
