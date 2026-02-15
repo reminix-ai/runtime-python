@@ -4,8 +4,8 @@ import pytest
 from pydantic import ValidationError
 
 from reminix_runtime.types import (
-    InvokeRequest,
-    InvokeResponse,
+    AgentRequest,
+    AgentResponse,
     Message,
 )
 
@@ -54,37 +54,37 @@ class TestMessage:
         assert msg.name == "my_tool"
 
 
-class TestInvokeRequest:
-    """Tests for InvokeRequest type."""
+class TestAgentRequest:
+    """Tests for AgentRequest type."""
 
-    def test_invoke_request_defaults_to_empty_input(self):
-        """InvokeRequest defaults to empty input."""
-        req = InvokeRequest()
+    def test_agent_request_defaults_to_empty_input(self):
+        """AgentRequest defaults to empty input."""
+        req = AgentRequest()
         assert req.input == {}
 
-    def test_invoke_request_accepts_valid_input(self):
-        """InvokeRequest accepts input dict."""
-        req = InvokeRequest(input={"task": "summarize", "text": "hello"})
+    def test_agent_request_accepts_valid_input(self):
+        """AgentRequest accepts input dict."""
+        req = AgentRequest(input={"task": "summarize", "text": "hello"})
         assert req.input["task"] == "summarize"
 
-    def test_invoke_request_accepts_empty_input(self):
-        """InvokeRequest can have empty input (for chat agents that receive messages)."""
-        req = InvokeRequest(input={})
+    def test_agent_request_accepts_empty_input(self):
+        """AgentRequest can have empty input (for chat agents that receive messages)."""
+        req = AgentRequest(input={})
         assert req.input == {}
 
-    def test_invoke_request_accepts_stream(self):
-        """InvokeRequest can have stream flag."""
-        req = InvokeRequest(input={"task": "test"}, stream=True)
+    def test_agent_request_accepts_stream(self):
+        """AgentRequest can have stream flag."""
+        req = AgentRequest(input={"task": "test"}, stream=True)
         assert req.stream is True
 
-    def test_invoke_request_accepts_context(self):
-        """InvokeRequest can have optional context."""
-        req = InvokeRequest(input={"task": "test"}, context={"user_id": "123"})
+    def test_agent_request_accepts_context(self):
+        """AgentRequest can have optional context."""
+        req = AgentRequest(input={"task": "test"}, context={"user_id": "123"})
         assert req.context == {"user_id": "123"}
 
-    def test_invoke_request_with_messages(self):
-        """InvokeRequest can have messages in input for chat-style agents."""
-        req = InvokeRequest(
+    def test_agent_request_with_messages(self):
+        """AgentRequest can have messages in input for chat-style agents."""
+        req = AgentRequest(
             input={
                 "messages": [
                     {"role": "user", "content": "hello"},
@@ -95,37 +95,29 @@ class TestInvokeRequest:
         assert len(req.input["messages"]) == 2
 
 
-class TestInvokeResponse:
-    """Tests for InvokeResponse type.
+class TestAgentResponse:
+    """Tests for AgentResponse type."""
 
-    InvokeResponse now uses { output: ..., metadata?: ... } format.
-    """
+    def test_agent_response_accepts_string_output(self):
+        """AgentResponse accepts string output."""
+        resp = AgentResponse(output="Result")
+        assert resp.output == "Result"
 
-    def test_invoke_response_is_dict(self):
-        """InvokeResponse is a dict type alias."""
-        resp: InvokeResponse = {"output": "Result"}
-        assert resp["output"] == "Result"
+    def test_agent_response_accepts_dict_output(self):
+        """AgentResponse accepts dict output."""
+        resp = AgentResponse(output={"result": 42, "status": "ok"})
+        assert resp.output == {"result": 42, "status": "ok"}
 
-    def test_invoke_response_accepts_string_output(self):
-        """InvokeResponse accepts string output."""
-        resp: InvokeResponse = {"output": "Result"}
-        assert resp["output"] == "Result"
+    def test_agent_response_accepts_any_output(self):
+        """AgentResponse accepts any type of output."""
+        resp = AgentResponse(output=[1, 2, 3])
+        assert resp.output == [1, 2, 3]
 
-    def test_invoke_response_accepts_dict_output(self):
-        """InvokeResponse accepts dict output."""
-        resp: InvokeResponse = {"output": {"result": 42, "status": "ok"}}
-        assert resp["output"] == {"result": 42, "status": "ok"}
-
-    def test_invoke_response_accepts_any_output(self):
-        """InvokeResponse accepts any type of output."""
-        resp: InvokeResponse = {"output": [1, 2, 3]}
-        assert resp["output"] == [1, 2, 3]
-
-    def test_invoke_response_accepts_metadata(self):
-        """InvokeResponse accepts optional metadata."""
-        resp: InvokeResponse = {
-            "output": "Result",
-            "metadata": {"model": "gpt-4", "latency_ms": 100},
-        }
-        assert resp["metadata"]["model"] == "gpt-4"
-        assert resp["metadata"]["latency_ms"] == 100
+    def test_agent_response_accepts_metadata(self):
+        """AgentResponse accepts optional metadata."""
+        resp = AgentResponse(
+            output="Result",
+            metadata={"model": "gpt-4", "latency_ms": 100},
+        )
+        assert resp.metadata["model"] == "gpt-4"
+        assert resp.metadata["latency_ms"] == 100

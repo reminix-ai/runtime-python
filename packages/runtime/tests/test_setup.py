@@ -8,7 +8,8 @@ def test_setup_works():
 
 def test_can_import_package():
     """Verify we can import the package."""
-    from reminix_runtime import AgentAdapter, serve
+    from reminix_runtime import agent, serve, tool
 
     assert serve is not None
-    assert AgentAdapter is not None
+    assert agent is not None
+    assert tool is not None

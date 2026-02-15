@@ -1,22 +1,20 @@
 """Tests for the serve() function and server endpoints."""
 
+from typing import Any
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from reminix_runtime import (
-    AgentAdapter,
-    AgentInvokeRequest,
-    AgentInvokeResponse,
+    AgentRequest,
     __version__,
     tool,
 )
 from reminix_runtime.server import create_app
 
 
-class MockTaskAdapter(AgentAdapter):
+class MockTaskAdapter:
     """A mock adapter for testing task-style requests."""
-
-    adapter_name = "mock"
 
     def __init__(self, name: str = "mock-agent"):
         self._name = name
@@ -25,15 +23,25 @@ class MockTaskAdapter(AgentAdapter):
     def name(self) -> str:
         return self._name
 
-    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponse:
+    @property
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "capabilities": {"streaming": True},
+            "adapter": "mock",
+            "input": {"type": "object"},
+            "output": {"type": "string"},
+        }
+
+    async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         task = request.input.get("task", "unknown")
         return {"output": f"Completed task: {task}"}
 
+    async def invoke_stream(self, request: AgentRequest):
+        yield ""
 
-class MockChatAdapter(AgentAdapter):
+
+class MockChatAdapter:
     """A mock adapter for testing chat-style requests."""
-
-    adapter_name = "mock"
 
     def __init__(self, name: str = "mock-agent"):
         self._name = name
@@ -42,7 +50,16 @@ class MockChatAdapter(AgentAdapter):
     def name(self) -> str:
         return self._name
 
-    async def invoke(self, request: AgentInvokeRequest) -> AgentInvokeResponse:
+    @property
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "capabilities": {"streaming": True},
+            "adapter": "mock",
+            "input": {"type": "object"},
+            "output": {"type": "string"},
+        }
+
+    async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = request.input.get("messages", [])
         user_message = messages[-1]["content"] if messages else ""
         return {
@@ -50,6 +67,9 @@ class MockChatAdapter(AgentAdapter):
                 "messages": [{"role": "assistant", "content": f"Chat response to: {user_message}"}]
             }
         }
+
+    async def invoke_stream(self, request: AgentRequest):
+        yield ""
 
 
 class TestCreateApp:
@@ -126,7 +146,6 @@ class TestInvokeEndpoint:
         """POST /agents/{agent}/invoke should return invoke response."""
         app = create_app(agents=[MockTaskAdapter("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            # New API uses { input: { ... } }
             response = await client.post(
                 "/agents/my-agent/invoke",
                 json={"input": {"task": "summarize"}},

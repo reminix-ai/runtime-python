@@ -2,13 +2,20 @@
 
 import inspect
 from collections.abc import Callable
-from typing import Any, Protocol, get_args, get_origin, get_type_hints, is_typeddict, runtime_checkable
+from typing import (
+    Any,
+    Protocol,
+    get_args,
+    get_origin,
+    get_type_hints,
+    is_typeddict,
+    runtime_checkable,
+)
 
 from docstring_parser import parse as parse_docstring
 from pydantic import BaseModel
 
-from .types import ToolRequest, ToolResponse
-
+from .types import ToolRequest
 
 # === Shared Schema Utilities ===
 

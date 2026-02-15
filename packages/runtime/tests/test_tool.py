@@ -7,8 +7,7 @@ from pydantic import BaseModel, Field
 
 from reminix_runtime import (
     Tool,
-    ToolBase,
-    ToolCallRequest,
+    ToolRequest,
     tool,
 )
 
@@ -34,7 +33,7 @@ class TestToolDecorator:
             return {"result": param}
 
         assert my_tool.name == "custom-name"
-        assert my_tool.description == "Custom description"
+        assert my_tool.metadata["description"] == "Custom description"
 
     def test_tool_name_defaults_to_function_name(self):
         """Tool name defaults to function name."""
@@ -54,7 +53,7 @@ class TestToolDecorator:
             """Get the current weather for a location."""
             return {}
 
-        assert get_weather.description == "Get the current weather for a location."
+        assert get_weather.metadata["description"] == "Get the current weather for a location."
 
     def test_tool_description_multiline_docstring(self):
         """Tool description uses first paragraph of multiline docstring."""
@@ -67,7 +66,7 @@ class TestToolDecorator:
             """
             return {}
 
-        assert get_weather.description == "Get the current weather."
+        assert get_weather.metadata["description"] == "Get the current weather."
 
 
 class TestToolSchemaExtraction:
@@ -81,8 +80,8 @@ class TestToolSchemaExtraction:
             """Test tool."""
             return {}
 
-        assert my_tool.input["properties"]["name"]["type"] == "string"
-        assert "name" in my_tool.input["required"]
+        assert my_tool.metadata["input"]["properties"]["name"]["type"] == "string"
+        assert "name" in my_tool.metadata["input"]["required"]
 
     def test_int_parameter(self):
         """Int type hint is converted to JSON Schema integer."""
@@ -92,7 +91,7 @@ class TestToolSchemaExtraction:
             """Test tool."""
             return {}
 
-        assert my_tool.input["properties"]["count"]["type"] == "integer"
+        assert my_tool.metadata["input"]["properties"]["count"]["type"] == "integer"
 
     def test_float_parameter(self):
         """Float type hint is converted to JSON Schema number."""
@@ -102,7 +101,7 @@ class TestToolSchemaExtraction:
             """Test tool."""
             return {}
 
-        assert my_tool.input["properties"]["value"]["type"] == "number"
+        assert my_tool.metadata["input"]["properties"]["value"]["type"] == "number"
 
     def test_bool_parameter(self):
         """Bool type hint is converted to JSON Schema boolean."""
@@ -112,7 +111,7 @@ class TestToolSchemaExtraction:
             """Test tool."""
             return {}
 
-        assert my_tool.input["properties"]["flag"]["type"] == "boolean"
+        assert my_tool.metadata["input"]["properties"]["flag"]["type"] == "boolean"
 
     def test_list_parameter(self):
         """List type hint is converted to JSON Schema array."""
@@ -122,7 +121,7 @@ class TestToolSchemaExtraction:
             """Test tool."""
             return {}
 
-        assert my_tool.input["properties"]["items"]["type"] == "array"
+        assert my_tool.metadata["input"]["properties"]["items"]["type"] == "array"
 
     def test_dict_parameter(self):
         """Dict type hint is converted to JSON Schema object."""
@@ -132,7 +131,7 @@ class TestToolSchemaExtraction:
             """Test tool."""
             return {}
 
-        assert my_tool.input["properties"]["data"]["type"] == "object"
+        assert my_tool.metadata["input"]["properties"]["data"]["type"] == "object"
 
     def test_required_parameter(self):
         """Parameters without defaults are required."""
@@ -142,7 +141,7 @@ class TestToolSchemaExtraction:
             """Test tool."""
             return {}
 
-        assert "required_param" in my_tool.input["required"]
+        assert "required_param" in my_tool.metadata["input"]["required"]
 
     def test_optional_parameter_with_default(self):
         """Parameters with defaults are not required."""
@@ -152,8 +151,8 @@ class TestToolSchemaExtraction:
             """Test tool."""
             return {}
 
-        assert "optional_param" not in my_tool.input["required"]
-        assert my_tool.input["properties"]["optional_param"]["default"] == "default"
+        assert "optional_param" not in my_tool.metadata["input"]["required"]
+        assert my_tool.metadata["input"]["properties"]["optional_param"]["default"] == "default"
 
     def test_mixed_parameters(self):
         """Mix of required and optional parameters."""
@@ -163,9 +162,9 @@ class TestToolSchemaExtraction:
             """Test tool."""
             return {}
 
-        assert "required" in my_tool.input["required"]
-        assert "optional" not in my_tool.input["required"]
-        assert my_tool.input["properties"]["optional"]["default"] == "default"
+        assert "required" in my_tool.metadata["input"]["required"]
+        assert "optional" not in my_tool.metadata["input"]["required"]
+        assert my_tool.metadata["input"]["properties"]["optional"]["default"] == "default"
 
     def test_multiple_parameters(self):
         """Multiple parameters are all extracted."""
@@ -175,10 +174,10 @@ class TestToolSchemaExtraction:
             """Test tool."""
             return {}
 
-        assert len(my_tool.input["properties"]) == 3
-        assert my_tool.input["properties"]["name"]["type"] == "string"
-        assert my_tool.input["properties"]["age"]["type"] == "integer"
-        assert my_tool.input["properties"]["active"]["type"] == "boolean"
+        assert len(my_tool.metadata["input"]["properties"]) == 3
+        assert my_tool.metadata["input"]["properties"]["name"]["type"] == "string"
+        assert my_tool.metadata["input"]["properties"]["age"]["type"] == "integer"
+        assert my_tool.metadata["input"]["properties"]["active"]["type"] == "boolean"
 
 
 class TestToolMetadata:
@@ -215,7 +214,6 @@ class TestToolMetadata:
 
         assert "output" in my_tool.metadata
         assert my_tool.metadata["output"]["type"] == "object"
-        assert my_tool.output == {"type": "object"}
 
     def test_metadata_output_with_specific_types(self):
         """Output schema correctly maps Python types to JSON Schema."""
@@ -249,7 +247,7 @@ class TestToolMetadata:
             """Test tool without return type."""
             return {"result": param}
 
-        assert my_tool.output == {"type": "string"}
+        assert my_tool.metadata["output"] == {"type": "string"}
 
 
 class TestPydanticOutputSchema:
@@ -266,7 +264,7 @@ class TestPydanticOutputSchema:
             """Greet someone."""
             return GreetOutput(message=f"Hello, {name}!")
 
-        output = greet.output
+        output = greet.metadata["output"]
         assert output is not None
         assert output["type"] == "object"
         assert "properties" in output
@@ -286,7 +284,7 @@ class TestPydanticOutputSchema:
             """Get weather."""
             return WeatherOutput(temp=72, condition="sunny")
 
-        output = get_weather.output
+        output = get_weather.metadata["output"]
         assert output["properties"]["temp"]["description"] == "Temperature in degrees"
         assert output["properties"]["condition"]["description"] == "Weather condition"
 
@@ -302,7 +300,7 @@ class TestPydanticOutputSchema:
             """Test tool."""
             return OutputWithOptional(required_field=param)
 
-        output = my_tool.output
+        output = my_tool.metadata["output"]
         assert "required_field" in output["required"]
         assert "optional_field" not in output["required"]
 
@@ -318,10 +316,10 @@ class TestPydanticOutputSchema:
             """Greet someone."""
             return GreetOutput(message=f"Hello, {name}!")
 
-        request = ToolCallRequest(input={"name": "World"})
+        request = ToolRequest(input={"name": "World"})
         response = await greet.call(request)
 
-        assert response.output.message == "Hello, World!"
+        assert response["output"].message == "Hello, World!"
 
 
 class TestTypedDictOutputSchema:
@@ -338,7 +336,7 @@ class TestTypedDictOutputSchema:
             """Greet someone."""
             return {"message": f"Hello, {name}!"}
 
-        output = greet.output
+        output = greet.metadata["output"]
         assert output is not None
         assert output["type"] == "object"
         assert "properties" in output
@@ -358,7 +356,7 @@ class TestTypedDictOutputSchema:
             """Get weather."""
             return {"temp": 72, "condition": "sunny", "location": location}
 
-        output = get_weather.output
+        output = get_weather.metadata["output"]
         assert len(output["properties"]) == 3
         assert output["properties"]["temp"]["type"] == "integer"
         assert output["properties"]["condition"]["type"] == "string"
@@ -376,10 +374,10 @@ class TestTypedDictOutputSchema:
             """Greet someone."""
             return {"message": f"Hello, {name}!"}
 
-        request = ToolCallRequest(input={"name": "World"})
+        request = ToolRequest(input={"name": "World"})
         response = await greet.call(request)
 
-        assert response.output == {"message": "Hello, World!"}
+        assert response["output"] == {"message": "Hello, World!"}
 
 
 class TestDocstringParsing:
@@ -398,7 +396,7 @@ class TestDocstringParsing:
             """
             return f"{greeting}, {name}!"
 
-        props = greet.input["properties"]
+        props = greet.metadata["input"]["properties"]
         assert props["name"]["description"] == "The name of the person to greet"
         assert props["greeting"]["description"] == "The greeting to use"
 
@@ -418,7 +416,7 @@ class TestDocstringParsing:
             """
             return a + b
 
-        props = calculate.input["properties"]
+        props = calculate.metadata["input"]["properties"]
         assert props["a"]["description"] == "First operand"
         assert props["b"]["description"] == "Second operand"
 
@@ -437,8 +435,8 @@ class TestDocstringParsing:
             """
             return f"Hello, {name}!"
 
-        assert greet.output is not None
-        assert greet.output["description"] == "A personalized greeting message"
+        assert greet.metadata["output"] is not None
+        assert greet.metadata["output"]["description"] == "A personalized greeting message"
 
     def test_docstring_without_args_section(self):
         """Tools work fine without Args section in docstring."""
@@ -449,7 +447,7 @@ class TestDocstringParsing:
             return param
 
         # Should not have description but should work
-        assert "description" not in simple_tool.input["properties"]["param"]
+        assert "description" not in simple_tool.metadata["input"]["properties"]["param"]
 
     def test_partial_docstring_args(self):
         """Only documented parameters get descriptions."""
@@ -464,7 +462,7 @@ class TestDocstringParsing:
             """
             return a + b + c
 
-        props = partial_docs.input["properties"]
+        props = partial_docs.metadata["input"]["properties"]
         assert props["a"]["description"] == "First parameter"
         assert "description" not in props["b"]
         assert props["c"]["description"] == "Third parameter"
@@ -482,10 +480,10 @@ class TestToolExecute:
             """Greet someone."""
             return {"message": f"Hello, {name}!"}
 
-        request = ToolCallRequest(input={"name": "World"})
+        request = ToolRequest(input={"name": "World"})
         response = await greet.call(request)
 
-        assert response.output == {"message": "Hello, World!"}
+        assert response["output"] == {"message": "Hello, World!"}
 
     @pytest.mark.asyncio
     async def test_execute_sync_function(self):
@@ -496,10 +494,10 @@ class TestToolExecute:
             """Add two numbers."""
             return a + b
 
-        request = ToolCallRequest(input={"a": 2, "b": 3})
+        request = ToolRequest(input={"a": 2, "b": 3})
         response = await add.call(request)
 
-        assert response.output == 5
+        assert response["output"] == 5
 
     @pytest.mark.asyncio
     async def test_execute_with_default_values(self):
@@ -510,10 +508,10 @@ class TestToolExecute:
             """Greet someone."""
             return f"{greeting}, {name}!"
 
-        request = ToolCallRequest(input={"name": "World"})
+        request = ToolRequest(input={"name": "World"})
         response = await greet.call(request)
 
-        assert response.output == "Hello, World!"
+        assert response["output"] == "Hello, World!"
 
     @pytest.mark.asyncio
     async def test_execute_override_default_values(self):
@@ -524,10 +522,10 @@ class TestToolExecute:
             """Greet someone."""
             return f"{greeting}, {name}!"
 
-        request = ToolCallRequest(input={"name": "World", "greeting": "Hi"})
+        request = ToolRequest(input={"name": "World", "greeting": "Hi"})
         response = await greet.call(request)
 
-        assert response.output == "Hi, World!"
+        assert response["output"] == "Hi, World!"
 
     @pytest.mark.asyncio
     async def test_execute_with_context(self):
@@ -539,10 +537,10 @@ class TestToolExecute:
             user_id = (context or {}).get("user_id", "anonymous")
             return {"param": param, "user_id": user_id}
 
-        request = ToolCallRequest(input={"param": "test"}, context={"user_id": "123"})
+        request = ToolRequest(input={"param": "test"}, context={"user_id": "123"})
         response = await my_tool.call(request)
 
-        assert response.output == {"param": "test", "user_id": "123"}
+        assert response["output"] == {"param": "test", "user_id": "123"}
 
     @pytest.mark.asyncio
     async def test_execute_context_optional(self):
@@ -552,9 +550,9 @@ class TestToolExecute:
         async def my_tool(x: str, context: dict | None = None) -> dict:
             return {"x": x, "user": (context or {}).get("user", "anonymous")}
 
-        request = ToolCallRequest(input={"x": "hi"})
+        request = ToolRequest(input={"x": "hi"})
         response = await my_tool.call(request)
-        assert response.output == {"x": "hi", "user": "anonymous"}
+        assert response["output"] == {"x": "hi", "user": "anonymous"}
 
     @pytest.mark.asyncio
     async def test_execute_without_context_param_ignores_context(self):
@@ -564,9 +562,9 @@ class TestToolExecute:
         async def my_tool(param: str) -> dict:
             return {"param": param}
 
-        request = ToolCallRequest(input={"param": "test"}, context={"user_id": "123"})
+        request = ToolRequest(input={"param": "test"}, context={"user_id": "123"})
         response = await my_tool.call(request)
-        assert response.output == {"param": "test"}
+        assert response["output"] == {"param": "test"}
 
 
 class TestToolErrorHandling:
@@ -581,7 +579,7 @@ class TestToolErrorHandling:
             """A tool that fails."""
             raise ValueError("Something went wrong")
 
-        request = ToolCallRequest(input={"param": "test"})
+        request = ToolRequest(input={"param": "test"})
         with pytest.raises(ValueError, match="Something went wrong"):
             await failing_tool.call(request)
 
@@ -594,25 +592,21 @@ class TestToolErrorHandling:
             """Test tool."""
             return {"result": required_param}
 
-        request = ToolCallRequest(input={})
+        request = ToolRequest(input={})
         with pytest.raises(TypeError, match="required_param"):
             await my_tool.call(request)
 
 
-class TestToolBase:
-    """Tests for ToolBase abstract class."""
+class TestToolLikeProtocol:
+    """Tests for ToolLike protocol conformance."""
 
-    def test_tool_inherits_from_toolbase(self):
-        """Tool class inherits from ToolBase."""
+    def test_tool_conforms_to_protocol(self):
+        """Tool created by @tool decorator conforms to ToolLike."""
+        from reminix_runtime import ToolLike
 
         @tool
         async def my_tool(param: str) -> dict:
             """Test tool."""
             return {}
 
-        assert isinstance(my_tool, ToolBase)
-
-    def test_toolbase_is_abstract(self):
-        """ToolBase cannot be instantiated directly."""
-        with pytest.raises(TypeError):
-            ToolBase()
+        assert isinstance(my_tool, ToolLike)

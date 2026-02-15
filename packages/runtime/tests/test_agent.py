@@ -1,180 +1,128 @@
-"""Tests for the decorator-based Agent class and agent decorators."""
+"""Tests for the RuntimeAgent class and @agent decorator."""
 
 import pytest
 
 from reminix_runtime import (
-    Agent,
-    AgentInvokeRequest,
-    AgentInvokeResponse,
+    AgentLike,
+    AgentRequest,
+    RuntimeAgent,
     agent,
 )
 
-
-class TestAgentCreation:
-    """Tests for Agent instantiation."""
-
-    def test_agent_can_be_instantiated(self):
-        """Agent is concrete and can be instantiated directly."""
-        test_agent = Agent("my-agent")
-        assert test_agent.name == "my-agent"
-
-    def test_agent_with_metadata(self):
-        """Agent can be created with custom metadata."""
-        test_agent = Agent("my-agent", metadata={"version": "1.0", "author": "test"})
-        assert test_agent.metadata["version"] == "1.0"
-        assert test_agent.metadata["author"] == "test"
-
-    def test_agent_default_metadata(self):
-        """Agent has default metadata with capabilities, input, and output."""
-        test_agent = Agent("my-agent")
-        assert test_agent.metadata["capabilities"]["streaming"] is False
-        assert test_agent.metadata["input"]["properties"]["prompt"]["type"] == "string"
-        assert test_agent.metadata["output"]["type"] == "string"
+# =============================================================================
+# Tests for RuntimeAgent
+# =============================================================================
 
 
-class TestAgentHandlerRegistration:
-    """Tests for handler registration with decorators."""
+class TestRuntimeAgentCreation:
+    """Tests for RuntimeAgent instantiation."""
 
-    def test_handler_registers_handler(self):
-        """handler decorator registers the handler."""
-        test_agent = Agent("test-agent")
+    def test_runtime_agent_has_name(self):
+        """RuntimeAgent stores its name."""
 
-        @test_agent.handler
-        async def handle_invoke(request: AgentInvokeRequest) -> AgentInvokeResponse:
-            return AgentInvokeResponse(output="test")
+        async def _invoke(request: AgentRequest) -> dict:
+            return {"output": "test"}
 
-        # Handler should be registered
-        assert test_agent._invoke_handler is not None
+        a = RuntimeAgent(
+            name="my-agent",
+            metadata={"capabilities": {"streaming": False}, "input": {}, "output": {}},
+            invoke_fn=_invoke,
+        )
+        assert a.name == "my-agent"
 
-    def test_stream_handler_registers_handler(self):
-        """stream_handler decorator registers the handler."""
-        test_agent = Agent("test-agent")
+    def test_runtime_agent_has_metadata(self):
+        """RuntimeAgent stores its metadata."""
 
-        @test_agent.stream_handler
-        async def handle_stream(request: AgentInvokeRequest):
-            yield "test"
+        async def _invoke(request: AgentRequest) -> dict:
+            return {"output": "test"}
 
-        # Handler should be registered
-        assert test_agent._invoke_stream_handler is not None
+        metadata = {
+            "capabilities": {"streaming": False},
+            "input": {"type": "object"},
+            "output": {"type": "string"},
+        }
+        a = RuntimeAgent(name="my-agent", metadata=metadata, invoke_fn=_invoke)
+        assert a.metadata["capabilities"]["streaming"] is False
+        assert a.metadata["input"]["type"] == "object"
 
-    def test_decorator_returns_original_function(self):
-        """Decorator returns the original function for reuse."""
-        test_agent = Agent("test-agent")
+    def test_runtime_agent_conforms_to_agent_like(self):
+        """RuntimeAgent conforms to the AgentLike protocol."""
 
-        @test_agent.handler
-        async def handle_invoke(request: AgentInvokeRequest) -> AgentInvokeResponse:
-            return AgentInvokeResponse(output="test")
+        async def _invoke(request: AgentRequest) -> dict:
+            return {"output": "test"}
 
-        # The decorated function should be returned
-        assert handle_invoke is not None
-        assert callable(handle_invoke)
-
-
-class TestAgentStreamingFlags:
-    """Tests for streaming capability detection."""
-
-    def test_streaming_false_by_default(self):
-        """streaming is False when no stream handler is registered."""
-        test_agent = Agent("test-agent")
-        assert test_agent.metadata["capabilities"]["streaming"] is False
-
-    def test_streaming_true_when_handler_registered(self):
-        """streaming is True when stream handler is registered."""
-        test_agent = Agent("test-agent")
-
-        @test_agent.stream_handler
-        async def handle_stream(request: AgentInvokeRequest):
-            yield "test"
-
-        assert test_agent.metadata["capabilities"]["streaming"] is True
+        a = RuntimeAgent(
+            name="my-agent",
+            metadata={"capabilities": {"streaming": False}, "input": {}, "output": {}},
+            invoke_fn=_invoke,
+        )
+        assert isinstance(a, AgentLike)
 
 
-class TestAgentInvoke:
-    """Tests for invoke functionality."""
+class TestRuntimeAgentInvoke:
+    """Tests for RuntimeAgent invoke functionality."""
 
     @pytest.mark.asyncio
-    async def test_invoke_calls_registered_handler(self):
-        """invoke calls the registered handler."""
-        test_agent = Agent("test-agent")
+    async def test_invoke_calls_provided_function(self):
+        """invoke() delegates to the provided invoke function."""
 
-        @test_agent.handler
-        async def handle_invoke(request: AgentInvokeRequest) -> AgentInvokeResponse:
+        async def _invoke(request: AgentRequest) -> dict:
             task = request.input.get("task", "unknown")
             return {"output": f"Completed: {task}"}
 
-        request = AgentInvokeRequest(input={"task": "summarize"})
-        response = await test_agent.invoke(request)
+        a = RuntimeAgent(
+            name="test-agent",
+            metadata={"capabilities": {"streaming": False}, "input": {}, "output": {}},
+            invoke_fn=_invoke,
+        )
+        request = AgentRequest(input={"task": "summarize"})
+        response = await a.invoke(request)
 
         assert response["output"] == "Completed: summarize"
 
     @pytest.mark.asyncio
-    async def test_invoke_without_handler_raises(self):
-        """invoke raises NotImplementedError when no handler is registered."""
-        test_agent = Agent("test-agent")
-        request = AgentInvokeRequest(input={"task": "test"})
+    async def test_invoke_stream_calls_provided_function(self):
+        """invoke_stream() delegates to the provided stream function."""
 
-        with pytest.raises(NotImplementedError) as exc_info:
-            await test_agent.invoke(request)
+        async def _invoke(request: AgentRequest) -> dict:
+            return {"output": "test"}
 
-        assert "No invoke handler registered" in str(exc_info.value)
-        assert "test-agent" in str(exc_info.value)
-
-
-class TestAgentInvokeStream:
-    """Tests for streaming invoke functionality."""
-
-    @pytest.mark.asyncio
-    async def test_invoke_stream_calls_registered_handler(self):
-        """invoke_stream calls the registered handler."""
-        test_agent = Agent("test-agent")
-
-        @test_agent.stream_handler
-        async def handle_stream(request: AgentInvokeRequest):
+        async def _stream(request: AgentRequest):
             yield "Hello"
             yield " world"
 
-        request = AgentInvokeRequest(input={"task": "test"})
+        a = RuntimeAgent(
+            name="test-agent",
+            metadata={"capabilities": {"streaming": True}, "input": {}, "output": {}},
+            invoke_fn=_invoke,
+            invoke_stream_fn=_stream,
+        )
+        request = AgentRequest(input={"task": "test"})
         chunks = []
-        async for chunk in test_agent.invoke_stream(request):
+        async for chunk in a.invoke_stream(request):
             chunks.append(chunk)
 
         assert chunks == ["Hello", " world"]
 
     @pytest.mark.asyncio
-    async def test_invoke_stream_without_handler_raises(self):
-        """invoke_stream raises NotImplementedError when no handler is registered."""
-        test_agent = Agent("test-agent")
-        request = AgentInvokeRequest(input={"task": "test"})
+    async def test_invoke_stream_without_function_raises(self):
+        """invoke_stream() raises NotImplementedError when no stream function provided."""
+
+        async def _invoke(request: AgentRequest) -> dict:
+            return {"output": "test"}
+
+        a = RuntimeAgent(
+            name="test-agent",
+            metadata={"capabilities": {"streaming": False}, "input": {}, "output": {}},
+            invoke_fn=_invoke,
+        )
+        request = AgentRequest(input={"task": "test"})
 
         with pytest.raises(NotImplementedError) as exc_info:
-            async for _ in test_agent.invoke_stream(request):
+            async for _ in a.invoke_stream(request):
                 pass
 
-        assert "No streaming invoke handler registered" in str(exc_info.value)
         assert "test-agent" in str(exc_info.value)
-
-
-class TestAgentWithContext:
-    """Tests for context handling."""
-
-    @pytest.mark.asyncio
-    async def test_invoke_handler_receives_context(self):
-        """invoke handler receives context from request."""
-        test_agent = Agent("test-agent")
-        received_context = None
-
-        @test_agent.handler
-        async def handle_invoke(request: AgentInvokeRequest) -> AgentInvokeResponse:
-            nonlocal received_context
-            received_context = request.context
-            return AgentInvokeResponse(output="done")
-
-        request = AgentInvokeRequest(
-            input={"task": "test"}, context={"user_id": "123", "session": "abc"}
-        )
-        await test_agent.invoke(request)
-
-        assert received_context == {"user_id": "123", "session": "abc"}
 
 
 # =============================================================================
@@ -185,15 +133,15 @@ class TestAgentWithContext:
 class TestAgentDecorator:
     """Tests for the @agent decorator."""
 
-    def test_agent_decorator_creates_agent(self):
-        """@agent decorator creates an Agent instance."""
+    def test_agent_decorator_creates_runtime_agent(self):
+        """@agent decorator creates a RuntimeAgent instance."""
 
         @agent
         async def calculator(a: float, b: float) -> float:
             """Add two numbers."""
             return a + b
 
-        assert isinstance(calculator, Agent)
+        assert isinstance(calculator, RuntimeAgent)
         assert calculator.name == "calculator"
 
     def test_agent_decorator_with_custom_name(self):
@@ -252,7 +200,6 @@ class TestAgentDecorator:
 
         output = calculator.metadata.get("output")
         assert output is not None
-        # Default output is string for simple return types wrapped
 
     def test_agent_decorator_default_output(self):
         """@agent decorator has default output schema."""
@@ -273,7 +220,7 @@ class TestAgentDecorator:
             """Add two numbers."""
             return a + b
 
-        request = AgentInvokeRequest(input={"a": 3, "b": 4})
+        request = AgentRequest(input={"a": 3, "b": 4})
         response = await calculator.invoke(request)
 
         assert response["output"] == 7.0
@@ -287,7 +234,7 @@ class TestAgentDecorator:
             """Add two numbers."""
             return a + b
 
-        request = AgentInvokeRequest(input={"a": 5, "b": 3})
+        request = AgentRequest(input={"a": 5, "b": 3})
         response = await calculator.invoke(request)
 
         assert response["output"] == 8.0
@@ -305,7 +252,7 @@ class TestAgentDecorator:
         # Test streaming
         assert streamer.metadata["capabilities"]["streaming"] is True
 
-        request = AgentInvokeRequest(input={"text": "hello world"})
+        request = AgentRequest(input={"text": "hello world"})
         chunks = []
         async for chunk in streamer.invoke_stream(request):
             chunks.append(chunk)
@@ -322,7 +269,7 @@ class TestAgentDecorator:
             for word in text.split():
                 yield word + " "
 
-        request = AgentInvokeRequest(input={"text": "hello world"})
+        request = AgentRequest(input={"text": "hello world"})
         response = await streamer.invoke(request)
 
         assert response["output"] == "hello world "
@@ -337,7 +284,7 @@ class TestAgentDecorator:
             user = (context or {}).get("user_id", "anonymous")
             return f"{user}: {prompt}"
 
-        request = AgentInvokeRequest(
+        request = AgentRequest(
             input={"prompt": "hello"},
             context={"user_id": "u-123", "tenant": "acme"},
         )
@@ -353,7 +300,7 @@ class TestAgentDecorator:
             user = (context or {}).get("user_id", "anonymous")
             return f"{user}: {prompt}"
 
-        request = AgentInvokeRequest(input={"prompt": "hi"})
+        request = AgentRequest(input={"prompt": "hi"})
         response = await with_context.invoke(request)
         assert response["output"] == "anonymous: hi"
 
@@ -368,7 +315,7 @@ class TestAgentDecorator:
             for word in text.split():
                 yield prefix + word + " "
 
-        request = AgentInvokeRequest(
+        request = AgentRequest(
             input={"text": "a b"},
             context={"prefix": ">"},
         )
@@ -401,7 +348,7 @@ class TestAgentTemplates:
         async def echo(prompt: str):
             return f"You said: {prompt}"
 
-        request = AgentInvokeRequest(input={"prompt": "hello"})
+        request = AgentRequest(input={"prompt": "hello"})
         response = await echo.invoke(request)
         assert response["output"] == "You said: hello"
 
@@ -426,7 +373,7 @@ class TestAgentTemplates:
             last = messages[-1] if messages else {}
             return f"Reply to: {last.get('content', '')}"
 
-        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
+        request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
         response = await chat_handler.invoke(request)
         assert response["output"] == "Reply to: Hi"
 
@@ -451,7 +398,7 @@ class TestAgentTemplates:
         async def task_handler(task: str, text: str | None = None):
             return f'Task "{task}" on: {text or "—"}'
 
-        request = AgentInvokeRequest(input={"task": "summarize", "text": "Some content"})
+        request = AgentRequest(input={"task": "summarize", "text": "Some content"})
         response = await task_handler.invoke(request)
         assert response["output"] == 'Task "summarize" on: Some content'
 
@@ -502,7 +449,7 @@ class TestAgentTemplates:
                 "result": {"summary": f"Ran {len(executed)} steps for: {task}"},
             }
 
-        request = AgentInvokeRequest(
+        request = AgentRequest(
             input={
                 "task": "process-data",
                 "steps": [{"name": "fetch"}, {"name": "transform"}],
@@ -549,7 +496,7 @@ class TestAgentTemplates:
         async def rag_handler(query: str):
             return f"Answer for: {query}"
 
-        request = AgentInvokeRequest(input={"query": "What is X?"})
+        request = AgentRequest(input={"query": "What is X?"})
         response = await rag_handler.invoke(request)
         assert response["output"] == "Answer for: What is X?"
 
@@ -577,7 +524,7 @@ class TestAgentTemplates:
                 {"role": "assistant", "content": f"Reply: {last.get('content', '')}"}
             ]
 
-        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
+        request = AgentRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
         response = await thread_handler.invoke(request)
         output = response["output"]
         assert isinstance(output, list)

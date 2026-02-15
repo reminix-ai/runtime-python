@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from reminix_anthropic import AnthropicAgentAdapter, serve_agent, wrap_agent
-from reminix_runtime import AgentAdapter, AgentInvokeRequest
+from reminix_runtime import AgentRequest
 
 
 class TestWrap:
@@ -17,7 +17,6 @@ class TestWrap:
         adapter = wrap_agent(mock_client)
 
         assert isinstance(adapter, AnthropicAgentAdapter)
-        assert isinstance(adapter, AgentAdapter)
 
     def test_wrap_with_custom_name(self):
         """wrap_agent() should accept a custom name."""
@@ -54,7 +53,7 @@ class TestAnthropicAgentAdapterInvoke:
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = AgentInvokeRequest(input={"prompt": "Hi"})
+        request = AgentRequest(input={"prompt": "Hi"})
 
         response = await adapter.invoke(request)
 
@@ -69,7 +68,7 @@ class TestAnthropicAgentAdapterInvoke:
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = AgentInvokeRequest(input={"prompt": "Hi"})
+        request = AgentRequest(input={"prompt": "Hi"})
 
         response = await adapter.invoke(request)
 
@@ -84,7 +83,7 @@ class TestAnthropicAgentAdapterInvoke:
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = AgentInvokeRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
+        request = AgentRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
         response = await adapter.invoke(request)
 
@@ -99,7 +98,7 @@ class TestAnthropicAgentAdapterInvoke:
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
         adapter = wrap_agent(mock_client)
-        request = AgentInvokeRequest(
+        request = AgentRequest(
             input={
                 "messages": [
                     {"role": "system", "content": "You are helpful"},

@@ -5,13 +5,13 @@ from .content import build_messages_from_input, message_content_to_text
 from .schemas import (
     ADAPTER_INPUT,
     AGENT_TEMPLATES,
-    AgentTemplate,
     CONTENT_PART_SCHEMA,
     DEFAULT_AGENT_INPUT,
     DEFAULT_AGENT_OUTPUT,
     DEFAULT_AGENT_TEMPLATE,
     MESSAGE_SCHEMA,
     TOOL_CALL_SCHEMA,
+    AgentTemplate,
 )
 from .server import create_app, serve
 from .tool import Tool, ToolLike, tool
