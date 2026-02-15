@@ -1,3 +1,3 @@
-from .agent_adapter import LlamaIndexRagAgent
+from .rag_agent import LlamaIndexRagAgent
 
 __all__ = ["LlamaIndexRagAgent"]

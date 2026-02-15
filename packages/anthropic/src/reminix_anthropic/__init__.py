@@ -1,3 +1,3 @@
-from .agent_adapter import AnthropicChatAgent
+from .chat_agent import AnthropicChatAgent
 
 __all__ = ["AnthropicChatAgent"]
