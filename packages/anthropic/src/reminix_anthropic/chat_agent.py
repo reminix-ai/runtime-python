@@ -21,14 +21,19 @@ class AnthropicChatAgent:
     def __init__(
         self,
         client: AsyncAnthropic,
+        *,
         name: str = "anthropic-agent",
         model: str = "claude-sonnet-4-20250514",
         max_tokens: int = 4096,
+        description: str | None = None,
+        instructions: str | None = None,
     ) -> None:
         self._client = client
         self._name = name
         self._model = model
         self._max_tokens = max_tokens
+        self._description = description or "anthropic chat agent"
+        self._instructions = instructions
 
     @property
     def name(self) -> str:
@@ -41,7 +46,7 @@ class AnthropicChatAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "anthropic chat agent",
+            "description": self._description,
             "capabilities": {"streaming": True},
             "input": AGENT_TYPES["chat"]["input"],
             "output": AGENT_TYPES["chat"]["output"],
@@ -75,6 +80,10 @@ class AnthropicChatAgent:
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
         system_message, anthropic_messages = self._extract_system_and_messages(messages)
+        if self._instructions:
+            system_message = self._instructions + (
+                "\n\n" + system_message if system_message else ""
+            )
 
         kwargs: dict[str, Any] = {
             "model": self._model,
@@ -91,6 +100,10 @@ class AnthropicChatAgent:
     async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
         messages = build_messages_from_input(request)
         system_message, anthropic_messages = self._extract_system_and_messages(messages)
+        if self._instructions:
+            system_message = self._instructions + (
+                "\n\n" + system_message if system_message else ""
+            )
 
         kwargs: dict[str, Any] = {
             "model": self._model,

@@ -15,13 +15,18 @@ class OpenAITaskAgent:
         self,
         client: AsyncOpenAI,
         output_schema: dict[str, Any],
+        *,
         name: str = "openai-task-agent",
         model: str = "gpt-4o-mini",
+        description: str | None = None,
+        instructions: str | None = None,
     ) -> None:
         self._client = client
         self._output_schema = output_schema
         self._name = name
         self._model = model
+        self._description = description or "openai task agent"
+        self._instructions = instructions
 
     @property
     def name(self) -> str:
@@ -34,7 +39,7 @@ class OpenAITaskAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "openai task agent",
+            "description": self._description,
             "capabilities": {"streaming": False},
             "input": AGENT_TYPES["task"]["input"],
             "output": AGENT_TYPES["task"]["output"],
@@ -51,9 +56,13 @@ class OpenAITaskAgent:
         if extra:
             prompt += f"\n\nContext:\n{json.dumps(extra, indent=2)}"
 
+        messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
+        if self._instructions:
+            messages.insert(0, {"role": "system", "content": self._instructions})
+
         response = await self._client.chat.completions.create(
             model=self._model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,  # type: ignore
             response_format={
                 "type": "json_schema",
                 "json_schema": {

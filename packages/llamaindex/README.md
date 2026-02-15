@@ -31,7 +31,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `LlamaIndexRagAgent(engine, name)`
+### `LlamaIndexRagAgent(engine, *, name, description, instructions)`
 
 Create a LlamaIndex RAG agent.
 
@@ -39,6 +39,8 @@ Create a LlamaIndex RAG agent.
 |-----------|------|---------|-------------|
 | `engine` | `BaseChatEngine` | required | A LlamaIndex chat engine |
 | `name` | `str` | `"llamaindex-agent"` | Name for the agent (used in URL path) |
+| `description` | `str` | `"llamaindex rag agent"` | Description shown in agent metadata |
+| `instructions` | `str` | `None` | Instructions prepended to query string |
 
 **Returns:** `LlamaIndexRagAgent` - A Reminix agent instance
 

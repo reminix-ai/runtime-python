@@ -47,9 +47,18 @@ def to_langchain_message(message: Message) -> BaseMessage:
 class LangChainChatAgent:
     """LangChain chat agent for agents and runnables."""
 
-    def __init__(self, agent: Runnable, name: str = "langchain-agent") -> None:
+    def __init__(
+        self,
+        agent: Runnable,
+        *,
+        name: str = "langchain-agent",
+        description: str | None = None,
+        instructions: str | None = None,
+    ) -> None:
         self._agent = agent
         self._name = name
+        self._description = description or "langchain chat agent"
+        self._instructions = instructions
 
     @property
     def name(self) -> str:
@@ -58,7 +67,7 @@ class LangChainChatAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "langchain chat agent",
+            "description": self._description,
             "capabilities": {"streaming": True},
             "input": AGENT_TYPES["chat"]["input"],
             "output": AGENT_TYPES["chat"]["output"],
@@ -72,7 +81,10 @@ class LangChainChatAgent:
 
         # If input had messages, convert to LangChain format
         if "messages" in request.input:
-            return [to_langchain_message(m) for m in messages]
+            lc_messages = [to_langchain_message(m) for m in messages]
+            if self._instructions:
+                lc_messages.insert(0, SystemMessage(content=self._instructions))
+            return lc_messages
         elif "prompt" in request.input:
             return request.input["prompt"]
         else:

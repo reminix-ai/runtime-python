@@ -24,9 +24,18 @@ class ChatEngine(Protocol):
 class LlamaIndexRagAgent:
     """LlamaIndex RAG agent for chat engines."""
 
-    def __init__(self, engine: ChatEngine, name: str = "llamaindex-agent") -> None:
+    def __init__(
+        self,
+        engine: ChatEngine,
+        *,
+        name: str = "llamaindex-agent",
+        description: str | None = None,
+        instructions: str | None = None,
+    ) -> None:
         self._engine = engine
         self._name = name
+        self._description = description or "llamaindex rag agent"
+        self._instructions = instructions
 
     @property
     def name(self) -> str:
@@ -35,7 +44,7 @@ class LlamaIndexRagAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "llamaindex rag agent",
+            "description": self._description,
             "capabilities": {"streaming": True},
             "input": AGENT_TYPES["rag"]["input"],
             "output": {"type": "string"},
@@ -66,12 +75,16 @@ class LlamaIndexRagAgent:
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         query = self._extract_query(request)
+        if self._instructions:
+            query = f"{self._instructions}\n\n{query}"
         response = await self._engine.achat(query)
         output = str(response.response) if hasattr(response, "response") else str(response)
         return {"output": output}
 
     async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
         query = self._extract_query(request)
+        if self._instructions:
+            query = f"{self._instructions}\n\n{query}"
         response = await self._engine.astream_chat(query)
         async for token in response.async_response_gen():
             yield json.dumps({"chunk": token})

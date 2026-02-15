@@ -44,7 +44,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `LangGraphThreadAgent(graph, name)`
+### `LangGraphThreadAgent(graph, *, name, description, instructions)`
 
 Create a LangGraph thread agent for chat-style interactions.
 
@@ -52,16 +52,19 @@ Create a LangGraph thread agent for chat-style interactions.
 |-----------|------|---------|-------------|
 | `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
 | `name` | `str` | `"langgraph-agent"` | Name for the agent (used in URL path) |
+| `description` | `str` | `"langgraph thread agent"` | Description shown in agent metadata |
+| `instructions` | `str` | `None` | System instructions prepended to messages |
 
 **Returns:** `LangGraphThreadAgent` - A Reminix thread agent instance
 
 The thread agent:
 1. Converts incoming messages to LangChain message format
-2. Invokes the graph with `{"messages": [...]}`
-3. Extracts the last AI message from the response
-4. Returns it in the Reminix response format
+2. Prepends a `SystemMessage` if `instructions` is set
+3. Invokes the graph with `{"messages": [...]}`
+4. Extracts the last AI message from the response
+5. Returns it in the Reminix response format
 
-### `LangGraphWorkflowAgent(graph, name)`
+### `LangGraphWorkflowAgent(graph, *, name, description, instructions)`
 
 Create a LangGraph workflow agent for multi-step execution with interrupt/resume support.
 
@@ -69,6 +72,8 @@ Create a LangGraph workflow agent for multi-step execution with interrupt/resume
 |-----------|------|---------|-------------|
 | `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
 | `name` | `str` | `"langgraph-workflow-agent"` | Name for the agent (used in URL path) |
+| `description` | `str` | `"langgraph workflow agent"` | Description shown in agent metadata |
+| `instructions` | `str` | `None` | Stored in metadata (not injected into graph execution) |
 
 **Returns:** `LangGraphWorkflowAgent` - A Reminix workflow agent instance
 

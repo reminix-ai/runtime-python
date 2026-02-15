@@ -24,9 +24,12 @@ class OpenAIThreadAgent:
         self,
         client: AsyncOpenAI,
         tools: list[ToolLike],
+        *,
         name: str = "openai-thread-agent",
         model: str = "gpt-4o-mini",
         max_turns: int = 10,
+        description: str | None = None,
+        instructions: str | None = None,
     ) -> None:
         self._client = client
         self._tools = {t.name: t for t in tools}
@@ -34,6 +37,8 @@ class OpenAIThreadAgent:
         self._name = name
         self._model = model
         self._max_turns = max_turns
+        self._description = description or "openai thread agent"
+        self._instructions = instructions
 
     @property
     def name(self) -> str:
@@ -46,7 +51,7 @@ class OpenAIThreadAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "openai thread agent",
+            "description": self._description,
             "capabilities": {"streaming": False},
             "input": AGENT_TYPES["thread"]["input"],
             "output": AGENT_TYPES["thread"]["output"],
@@ -104,6 +109,8 @@ class OpenAIThreadAgent:
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
         openai_messages = [self._to_openai_message(m) for m in messages]
+        if self._instructions:
+            openai_messages.insert(0, {"role": "system", "content": self._instructions})
 
         for _ in range(self._max_turns):
             response = await self._client.chat.completions.create(

@@ -75,21 +75,23 @@ Your agents are now available at:
 
 ## API Reference
 
-### `OpenAIChatAgent(client, name, model)`
+### `OpenAIChatAgent(client, *, name, model, description, instructions)`
 
-Create an OpenAI chat agent. Follows the chat template and supports streaming.
+Create an OpenAI chat agent. Follows the chat type and supports streaming.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `client` | `AsyncOpenAI` | required | An OpenAI async client |
 | `name` | `str` | `"openai-agent"` | Name for the agent (used in URL path) |
 | `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
+| `description` | `str` | `"openai chat agent"` | Description shown in agent metadata |
+| `instructions` | `str` | `None` | System instructions prepended to messages |
 
 **Returns:** `OpenAIChatAgent` - A Reminix chat agent instance
 
-### `OpenAITaskAgent(client, output_schema, name, model)`
+### `OpenAITaskAgent(client, output_schema, *, name, model, description, instructions)`
 
-Create an OpenAI task agent. Follows the task template and returns structured output. Streaming is not supported.
+Create an OpenAI task agent. Follows the task type and returns structured output. Streaming is not supported.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -97,12 +99,14 @@ Create an OpenAI task agent. Follows the task template and returns structured ou
 | `output_schema` | `type[BaseModel]` | required | A Pydantic model defining the structured output |
 | `name` | `str` | `"openai-task-agent"` | Name for the agent (used in URL path) |
 | `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
+| `description` | `str` | `"openai task agent"` | Description shown in agent metadata |
+| `instructions` | `str` | `None` | System instructions prepended to messages |
 
 **Returns:** `OpenAITaskAgent` - A Reminix task agent instance
 
-### `OpenAIThreadAgent(client, tools, name, model, max_turns)`
+### `OpenAIThreadAgent(client, tools, *, name, model, max_turns, description, instructions)`
 
-Create an OpenAI thread agent. Follows the thread template and supports tool use over multiple turns. Streaming is not supported.
+Create an OpenAI thread agent. Follows the thread type and supports tool use over multiple turns. Streaming is not supported.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -111,6 +115,8 @@ Create an OpenAI thread agent. Follows the thread template and supports tool use
 | `name` | `str` | `"openai-thread-agent"` | Name for the agent (used in URL path) |
 | `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
 | `max_turns` | `int` | `10` | Maximum number of tool-use turns before stopping |
+| `description` | `str` | `"openai thread agent"` | Description shown in agent metadata |
+| `instructions` | `str` | `None` | System instructions prepended to messages |
 
 **Returns:** `OpenAIThreadAgent` - A Reminix thread agent instance
 

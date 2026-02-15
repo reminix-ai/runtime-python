@@ -24,10 +24,13 @@ class AnthropicThreadAgent:
         self,
         client: AsyncAnthropic,
         tools: list[ToolLike],
+        *,
         name: str = "anthropic-thread-agent",
         model: str = "claude-sonnet-4-20250514",
         max_tokens: int = 4096,
         max_turns: int = 10,
+        description: str | None = None,
+        instructions: str | None = None,
     ) -> None:
         self._client = client
         self._tools = {t.name: t for t in tools}
@@ -36,6 +39,8 @@ class AnthropicThreadAgent:
         self._model = model
         self._max_tokens = max_tokens
         self._max_turns = max_turns
+        self._description = description or "anthropic thread agent"
+        self._instructions = instructions
 
     @property
     def name(self) -> str:
@@ -48,7 +53,7 @@ class AnthropicThreadAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "anthropic thread agent",
+            "description": self._description,
             "capabilities": {"streaming": False},
             "input": AGENT_TYPES["thread"]["input"],
             "output": AGENT_TYPES["thread"]["output"],
@@ -110,6 +115,10 @@ class AnthropicThreadAgent:
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
         system_message, anthropic_messages = self._extract_system_and_messages(messages)
+        if self._instructions:
+            system_message = self._instructions + (
+                "\n\n" + system_message if system_message else ""
+            )
 
         for _ in range(self._max_turns):
             kwargs: dict[str, Any] = {

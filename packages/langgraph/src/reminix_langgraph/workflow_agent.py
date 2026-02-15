@@ -15,9 +15,18 @@ class LangGraphWorkflowAgent:
     to the workflow template's {status, steps, result, pendingAction} output schema.
     """
 
-    def __init__(self, graph: Any, name: str = "langgraph-workflow-agent") -> None:
+    def __init__(
+        self,
+        graph: Any,
+        *,
+        name: str = "langgraph-workflow-agent",
+        description: str | None = None,
+        instructions: str | None = None,
+    ) -> None:
         self._graph = graph
         self._name = name
+        self._description = description or "langgraph workflow agent"
+        self._instructions = instructions
 
     @property
     def name(self) -> str:
@@ -26,7 +35,7 @@ class LangGraphWorkflowAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "langgraph workflow agent",
+            "description": self._description,
             "capabilities": {"streaming": False},
             "input": AGENT_TYPES["workflow"]["input"],
             "output": AGENT_TYPES["workflow"]["output"],

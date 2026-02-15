@@ -67,7 +67,7 @@ Your agents are now available at:
 
 ## API Reference
 
-### `AnthropicChatAgent(client, name, model, max_tokens)`
+### `AnthropicChatAgent(client, *, name, model, max_tokens, description, instructions)`
 
 Create an Anthropic chat agent. Supports streaming.
 
@@ -77,16 +77,18 @@ Create an Anthropic chat agent. Supports streaming.
 | `name` | `str` | `"anthropic-agent"` | Name for the agent (used in URL path) |
 | `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
 | `max_tokens` | `int` | `4096` | Maximum tokens in response |
+| `description` | `str` | `"anthropic chat agent"` | Description shown in agent metadata |
+| `instructions` | `str` | `None` | System instructions merged with system messages |
 
 **Returns:** `AnthropicChatAgent` - A Reminix chat agent instance
 
 The chat agent:
 1. Converts incoming messages to Anthropic format
-2. Extracts system messages and passes them as the `system` parameter
+2. Extracts system messages and merges with `instructions` as the `system` parameter
 3. Returns the assistant's text response
 4. Supports streaming via Server-Sent Events
 
-### `AnthropicTaskAgent(client, output_schema, name, model, max_tokens)`
+### `AnthropicTaskAgent(client, output_schema, *, name, model, max_tokens, description, instructions)`
 
 Create an Anthropic task agent. Returns structured output via tool-use. Does not support streaming.
 
@@ -97,6 +99,8 @@ Create an Anthropic task agent. Returns structured output via tool-use. Does not
 | `name` | `str` | `"anthropic-task-agent"` | Name for the agent (used in URL path) |
 | `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
 | `max_tokens` | `int` | `4096` | Maximum tokens in response |
+| `description` | `str` | `"anthropic task agent"` | Description shown in agent metadata |
+| `instructions` | `str` | `None` | System instructions passed as `system` parameter |
 
 **Returns:** `AnthropicTaskAgent` - A Reminix task agent instance
 
@@ -106,7 +110,7 @@ The task agent:
 3. Forces a tool call using the provided `output_schema`
 4. Extracts and returns the structured result from the tool-use block
 
-### `AnthropicThreadAgent(client, tools, name, model, max_tokens, max_turns)`
+### `AnthropicThreadAgent(client, tools, *, name, model, max_tokens, max_turns, description, instructions)`
 
 Create an Anthropic thread agent with a tool-calling loop. Does not support streaming.
 
@@ -118,6 +122,8 @@ Create an Anthropic thread agent with a tool-calling loop. Does not support stre
 | `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
 | `max_tokens` | `int` | `4096` | Maximum tokens in response |
 | `max_turns` | `int` | `10` | Maximum number of tool-calling turns |
+| `description` | `str` | `"anthropic thread agent"` | Description shown in agent metadata |
+| `instructions` | `str` | `None` | System instructions merged with system messages |
 
 **Returns:** `AnthropicThreadAgent` - A Reminix thread agent instance
 

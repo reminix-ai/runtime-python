@@ -4,7 +4,7 @@ import json
 from collections.abc import AsyncIterator
 from typing import Any
 
-from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage, SystemMessage
 
 from reminix_langchain import to_langchain_message
 from reminix_runtime import (
@@ -17,9 +17,18 @@ from reminix_runtime import (
 class LangGraphThreadAgent:
     """LangGraph thread agent for compiled graphs."""
 
-    def __init__(self, graph: Any, name: str = "langgraph-agent") -> None:
+    def __init__(
+        self,
+        graph: Any,
+        *,
+        name: str = "langgraph-agent",
+        description: str | None = None,
+        instructions: str | None = None,
+    ) -> None:
         self._graph = graph
         self._name = name
+        self._description = description or "langgraph thread agent"
+        self._instructions = instructions
 
     @property
     def name(self) -> str:
@@ -28,7 +37,7 @@ class LangGraphThreadAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "langgraph thread agent",
+            "description": self._description,
             "capabilities": {"streaming": True},
             "input": AGENT_TYPES["thread"]["input"],
             "output": {"type": "string"},
@@ -48,6 +57,8 @@ class LangGraphThreadAgent:
         if "messages" in request.input:
             messages = build_messages_from_input(request)
             lc_messages = [to_langchain_message(m) for m in messages]
+            if self._instructions:
+                lc_messages.insert(0, SystemMessage(content=self._instructions))
             return {"messages": lc_messages}
         else:
             return request.input

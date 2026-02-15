@@ -21,12 +21,17 @@ class OpenAIChatAgent:
     def __init__(
         self,
         client: AsyncOpenAI,
+        *,
         name: str = "openai-agent",
         model: str = "gpt-4o-mini",
+        description: str | None = None,
+        instructions: str | None = None,
     ) -> None:
         self._client = client
         self._name = name
         self._model = model
+        self._description = description or "openai chat agent"
+        self._instructions = instructions
 
     @property
     def name(self) -> str:
@@ -39,7 +44,7 @@ class OpenAIChatAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "openai chat agent",
+            "description": self._description,
             "capabilities": {"streaming": True},
             "input": AGENT_TYPES["chat"]["input"],
             "output": AGENT_TYPES["chat"]["output"],
@@ -67,6 +72,8 @@ class OpenAIChatAgent:
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
         openai_messages = [self._to_openai_message(m) for m in messages]
+        if self._instructions:
+            openai_messages.insert(0, {"role": "system", "content": self._instructions})
 
         response = await self._client.chat.completions.create(
             model=self._model,
@@ -79,6 +86,8 @@ class OpenAIChatAgent:
     async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
         messages = build_messages_from_input(request)
         openai_messages = [self._to_openai_message(m) for m in messages]
+        if self._instructions:
+            openai_messages.insert(0, {"role": "system", "content": self._instructions})
 
         stream = await self._client.chat.completions.create(
             model=self._model,
