@@ -2,14 +2,11 @@
 
 import inspect
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import Any, Protocol, TypeVar, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from .schemas import AGENT_TEMPLATES, DEFAULT_AGENT_OUTPUT, AgentTemplate
 from .tool import _extract_schema_from_function
 from .types import AgentRequest
-
-F = TypeVar("F", bound=Callable[..., Any])
-
 
 # === AgentLike Protocol ===
 
