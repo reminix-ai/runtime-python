@@ -4,52 +4,52 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from reminix_openai import OpenAIChat
+from reminix_openai import OpenAIChatAgent
 from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
-class TestOpenAIChat:
-    """Tests for the OpenAIChat class."""
+class TestOpenAIChatAgent:
+    """Tests for the OpenAIChatAgent class."""
 
     def test_instantiation(self):
-        """OpenAIChat should be instantiable."""
+        """OpenAIChatAgent should be instantiable."""
         mock_client = MagicMock()
-        agent = OpenAIChat(mock_client)
+        agent = OpenAIChatAgent(mock_client)
 
-        assert isinstance(agent, OpenAIChat)
+        assert isinstance(agent, OpenAIChatAgent)
 
     def test_custom_name(self):
-        """OpenAIChat should accept a custom name."""
+        """OpenAIChatAgent should accept a custom name."""
         mock_client = MagicMock()
-        agent = OpenAIChat(mock_client, name="my-custom-agent")
+        agent = OpenAIChatAgent(mock_client, name="my-custom-agent")
 
         assert agent.name == "my-custom-agent"
 
     def test_custom_model(self):
-        """OpenAIChat should accept a custom model."""
+        """OpenAIChatAgent should accept a custom model."""
         mock_client = MagicMock()
-        agent = OpenAIChat(mock_client, model="gpt-4o")
+        agent = OpenAIChatAgent(mock_client, model="gpt-4o")
 
         assert agent.model == "gpt-4o"
 
     def test_default_values(self):
-        """OpenAIChat should use default values if not provided."""
+        """OpenAIChatAgent should use default values if not provided."""
         mock_client = MagicMock()
-        agent = OpenAIChat(mock_client)
+        agent = OpenAIChatAgent(mock_client)
 
         assert agent.name == "openai-agent"
         assert agent.model == "gpt-4o-mini"
 
     def test_chat_template_metadata(self):
-        """OpenAIChat should have chat template metadata."""
+        """OpenAIChatAgent should have chat template metadata."""
         mock_client = MagicMock()
-        agent = OpenAIChat(mock_client)
+        agent = OpenAIChatAgent(mock_client)
 
         assert agent.metadata["template"] == "chat"
         assert agent.metadata["input"] == AGENT_TEMPLATES["chat"]["input"]
 
 
-class TestOpenAIChatInvoke:
+class TestOpenAIChatAgentInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
@@ -60,7 +60,7 @@ class TestOpenAIChatInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="Hello!"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        agent = OpenAIChat(mock_client)
+        agent = OpenAIChatAgent(mock_client)
         request = AgentRequest(input={"prompt": "Hi"})
 
         await agent.invoke(request)
@@ -75,7 +75,7 @@ class TestOpenAIChatInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="Hello from OpenAI!"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        agent = OpenAIChat(mock_client)
+        agent = OpenAIChatAgent(mock_client)
         request = AgentRequest(input={"prompt": "Hi"})
 
         response = await agent.invoke(request)
@@ -90,7 +90,7 @@ class TestOpenAIChatInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        agent = OpenAIChat(mock_client)
+        agent = OpenAIChatAgent(mock_client)
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
         await agent.invoke(request)
@@ -107,7 +107,7 @@ class TestOpenAIChatInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        agent = OpenAIChat(mock_client, model="gpt-4o")
+        agent = OpenAIChatAgent(mock_client, model="gpt-4o")
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
         await agent.invoke(request)

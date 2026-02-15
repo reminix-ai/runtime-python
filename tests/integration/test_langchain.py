@@ -6,7 +6,7 @@ from httpx import ASGITransport
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 
-from reminix_langchain import LangChainChat
+from reminix_langchain import LangChainChatAgent
 from reminix_runtime import create_app
 
 
@@ -30,7 +30,7 @@ class TestLangChainAdapter:
     def agent(self, openai_api_key):
         llm = ChatOpenAI(model="gpt-4.1-nano", api_key=openai_api_key)
         llm_with_tools = llm.bind_tools([get_weather])
-        return LangChainChat(llm_with_tools, name="test-langchain")
+        return LangChainChatAgent(llm_with_tools, name="test-langchain")
 
     @pytest.fixture
     def app(self, agent):

@@ -38,7 +38,7 @@ from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from reminix_langgraph import LangGraphThread
+from reminix_langgraph import LangGraphThreadAgent
 from reminix_runtime import serve
 
 # Load environment variables from root .env file
@@ -63,7 +63,7 @@ llm = ChatOpenAI(model="gpt-4o-mini")
 graph = create_react_agent(llm, tools=[get_weather])
 
 # Create and serve the agent
-agent = LangGraphThread(graph, name="langgraph-tools")
+agent = LangGraphThreadAgent(graph, name="langgraph-tools")
 
 if __name__ == "__main__":
     print("Server running on http://localhost:8080")

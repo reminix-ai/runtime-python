@@ -65,12 +65,12 @@ curl -X POST http://localhost:8080/agents/llamaindex-rag/invoke \
 1. Define tools as Python functions
 2. Create a LlamaIndex ReAct agent using the workflow-based API
 3. Wrap it with a ChatEngineWrapper for compatibility
-4. Create a `LlamaIndexRag` agent and serve it with `reminix-runtime`
+4. Create a `LlamaIndexRagAgent` agent and serve it with `reminix-runtime`
 
 ```python
 from llama_index.core.agent.workflow import ReActAgent
 from llama_index.llms.openai import OpenAI
-from reminix_llamaindex import LlamaIndexRag
+from reminix_llamaindex import LlamaIndexRagAgent
 from reminix_runtime import serve
 
 def get_weather(city: str) -> str:
@@ -81,6 +81,6 @@ llm = OpenAI(model="gpt-4o-mini")
 react_agent = ReActAgent(tools=[get_weather], llm=llm)
 # Use ChatEngineWrapper to adapt the workflow agent
 engine = ChatEngineWrapper(react_agent)
-agent = LlamaIndexRag(engine, name="llamaindex-rag")
+agent = LlamaIndexRagAgent(engine, name="llamaindex-rag")
 serve(agents=[agent])
 ```

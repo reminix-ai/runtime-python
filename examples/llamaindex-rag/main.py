@@ -38,7 +38,7 @@ from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.workflow import Context
 from llama_index.llms.openai import OpenAI
 
-from reminix_llamaindex import LlamaIndexRag
+from reminix_llamaindex import LlamaIndexRagAgent
 from reminix_runtime import serve
 
 # Load environment variables from root .env file
@@ -80,7 +80,7 @@ react_agent = ReActAgent(tools=[get_weather], llm=llm)
 engine = ChatEngineWrapper(react_agent)
 
 # Create and serve the agent
-agent = LlamaIndexRag(engine, name="llamaindex-rag")
+agent = LlamaIndexRagAgent(engine, name="llamaindex-rag")
 
 if __name__ == "__main__":
     print("Server running on http://localhost:8080")

@@ -14,7 +14,7 @@ from reminix_runtime import (
 )
 
 
-class LangGraphThread:
+class LangGraphThreadAgent:
     """Thread agent adapter for LangGraph compiled graphs."""
 
     def __init__(self, graph: Any, name: str = "langgraph-agent") -> None:

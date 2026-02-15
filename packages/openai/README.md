@@ -16,11 +16,11 @@ This will also install `reminix-runtime` as a dependency.
 
 ```python
 from openai import AsyncOpenAI
-from reminix_openai import OpenAIChat
+from reminix_openai import OpenAIChatAgent
 from reminix_runtime import serve
 
 client = AsyncOpenAI()
-agent = OpenAIChat(client, name="my-chatbot", model="gpt-4o")
+agent = OpenAIChatAgent(client, name="my-chatbot", model="gpt-4o")
 serve(agents=[agent])
 ```
 
@@ -29,7 +29,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `OpenAIChat(client, name, model)`
+### `OpenAIChatAgent(client, name, model)`
 
 Create an OpenAI chat agent.
 
@@ -39,13 +39,13 @@ Create an OpenAI chat agent.
 | `name` | `str` | `"openai-agent"` | Name for the agent (used in URL path) |
 | `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
 
-**Returns:** `OpenAIChat` - A Reminix agent instance
+**Returns:** `OpenAIChatAgent` - A Reminix agent instance
 
 ### Example with Custom Configuration
 
 ```python
 from openai import AsyncOpenAI
-from reminix_openai import OpenAIChat
+from reminix_openai import OpenAIChatAgent
 from reminix_runtime import serve
 
 client = AsyncOpenAI(
@@ -53,7 +53,7 @@ client = AsyncOpenAI(
     base_url="https://your-proxy.com/v1"  # Optional: custom endpoint
 )
 
-agent = OpenAIChat(
+agent = OpenAIChatAgent(
     client,
     name="gpt4-agent",
     model="gpt-4o"

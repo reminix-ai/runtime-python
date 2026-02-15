@@ -17,12 +17,12 @@ This will also install `reminix-runtime` as a dependency.
 ```python
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
-from reminix_langgraph import LangGraphThread
+from reminix_langgraph import LangGraphThreadAgent
 from reminix_runtime import serve
 
 llm = ChatOpenAI(model="gpt-4o")
 graph = create_react_agent(llm, tools=[])
-agent = LangGraphThread(graph, name="my-agent")
+agent = LangGraphThreadAgent(graph, name="my-agent")
 serve(agents=[agent])
 ```
 
@@ -31,7 +31,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `LangGraphThread(graph, name)`
+### `LangGraphThreadAgent(graph, name)`
 
 Create a LangGraph thread agent.
 
@@ -40,7 +40,7 @@ Create a LangGraph thread agent.
 | `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
 | `name` | `str` | `"langgraph-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LangGraphThread` - A Reminix agent instance
+**Returns:** `LangGraphThreadAgent` - A Reminix agent instance
 
 ### How It Works
 

@@ -15,7 +15,7 @@ from reminix_runtime import (
 )
 
 
-class AnthropicChat:
+class AnthropicChatAgent:
     """Chat agent adapter for Anthropic messages API."""
 
     def __init__(

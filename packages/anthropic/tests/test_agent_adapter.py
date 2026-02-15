@@ -4,52 +4,52 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from reminix_anthropic import AnthropicChat
+from reminix_anthropic import AnthropicChatAgent
 from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
-class TestAnthropicChat:
-    """Tests for the AnthropicChat class."""
+class TestAnthropicChatAgent:
+    """Tests for the AnthropicChatAgent class."""
 
     def test_instantiation(self):
-        """AnthropicChat should be instantiable."""
+        """AnthropicChatAgent should be instantiable."""
         mock_client = MagicMock()
-        agent = AnthropicChat(mock_client)
+        agent = AnthropicChatAgent(mock_client)
 
-        assert isinstance(agent, AnthropicChat)
+        assert isinstance(agent, AnthropicChatAgent)
 
     def test_custom_name(self):
-        """AnthropicChat should accept a custom name."""
+        """AnthropicChatAgent should accept a custom name."""
         mock_client = MagicMock()
-        agent = AnthropicChat(mock_client, name="my-custom-agent")
+        agent = AnthropicChatAgent(mock_client, name="my-custom-agent")
 
         assert agent.name == "my-custom-agent"
 
     def test_custom_model(self):
-        """AnthropicChat should accept a custom model."""
+        """AnthropicChatAgent should accept a custom model."""
         mock_client = MagicMock()
-        agent = AnthropicChat(mock_client, model="claude-opus-4-20250514")
+        agent = AnthropicChatAgent(mock_client, model="claude-opus-4-20250514")
 
         assert agent.model == "claude-opus-4-20250514"
 
     def test_default_values(self):
-        """AnthropicChat should use default values if not provided."""
+        """AnthropicChatAgent should use default values if not provided."""
         mock_client = MagicMock()
-        agent = AnthropicChat(mock_client)
+        agent = AnthropicChatAgent(mock_client)
 
         assert agent.name == "anthropic-agent"
         assert agent.model == "claude-sonnet-4-20250514"
 
     def test_chat_template_metadata(self):
-        """AnthropicChat should have chat template metadata."""
+        """AnthropicChatAgent should have chat template metadata."""
         mock_client = MagicMock()
-        agent = AnthropicChat(mock_client)
+        agent = AnthropicChatAgent(mock_client)
 
         assert agent.metadata["template"] == "chat"
         assert agent.metadata["input"] == AGENT_TEMPLATES["chat"]["input"]
 
 
-class TestAnthropicChatInvoke:
+class TestAnthropicChatAgentInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
@@ -60,7 +60,7 @@ class TestAnthropicChatInvoke:
         mock_response.content = [MagicMock(type="text", text="Hello!")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        agent = AnthropicChat(mock_client)
+        agent = AnthropicChatAgent(mock_client)
         request = AgentRequest(input={"prompt": "Hi"})
 
         await agent.invoke(request)
@@ -75,7 +75,7 @@ class TestAnthropicChatInvoke:
         mock_response.content = [MagicMock(type="text", text="Hello from Anthropic!")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        agent = AnthropicChat(mock_client)
+        agent = AnthropicChatAgent(mock_client)
         request = AgentRequest(input={"prompt": "Hi"})
 
         response = await agent.invoke(request)
@@ -90,7 +90,7 @@ class TestAnthropicChatInvoke:
         mock_response.content = [MagicMock(type="text", text="Response")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        agent = AnthropicChat(mock_client)
+        agent = AnthropicChatAgent(mock_client)
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
 
         response = await agent.invoke(request)
@@ -105,7 +105,7 @@ class TestAnthropicChatInvoke:
         mock_response.content = [MagicMock(type="text", text="Response")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        agent = AnthropicChat(mock_client)
+        agent = AnthropicChatAgent(mock_client)
         request = AgentRequest(
             input={
                 "messages": [

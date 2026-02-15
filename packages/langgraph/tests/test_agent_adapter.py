@@ -5,44 +5,44 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from reminix_langgraph import LangGraphThread
+from reminix_langgraph import LangGraphThreadAgent
 from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
-class TestLangGraphThread:
-    """Tests for the LangGraphThread class."""
+class TestLangGraphThreadAgent:
+    """Tests for the LangGraphThreadAgent class."""
 
     def test_instantiation(self):
-        """LangGraphThread should be instantiable."""
+        """LangGraphThreadAgent should be instantiable."""
         mock_graph = MagicMock()
-        agent = LangGraphThread(mock_graph)
+        agent = LangGraphThreadAgent(mock_graph)
 
-        assert isinstance(agent, LangGraphThread)
+        assert isinstance(agent, LangGraphThreadAgent)
 
     def test_custom_name(self):
-        """LangGraphThread should accept a custom name."""
+        """LangGraphThreadAgent should accept a custom name."""
         mock_graph = MagicMock()
-        agent = LangGraphThread(mock_graph, name="my-custom-agent")
+        agent = LangGraphThreadAgent(mock_graph, name="my-custom-agent")
 
         assert agent.name == "my-custom-agent"
 
     def test_default_name(self):
-        """LangGraphThread should use default name if not provided."""
+        """LangGraphThreadAgent should use default name if not provided."""
         mock_graph = MagicMock()
-        agent = LangGraphThread(mock_graph)
+        agent = LangGraphThreadAgent(mock_graph)
 
         assert agent.name == "langgraph-agent"
 
     def test_thread_template_metadata(self):
-        """LangGraphThread should have thread template metadata."""
+        """LangGraphThreadAgent should have thread template metadata."""
         mock_graph = MagicMock()
-        agent = LangGraphThread(mock_graph)
+        agent = LangGraphThreadAgent(mock_graph)
 
         assert agent.metadata["template"] == "thread"
         assert agent.metadata["input"] == AGENT_TEMPLATES["thread"]["input"]
 
 
-class TestLangGraphThreadInvoke:
+class TestLangGraphThreadAgentInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
@@ -51,7 +51,7 @@ class TestLangGraphThreadInvoke:
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(return_value={"messages": [AIMessage(content="Hello!")]})
 
-        agent = LangGraphThread(mock_graph)
+        agent = LangGraphThreadAgent(mock_graph)
         request = AgentRequest(input={"query": "What is AI?"})
 
         await agent.invoke(request)
@@ -68,7 +68,7 @@ class TestLangGraphThreadInvoke:
             }
         )
 
-        agent = LangGraphThread(mock_graph)
+        agent = LangGraphThreadAgent(mock_graph)
         request = AgentRequest(input={"messages": []})
 
         response = await agent.invoke(request)
@@ -81,7 +81,7 @@ class TestLangGraphThreadInvoke:
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(return_value={"result": "success"})
 
-        agent = LangGraphThread(mock_graph)
+        agent = LangGraphThreadAgent(mock_graph)
         request = AgentRequest(input={"task": "compute"})
 
         response = await agent.invoke(request)
@@ -94,7 +94,7 @@ class TestLangGraphThreadInvoke:
         mock_graph = MagicMock()
         mock_graph.ainvoke = AsyncMock(return_value={"messages": [AIMessage(content="Hello!")]})
 
-        agent = LangGraphThread(mock_graph)
+        agent = LangGraphThreadAgent(mock_graph)
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
         await agent.invoke(request)
@@ -118,7 +118,7 @@ class TestLangGraphThreadInvoke:
             }
         )
 
-        agent = LangGraphThread(mock_graph)
+        agent = LangGraphThreadAgent(mock_graph)
         request = AgentRequest(
             input={
                 "messages": [

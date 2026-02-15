@@ -36,7 +36,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
-from reminix_langchain import LangChainChat
+from reminix_langchain import LangChainChatAgent
 from reminix_runtime import serve
 
 # Load environment variables from root .env file
@@ -46,7 +46,7 @@ load_dotenv(Path(__file__).parent.parent.parent / ".env")
 model = ChatOpenAI(model="gpt-4o-mini")
 
 # Create and serve the agent
-agent = LangChainChat(model, name="langchain-basic")
+agent = LangChainChatAgent(model, name="langchain-basic")
 
 if __name__ == "__main__":
     print("Server running on http://localhost:8080")

@@ -6,44 +6,44 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import Runnable
 
-from reminix_langchain import LangChainChat
+from reminix_langchain import LangChainChatAgent
 from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
-class TestLangChainChat:
-    """Tests for the LangChainChat class."""
+class TestLangChainChatAgent:
+    """Tests for the LangChainChatAgent class."""
 
     def test_instantiation(self):
-        """LangChainChat should be instantiable."""
+        """LangChainChatAgent should be instantiable."""
         mock_runnable = MagicMock(spec=Runnable)
-        agent = LangChainChat(mock_runnable)
+        agent = LangChainChatAgent(mock_runnable)
 
-        assert isinstance(agent, LangChainChat)
+        assert isinstance(agent, LangChainChatAgent)
 
     def test_custom_name(self):
-        """LangChainChat should accept a custom name."""
+        """LangChainChatAgent should accept a custom name."""
         mock_runnable = MagicMock(spec=Runnable)
-        agent = LangChainChat(mock_runnable, name="my-custom-agent")
+        agent = LangChainChatAgent(mock_runnable, name="my-custom-agent")
 
         assert agent.name == "my-custom-agent"
 
     def test_default_name(self):
-        """LangChainChat should use default name if not provided."""
+        """LangChainChatAgent should use default name if not provided."""
         mock_runnable = MagicMock(spec=Runnable)
-        agent = LangChainChat(mock_runnable)
+        agent = LangChainChatAgent(mock_runnable)
 
         assert agent.name == "langchain-agent"
 
     def test_chat_template_metadata(self):
-        """LangChainChat should have chat template metadata."""
+        """LangChainChatAgent should have chat template metadata."""
         mock_runnable = MagicMock(spec=Runnable)
-        agent = LangChainChat(mock_runnable)
+        agent = LangChainChatAgent(mock_runnable)
 
         assert agent.metadata["template"] == "chat"
         assert agent.metadata["input"] == AGENT_TEMPLATES["chat"]["input"]
 
 
-class TestLangChainChatInvoke:
+class TestLangChainChatAgentInvoke:
     """Tests for the invoke() method."""
 
     @pytest.mark.asyncio
@@ -52,7 +52,7 @@ class TestLangChainChatInvoke:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello!"))
 
-        agent = LangChainChat(mock_runnable)
+        agent = LangChainChatAgent(mock_runnable)
         request = AgentRequest(input={"query": "What is AI?"})
 
         await agent.invoke(request)
@@ -65,7 +65,7 @@ class TestLangChainChatInvoke:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Hello from LangChain!"))
 
-        agent = LangChainChat(mock_runnable)
+        agent = LangChainChatAgent(mock_runnable)
         request = AgentRequest(input={"query": "Hi"})
 
         response = await agent.invoke(request)
@@ -78,7 +78,7 @@ class TestLangChainChatInvoke:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value={"result": "success", "value": 42})
 
-        agent = LangChainChat(mock_runnable)
+        agent = LangChainChatAgent(mock_runnable)
         request = AgentRequest(input={"task": "compute"})
 
         response = await agent.invoke(request)
@@ -91,7 +91,7 @@ class TestLangChainChatInvoke:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value="Simple string result")
 
-        agent = LangChainChat(mock_runnable)
+        agent = LangChainChatAgent(mock_runnable)
         request = AgentRequest(input={"query": "test"})
 
         response = await agent.invoke(request)
@@ -104,7 +104,7 @@ class TestLangChainChatInvoke:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Response"))
 
-        agent = LangChainChat(mock_runnable)
+        agent = LangChainChatAgent(mock_runnable)
         request = AgentRequest(
             input={
                 "messages": [
@@ -135,7 +135,7 @@ class TestMessageConversion:
         mock_runnable = MagicMock(spec=Runnable)
         mock_runnable.ainvoke = AsyncMock(return_value=AIMessage(content="Response"))
 
-        agent = LangChainChat(mock_runnable)
+        agent = LangChainChatAgent(mock_runnable)
         request = AgentRequest(
             input={
                 "messages": [

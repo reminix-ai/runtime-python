@@ -15,7 +15,7 @@ from reminix_runtime import (
 )
 
 
-class OpenAIChat:
+class OpenAIChatAgent:
     """Chat agent adapter for OpenAI chat completions."""
 
     def __init__(

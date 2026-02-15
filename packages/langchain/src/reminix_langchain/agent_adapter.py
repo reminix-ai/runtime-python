@@ -44,7 +44,7 @@ def to_langchain_message(message: Message) -> BaseMessage:
         return HumanMessage(content=content)
 
 
-class LangChainChat:
+class LangChainChatAgent:
     """Chat agent adapter for LangChain agents and runnables."""
 
     def __init__(self, agent: Runnable, name: str = "langchain-agent") -> None:

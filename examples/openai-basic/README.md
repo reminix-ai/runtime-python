@@ -59,14 +59,14 @@ curl -X POST http://localhost:8080/agents/openai-basic/invoke \
 ## How it works
 
 1. Create an OpenAI client using `openai`
-2. Create an `OpenAIChat` agent and serve it with `reminix-runtime`
+2. Create an `OpenAIChatAgent` agent and serve it with `reminix-runtime`
 
 ```python
 from openai import AsyncOpenAI
-from reminix_openai import OpenAIChat
+from reminix_openai import OpenAIChatAgent
 from reminix_runtime import serve
 
 client = AsyncOpenAI()
-agent = OpenAIChat(client, name="openai-basic", model="gpt-4o-mini")
+agent = OpenAIChatAgent(client, name="openai-basic", model="gpt-4o-mini")
 serve(agents=[agent])
 ```

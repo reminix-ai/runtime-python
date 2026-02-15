@@ -1,3 +1,3 @@
-from .agent_adapter import LangGraphThread
+from .agent_adapter import LangGraphThreadAgent
 
-__all__ = ["LangGraphThread"]
+__all__ = ["LangGraphThreadAgent"]

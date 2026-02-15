@@ -17,12 +17,12 @@ This will also install `reminix-runtime` as a dependency.
 ```python
 from llama_index.core.chat_engine import SimpleChatEngine
 from llama_index.llms.openai import OpenAI
-from reminix_llamaindex import LlamaIndexRag
+from reminix_llamaindex import LlamaIndexRagAgent
 from reminix_runtime import serve
 
 llm = OpenAI(model="gpt-4o")
 engine = SimpleChatEngine.from_defaults(llm=llm)
-agent = LlamaIndexRag(engine, name="my-chatbot")
+agent = LlamaIndexRagAgent(engine, name="my-chatbot")
 serve(agents=[agent])
 ```
 
@@ -31,7 +31,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `LlamaIndexRag(engine, name)`
+### `LlamaIndexRagAgent(engine, name)`
 
 Create a LlamaIndex RAG agent.
 
@@ -40,14 +40,14 @@ Create a LlamaIndex RAG agent.
 | `engine` | `BaseChatEngine` | required | A LlamaIndex chat engine |
 | `name` | `str` | `"llamaindex-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LlamaIndexRag` - A Reminix agent instance
+**Returns:** `LlamaIndexRagAgent` - A Reminix agent instance
 
 ### Example with RAG
 
 ```python
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.llms.openai import OpenAI
-from reminix_llamaindex import LlamaIndexRag
+from reminix_llamaindex import LlamaIndexRagAgent
 from reminix_runtime import serve
 
 # Load documents and create index
@@ -58,7 +58,7 @@ index = VectorStoreIndex.from_documents(documents)
 engine = index.as_chat_engine(llm=OpenAI(model="gpt-4o"))
 
 # Create and serve
-agent = LlamaIndexRag(engine, name="rag-chatbot")
+agent = LlamaIndexRagAgent(engine, name="rag-chatbot")
 serve(agents=[agent])
 ```
 

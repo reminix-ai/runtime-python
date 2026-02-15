@@ -16,11 +16,11 @@ This will also install `reminix-runtime` as a dependency.
 
 ```python
 from anthropic import AsyncAnthropic
-from reminix_anthropic import AnthropicChat
+from reminix_anthropic import AnthropicChatAgent
 from reminix_runtime import serve
 
 client = AsyncAnthropic()
-agent = AnthropicChat(client, name="my-claude", model="claude-sonnet-4-20250514")
+agent = AnthropicChatAgent(client, name="my-claude", model="claude-sonnet-4-20250514")
 serve(agents=[agent])
 ```
 
@@ -29,7 +29,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `AnthropicChat(client, name, model, max_tokens)`
+### `AnthropicChatAgent(client, name, model, max_tokens)`
 
 Create an Anthropic chat agent.
 
@@ -40,7 +40,7 @@ Create an Anthropic chat agent.
 | `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
 | `max_tokens` | `int` | `4096` | Maximum tokens in response |
 
-**Returns:** `AnthropicChat` - A Reminix agent instance
+**Returns:** `AnthropicChatAgent` - A Reminix agent instance
 
 ### System Messages
 

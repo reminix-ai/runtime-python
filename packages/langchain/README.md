@@ -16,11 +16,11 @@ This will also install `reminix-runtime` as a dependency.
 
 ```python
 from langchain_openai import ChatOpenAI
-from reminix_langchain import LangChainChat
+from reminix_langchain import LangChainChatAgent
 from reminix_runtime import serve
 
 llm = ChatOpenAI(model="gpt-4o")
-agent = LangChainChat(llm, name="my-chatbot")
+agent = LangChainChatAgent(llm, name="my-chatbot")
 serve(agents=[agent])
 ```
 
@@ -29,7 +29,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `LangChainChat(runnable, name)`
+### `LangChainChatAgent(runnable, name)`
 
 Create a LangChain chat agent.
 
@@ -38,14 +38,14 @@ Create a LangChain chat agent.
 | `runnable` | `Runnable` | required | Any LangChain runnable (LLM, chain, agent, etc.) |
 | `name` | `str` | `"langchain-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LangChainChat` - A Reminix agent instance
+**Returns:** `LangChainChatAgent` - A Reminix agent instance
 
 ### Example with a Chain
 
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from reminix_langchain import LangChainChat
+from reminix_langchain import LangChainChatAgent
 from reminix_runtime import serve
 
 # Create a chain
@@ -57,7 +57,7 @@ llm = ChatOpenAI(model="gpt-4o")
 chain = prompt | llm
 
 # Create and serve
-agent = LangChainChat(chain, name="my-chain")
+agent = LangChainChatAgent(chain, name="my-chain")
 serve(agents=[agent])
 ```
 

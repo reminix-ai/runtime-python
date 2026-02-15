@@ -21,7 +21,7 @@ class ChatEngine(Protocol):
     async def astream_chat(self, message: str) -> Any: ...
 
 
-class LlamaIndexRag:
+class LlamaIndexRagAgent:
     """RAG agent adapter for LlamaIndex chat engines."""
 
     def __init__(self, engine: ChatEngine, name: str = "llamaindex-agent") -> None:

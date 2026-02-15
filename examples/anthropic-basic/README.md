@@ -59,14 +59,14 @@ curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
 ## How it works
 
 1. Create an Anthropic client using `anthropic`
-2. Create an `AnthropicChat` agent and serve it with `reminix-runtime`
+2. Create an `AnthropicChatAgent` agent and serve it with `reminix-runtime`
 
 ```python
 from anthropic import AsyncAnthropic
-from reminix_anthropic import AnthropicChat
+from reminix_anthropic import AnthropicChatAgent
 from reminix_runtime import serve
 
 client = AsyncAnthropic()
-agent = AnthropicChat(client, name="anthropic-basic", model="claude-3-haiku-20240307")
+agent = AnthropicChatAgent(client, name="anthropic-basic", model="claude-3-haiku-20240307")
 serve(agents=[agent])
 ```

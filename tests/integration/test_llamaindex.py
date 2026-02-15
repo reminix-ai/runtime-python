@@ -7,7 +7,7 @@ from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.workflow import Context
 from llama_index.llms.openai import OpenAI
 
-from reminix_llamaindex import LlamaIndexRag
+from reminix_llamaindex import LlamaIndexRagAgent
 from reminix_runtime import create_app
 
 
@@ -49,7 +49,7 @@ class TestLlamaIndexAdapter:
         llm = OpenAI(model="gpt-4.1-nano", api_key=openai_api_key)
         react_agent = ReActAgent(tools=[get_weather], llm=llm)
         wrapped_engine = ChatEngineWrapper(react_agent)
-        return LlamaIndexRag(wrapped_engine, name="test-llamaindex")
+        return LlamaIndexRagAgent(wrapped_engine, name="test-llamaindex")
 
     @pytest.fixture
     def app(self, agent):

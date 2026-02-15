@@ -1,3 +1,3 @@
-from .agent_adapter import OpenAIChat
+from .agent_adapter import OpenAIChatAgent
 
-__all__ = ["OpenAIChat"]
+__all__ = ["OpenAIChatAgent"]
