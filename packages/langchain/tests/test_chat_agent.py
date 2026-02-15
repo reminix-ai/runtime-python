@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import Runnable
 
 from reminix_langchain import LangChainChatAgent
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 class TestLangChainChatAgent:
@@ -35,12 +35,12 @@ class TestLangChainChatAgent:
         assert agent.name == "langchain-agent"
 
     def test_chat_template_metadata(self):
-        """LangChainChatAgent should have chat template metadata."""
+        """LangChainChatAgent should have chat type metadata."""
         mock_runnable = MagicMock(spec=Runnable)
         agent = LangChainChatAgent(mock_runnable)
 
-        assert agent.metadata["template"] == "chat"
-        assert agent.metadata["input"] == AGENT_TEMPLATES["chat"]["input"]
+        assert agent.metadata["type"] == "chat"
+        assert agent.metadata["input"] == AGENT_TYPES["chat"]["input"]
 
 
 class TestLangChainChatAgentInvoke:

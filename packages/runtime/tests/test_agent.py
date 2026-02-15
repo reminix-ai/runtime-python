@@ -325,26 +325,26 @@ class TestAgentDecorator:
         assert chunks == [">a ", ">b "]
 
 
-class TestAgentTemplates:
-    """Tests for @agent(template=...) templates (prompt, chat, task)."""
+class TestAgentTypes:
+    """Tests for @agent(type=...) types (prompt, chat, task)."""
 
-    def test_template_prompt_metadata(self):
-        """template=prompt sets prompt input and string output in metadata."""
+    def test_type_prompt_metadata(self):
+        """type=prompt sets prompt input and string output in metadata."""
 
-        @agent(template="prompt")
+        @agent(type="prompt")
         async def echo(prompt: str):
             return f"You said: {prompt}"
 
-        assert echo.metadata["template"] == "prompt"
+        assert echo.metadata["type"] == "prompt"
         assert echo.metadata["input"]["required"] == ["prompt"]
         assert echo.metadata["input"]["properties"]["prompt"]["type"] == "string"
         assert echo.metadata["output"]["type"] == "string"
 
     @pytest.mark.asyncio
-    async def test_template_prompt_invoke(self):
-        """template=prompt agent handles invoke with prompt input."""
+    async def test_type_prompt_invoke(self):
+        """type=prompt agent handles invoke with prompt input."""
 
-        @agent(template="prompt")
+        @agent(type="prompt")
         async def echo(prompt: str):
             return f"You said: {prompt}"
 
@@ -352,23 +352,23 @@ class TestAgentTemplates:
         response = await echo.invoke(request)
         assert response["output"] == "You said: hello"
 
-    def test_template_chat_metadata(self):
-        """template=chat sets messages input and string output in metadata."""
+    def test_type_chat_metadata(self):
+        """type=chat sets messages input and string output in metadata."""
 
-        @agent(template="chat")
+        @agent(type="chat")
         async def chat_handler(messages: list):
             return "ok"
 
-        assert chat_handler.metadata["template"] == "chat"
+        assert chat_handler.metadata["type"] == "chat"
         assert chat_handler.metadata["input"]["required"] == ["messages"]
         assert "messages" in chat_handler.metadata["input"]["properties"]
         assert chat_handler.metadata["output"]["type"] == "string"
 
     @pytest.mark.asyncio
-    async def test_template_chat_invoke(self):
-        """template=chat agent handles invoke with messages input."""
+    async def test_type_chat_invoke(self):
+        """type=chat agent handles invoke with messages input."""
 
-        @agent(template="chat")
+        @agent(type="chat")
         async def chat_handler(messages: list):
             last = messages[-1] if messages else {}
             return f"Reply to: {last.get('content', '')}"
@@ -377,24 +377,24 @@ class TestAgentTemplates:
         response = await chat_handler.invoke(request)
         assert response["output"] == "Reply to: Hi"
 
-    def test_template_task_metadata(self):
-        """template=task sets task input and structured output in metadata."""
+    def test_type_task_metadata(self):
+        """type=task sets task input and structured output in metadata."""
 
-        @agent(template="task")
+        @agent(type="task")
         async def task_handler(task: str, text: str | None = None):
             return f"Task {task}"
 
-        assert task_handler.metadata["template"] == "task"
+        assert task_handler.metadata["type"] == "task"
         assert task_handler.metadata["input"]["required"] == ["task"]
         assert "task" in task_handler.metadata["input"]["properties"]
         assert "description" in task_handler.metadata["output"]
         assert "stateless, single-shot" in task_handler.metadata["output"]["description"]
 
     @pytest.mark.asyncio
-    async def test_template_task_invoke(self):
-        """template=task agent handles invoke with task input."""
+    async def test_type_task_invoke(self):
+        """type=task agent handles invoke with task input."""
 
-        @agent(template="task")
+        @agent(type="task")
         async def task_handler(task: str, text: str | None = None):
             return f'Task "{task}" on: {text or "—"}'
 
@@ -402,10 +402,10 @@ class TestAgentTemplates:
         response = await task_handler.invoke(request)
         assert response["output"] == 'Task "summarize" on: Some content'
 
-    def test_template_workflow_metadata(self):
-        """template=workflow sets workflow input/output schemas with status and steps."""
+    def test_type_workflow_metadata(self):
+        """type=workflow sets workflow input/output schemas with status and steps."""
 
-        @agent(template="workflow")
+        @agent(type="workflow")
         async def workflow_handler(task: str, steps: list | None = None):
             return {
                 "status": "completed",
@@ -413,7 +413,7 @@ class TestAgentTemplates:
                 "result": {"summary": "All steps completed"},
             }
 
-        assert workflow_handler.metadata["template"] == "workflow"
+        assert workflow_handler.metadata["type"] == "workflow"
         input_schema = workflow_handler.metadata["input"]
         assert input_schema["required"] == ["task"]
         assert "task" in input_schema["properties"]
@@ -435,10 +435,10 @@ class TestAgentTemplates:
         assert "pendingAction" in output_schema["properties"]
 
     @pytest.mark.asyncio
-    async def test_template_workflow_invoke(self):
-        """template=workflow agent handles invoke with task+steps and returns structured output."""
+    async def test_type_workflow_invoke(self):
+        """type=workflow agent handles invoke with task+steps and returns structured output."""
 
-        @agent(template="workflow")
+        @agent(type="workflow")
         async def workflow_handler(task: str, steps: list | None = None):
             executed = []
             for s in steps or []:
@@ -463,36 +463,36 @@ class TestAgentTemplates:
         assert output["steps"][1]["name"] == "transform"
         assert output["result"]["summary"] == "Ran 2 steps for: process-data"
 
-    def test_no_template_derives_from_function(self):
-        """Without template, input/output are derived from function signature."""
+    def test_no_type_derives_from_function(self):
+        """Without type, input/output are derived from function signature."""
 
         @agent
         async def add(a: int, b: int) -> int:
             """Add two numbers."""
             return a + b
 
-        assert "template" not in add.metadata
+        assert "type" not in add.metadata
         assert "a" in add.metadata["input"]["properties"]
         assert "b" in add.metadata["input"]["properties"]
         assert add.metadata["input"]["required"] == ["a", "b"]
 
-    def test_template_rag_metadata(self):
-        """template=rag sets query input and string output in metadata."""
+    def test_type_rag_metadata(self):
+        """type=rag sets query input and string output in metadata."""
 
-        @agent(template="rag")
+        @agent(type="rag")
         async def rag_handler(query: str):
             return f"Answer for: {query}"
 
-        assert rag_handler.metadata["template"] == "rag"
+        assert rag_handler.metadata["type"] == "rag"
         assert rag_handler.metadata["input"]["required"] == ["query"]
         assert "query" in rag_handler.metadata["input"]["properties"]
         assert rag_handler.metadata["output"]["type"] == "string"
 
     @pytest.mark.asyncio
-    async def test_template_rag_invoke(self):
-        """template=rag agent handles invoke with query input."""
+    async def test_type_rag_invoke(self):
+        """type=rag agent handles invoke with query input."""
 
-        @agent(template="rag")
+        @agent(type="rag")
         async def rag_handler(query: str):
             return f"Answer for: {query}"
 
@@ -500,24 +500,24 @@ class TestAgentTemplates:
         response = await rag_handler.invoke(request)
         assert response["output"] == "Answer for: What is X?"
 
-    def test_template_thread_metadata(self):
-        """template=thread sets messages input and messages output (array) in metadata."""
+    def test_type_thread_metadata(self):
+        """type=thread sets messages input and messages output (array) in metadata."""
 
-        @agent(template="thread")
+        @agent(type="thread")
         async def thread_handler(messages: list):
             return messages + [{"role": "assistant", "content": "ok"}]
 
-        assert thread_handler.metadata["template"] == "thread"
+        assert thread_handler.metadata["type"] == "thread"
         assert thread_handler.metadata["input"]["required"] == ["messages"]
         assert "messages" in thread_handler.metadata["input"]["properties"]
         assert thread_handler.metadata["output"]["type"] == "array"
         assert "items" in thread_handler.metadata["output"]
 
     @pytest.mark.asyncio
-    async def test_template_thread_invoke(self):
-        """template=thread agent returns updated message thread (output is messages)."""
+    async def test_type_thread_invoke(self):
+        """type=thread agent returns updated message thread (output is messages)."""
 
-        @agent(template="thread")
+        @agent(type="thread")
         async def thread_handler(messages: list):
             last = messages[-1] if messages else {}
             return messages + [

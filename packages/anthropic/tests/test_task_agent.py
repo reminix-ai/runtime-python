@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from reminix_anthropic import AnthropicTaskAgent
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 SAMPLE_SCHEMA = {
     "type": "object",
@@ -50,13 +50,13 @@ class TestAnthropicTaskAgent:
         assert agent.model == "claude-sonnet-4-20250514"
 
     def test_task_template_metadata(self):
-        """AnthropicTaskAgent should have task template metadata."""
+        """AnthropicTaskAgent should have task type metadata."""
         mock_client = MagicMock()
         agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA)
 
-        assert agent.metadata["template"] == "task"
-        assert agent.metadata["input"] == AGENT_TEMPLATES["task"]["input"]
-        assert agent.metadata["output"] == AGENT_TEMPLATES["task"]["output"]
+        assert agent.metadata["type"] == "task"
+        assert agent.metadata["input"] == AGENT_TYPES["task"]["input"]
+        assert agent.metadata["output"] == AGENT_TYPES["task"]["output"]
         assert agent.metadata["capabilities"]["streaming"] is False
 
 

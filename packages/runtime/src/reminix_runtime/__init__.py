@@ -3,8 +3,8 @@ __version__ = "0.0.19"
 from .agent import AgentLike, RuntimeAgent, agent
 from .content import build_messages_from_input, message_content_to_text
 from .schemas import (
-    AGENT_TEMPLATES,
-    AgentTemplate,
+    AGENT_TYPES,
+    AgentType,
 )
 from .server import create_app, serve
 from .tool import Tool, ToolLike, tool
@@ -28,8 +28,8 @@ __all__ = [
     "message_content_to_text",
     "build_messages_from_input",
     # Schemas
-    "AgentTemplate",
-    "AGENT_TEMPLATES",
+    "AgentType",
+    "AGENT_TYPES",
     # Base types
     "Role",
     "Message",

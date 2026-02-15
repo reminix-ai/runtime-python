@@ -8,7 +8,7 @@ from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
 
 from reminix_langchain import to_langchain_message
 from reminix_runtime import (
-    AGENT_TEMPLATES,
+    AGENT_TYPES,
     AgentRequest,
     build_messages_from_input,
 )
@@ -30,10 +30,10 @@ class LangGraphThreadAgent:
         return {
             "description": "langgraph thread agent",
             "capabilities": {"streaming": True},
-            "input": AGENT_TEMPLATES["thread"]["input"],
+            "input": AGENT_TYPES["thread"]["input"],
             "output": {"type": "string"},
             "framework": "langgraph",
-            "template": "thread",
+            "type": "thread",
         }
 
     def _get_last_ai_content(self, messages: list[BaseMessage]) -> str:

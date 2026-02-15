@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from reminix_openai import OpenAIChatAgent
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 class TestOpenAIChatAgent:
@@ -41,12 +41,12 @@ class TestOpenAIChatAgent:
         assert agent.model == "gpt-4o-mini"
 
     def test_chat_template_metadata(self):
-        """OpenAIChatAgent should have chat template metadata."""
+        """OpenAIChatAgent should have chat type metadata."""
         mock_client = MagicMock()
         agent = OpenAIChatAgent(mock_client)
 
-        assert agent.metadata["template"] == "chat"
-        assert agent.metadata["input"] == AGENT_TEMPLATES["chat"]["input"]
+        assert agent.metadata["type"] == "chat"
+        assert agent.metadata["input"] == AGENT_TYPES["chat"]["input"]
 
 
 class TestOpenAIChatAgentInvoke:

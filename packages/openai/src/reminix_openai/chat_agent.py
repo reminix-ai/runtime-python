@@ -7,7 +7,7 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from reminix_runtime import (
-    AGENT_TEMPLATES,
+    AGENT_TYPES,
     AgentRequest,
     Message,
     build_messages_from_input,
@@ -41,10 +41,10 @@ class OpenAIChatAgent:
         return {
             "description": "openai chat agent",
             "capabilities": {"streaming": True},
-            "input": AGENT_TEMPLATES["chat"]["input"],
-            "output": AGENT_TEMPLATES["chat"]["output"],
+            "input": AGENT_TYPES["chat"]["input"],
+            "output": AGENT_TYPES["chat"]["output"],
             "framework": "openai",
-            "template": "chat",
+            "type": "chat",
         }
 
     def _to_openai_message(self, message: Message) -> dict[str, Any]:

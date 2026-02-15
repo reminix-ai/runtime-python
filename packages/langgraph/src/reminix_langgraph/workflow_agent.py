@@ -5,7 +5,7 @@ from typing import Any
 from langgraph.errors import GraphInterrupt
 from langgraph.types import Command
 
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 class LangGraphWorkflowAgent:
@@ -28,10 +28,10 @@ class LangGraphWorkflowAgent:
         return {
             "description": "langgraph workflow agent",
             "capabilities": {"streaming": False},
-            "input": AGENT_TEMPLATES["workflow"]["input"],
-            "output": AGENT_TEMPLATES["workflow"]["output"],
+            "input": AGENT_TYPES["workflow"]["input"],
+            "output": AGENT_TYPES["workflow"]["output"],
             "framework": "langgraph",
-            "template": "workflow",
+            "type": "workflow",
         }
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:

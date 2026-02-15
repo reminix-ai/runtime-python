@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from reminix_anthropic import AnthropicChatAgent
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 class TestAnthropicChatAgent:
@@ -41,12 +41,12 @@ class TestAnthropicChatAgent:
         assert agent.model == "claude-sonnet-4-20250514"
 
     def test_chat_template_metadata(self):
-        """AnthropicChatAgent should have chat template metadata."""
+        """AnthropicChatAgent should have chat type metadata."""
         mock_client = MagicMock()
         agent = AnthropicChatAgent(mock_client)
 
-        assert agent.metadata["template"] == "chat"
-        assert agent.metadata["input"] == AGENT_TEMPLATES["chat"]["input"]
+        assert agent.metadata["type"] == "chat"
+        assert agent.metadata["input"] == AGENT_TYPES["chat"]["input"]
 
 
 class TestAnthropicChatAgentInvoke:

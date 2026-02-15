@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 from typing import Any, Protocol, runtime_checkable
 
 from reminix_runtime import (
-    AGENT_TEMPLATES,
+    AGENT_TYPES,
     AgentRequest,
     Message,
     build_messages_from_input,
@@ -37,10 +37,10 @@ class LlamaIndexRagAgent:
         return {
             "description": "llamaindex rag agent",
             "capabilities": {"streaming": True},
-            "input": AGENT_TEMPLATES["rag"]["input"],
+            "input": AGENT_TYPES["rag"]["input"],
             "output": {"type": "string"},
             "framework": "llamaindex",
-            "template": "rag",
+            "type": "rag",
         }
 
     def _get_last_user_message(self, messages: list[Message]) -> str:

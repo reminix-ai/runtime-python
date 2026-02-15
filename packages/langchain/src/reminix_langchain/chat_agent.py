@@ -15,7 +15,7 @@ from langchain_core.messages import (
 from langchain_core.runnables import Runnable
 
 from reminix_runtime import (
-    AGENT_TEMPLATES,
+    AGENT_TYPES,
     AgentRequest,
     Message,
     build_messages_from_input,
@@ -60,10 +60,10 @@ class LangChainChatAgent:
         return {
             "description": "langchain chat agent",
             "capabilities": {"streaming": True},
-            "input": AGENT_TEMPLATES["chat"]["input"],
-            "output": AGENT_TEMPLATES["chat"]["output"],
+            "input": AGENT_TYPES["chat"]["input"],
+            "output": AGENT_TYPES["chat"]["output"],
             "framework": "langchain",
-            "template": "chat",
+            "type": "chat",
         }
 
     def _build_langchain_input(self, request: AgentRequest) -> Any:

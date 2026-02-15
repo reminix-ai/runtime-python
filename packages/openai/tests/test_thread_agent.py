@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from reminix_openai import OpenAIThreadAgent
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 def make_mock_tool(name: str = "get_weather", result: dict | None = None):
@@ -73,9 +73,9 @@ class TestOpenAIThreadAgent:
     def test_thread_template_metadata(self):
         mock_client = MagicMock()
         agent = OpenAIThreadAgent(mock_client, [make_mock_tool()])
-        assert agent.metadata["template"] == "thread"
-        assert agent.metadata["input"] == AGENT_TEMPLATES["thread"]["input"]
-        assert agent.metadata["output"] == AGENT_TEMPLATES["thread"]["output"]
+        assert agent.metadata["type"] == "thread"
+        assert agent.metadata["input"] == AGENT_TYPES["thread"]["input"]
+        assert agent.metadata["output"] == AGENT_TYPES["thread"]["output"]
         assert agent.metadata["capabilities"]["streaming"] is False
 
 

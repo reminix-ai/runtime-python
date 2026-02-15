@@ -4,7 +4,7 @@ import inspect
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, Protocol, runtime_checkable
 
-from .schemas import AGENT_TEMPLATES, DEFAULT_AGENT_OUTPUT, AgentTemplate
+from .schemas import AGENT_TYPES, DEFAULT_AGENT_OUTPUT, AgentType
 from .tool import _extract_schema_from_function
 from .types import AgentRequest
 
@@ -75,12 +75,12 @@ def agent(
     *,
     name: str | None = None,
     description: str | None = None,
-    template: AgentTemplate | None = None,
+    type: AgentType | None = None,
 ) -> RuntimeAgent | Callable[[Callable[..., Any]], RuntimeAgent]:
     """Decorator to create an agent from a function.
 
     The function parameters become the agent's input schema (like @tool),
-    unless template is set, in which case the template's input/output schema is used.
+    unless type is set, in which case the type's input/output schema is used.
 
     Supports both sync and async functions, and async generators for streaming.
 
@@ -95,7 +95,7 @@ def agent(
             '''Echo the message.'''
             return f"Echo: {message}"
 
-        @agent(template="chat")
+        @agent(type="chat")
         async def chat_handler(messages: list):
             '''Reply to messages.'''
             last = messages[-1] if messages else {}
@@ -112,8 +112,8 @@ def agent(
         func: The function to wrap (when used without parentheses).
         name: Optional name override. Defaults to function name.
         description: Optional description override. Defaults to docstring.
-        template: Optional template (prompt, chat, task, rag, thread, workflow).
-            When set, uses that template's input/output schema instead of
+        type: Optional agent type (prompt, chat, task, rag, thread, workflow).
+            When set, uses that type's input/output schema instead of
             deriving from the function signature.
 
     Returns:
@@ -135,9 +135,9 @@ def agent(
         # Detect if streaming (async generator function)
         is_streaming = inspect.isasyncgenfunction(f)
 
-        # Resolve input and output schemas: template overrides derivation
-        if template is not None and template in AGENT_TEMPLATES:
-            t = AGENT_TEMPLATES[template]
+        # Resolve input and output schemas: type overrides derivation
+        if type is not None and type in AGENT_TYPES:
+            t = AGENT_TYPES[type]
             input_schema = t["input"]
             output_schema = t["output"]
         else:
@@ -153,8 +153,8 @@ def agent(
             "output": output_schema,
             "capabilities": {"streaming": is_streaming},
         }
-        if template is not None:
-            metadata["template"] = template
+        if type is not None:
+            metadata["type"] = type
 
         # Build handler functions
         invoke_fn: Callable[[AgentRequest], Awaitable[dict[str, Any]]]

@@ -6,7 +6,7 @@ from typing import Any
 from anthropic import AsyncAnthropic
 
 from reminix_runtime import (
-    AGENT_TEMPLATES,
+    AGENT_TYPES,
     AgentRequest,
     Message,
     ToolCall,
@@ -50,10 +50,10 @@ class AnthropicThreadAgent:
         return {
             "description": "anthropic thread agent",
             "capabilities": {"streaming": False},
-            "input": AGENT_TEMPLATES["thread"]["input"],
-            "output": AGENT_TEMPLATES["thread"]["output"],
+            "input": AGENT_TYPES["thread"]["input"],
+            "output": AGENT_TYPES["thread"]["output"],
             "framework": "anthropic",
-            "template": "thread",
+            "type": "thread",
         }
 
     @staticmethod

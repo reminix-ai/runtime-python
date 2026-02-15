@@ -6,7 +6,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from reminix_langgraph import LangGraphThreadAgent
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 class TestLangGraphThreadAgent:
@@ -34,12 +34,12 @@ class TestLangGraphThreadAgent:
         assert agent.name == "langgraph-agent"
 
     def test_thread_template_metadata(self):
-        """LangGraphThreadAgent should have thread template metadata."""
+        """LangGraphThreadAgent should have thread type metadata."""
         mock_graph = MagicMock()
         agent = LangGraphThreadAgent(mock_graph)
 
-        assert agent.metadata["template"] == "thread"
-        assert agent.metadata["input"] == AGENT_TEMPLATES["thread"]["input"]
+        assert agent.metadata["type"] == "thread"
+        assert agent.metadata["input"] == AGENT_TYPES["thread"]["input"]
 
 
 class TestLangGraphThreadAgentInvoke:

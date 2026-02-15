@@ -5,7 +5,7 @@ from typing import Any
 
 from openai import AsyncOpenAI
 
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 class OpenAITaskAgent:
@@ -36,10 +36,10 @@ class OpenAITaskAgent:
         return {
             "description": "openai task agent",
             "capabilities": {"streaming": False},
-            "input": AGENT_TEMPLATES["task"]["input"],
-            "output": AGENT_TEMPLATES["task"]["output"],
+            "input": AGENT_TYPES["task"]["input"],
+            "output": AGENT_TYPES["task"]["output"],
             "framework": "openai",
-            "template": "task",
+            "type": "task",
         }
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:

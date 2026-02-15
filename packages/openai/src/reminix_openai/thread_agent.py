@@ -6,7 +6,7 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from reminix_runtime import (
-    AGENT_TEMPLATES,
+    AGENT_TYPES,
     AgentRequest,
     Message,
     ToolCall,
@@ -48,10 +48,10 @@ class OpenAIThreadAgent:
         return {
             "description": "openai thread agent",
             "capabilities": {"streaming": False},
-            "input": AGENT_TEMPLATES["thread"]["input"],
-            "output": AGENT_TEMPLATES["thread"]["output"],
+            "input": AGENT_TYPES["thread"]["input"],
+            "output": AGENT_TYPES["thread"]["output"],
             "framework": "openai",
-            "template": "thread",
+            "type": "thread",
         }
 
     @staticmethod

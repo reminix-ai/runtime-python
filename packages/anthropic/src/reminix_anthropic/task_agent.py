@@ -5,7 +5,7 @@ from typing import Any
 
 from anthropic import AsyncAnthropic
 
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 class AnthropicTaskAgent:
@@ -38,10 +38,10 @@ class AnthropicTaskAgent:
         return {
             "description": "anthropic task agent",
             "capabilities": {"streaming": False},
-            "input": AGENT_TEMPLATES["task"]["input"],
-            "output": AGENT_TEMPLATES["task"]["output"],
+            "input": AGENT_TYPES["task"]["input"],
+            "output": AGENT_TYPES["task"]["output"],
             "framework": "anthropic",
-            "template": "task",
+            "type": "task",
         }
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:

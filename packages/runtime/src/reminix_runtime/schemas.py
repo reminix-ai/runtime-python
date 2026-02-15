@@ -1,15 +1,15 @@
-"""Agent template schemas for Reminix Runtime.
+"""Agent type schemas for Reminix Runtime.
 
-Defines named templates with predefined input/output JSON schemas.
-These templates standardize common agent patterns (prompt, chat, task, etc.)
+Defines named types with predefined input/output JSON schemas.
+These types standardize common agent patterns (prompt, chat, task, etc.)
 so that clients and tooling can interoperate without inspecting individual schemas.
 """
 
 from typing import Any, Literal
 
-AgentTemplate = Literal["prompt", "chat", "task", "rag", "thread", "workflow"]
+AgentType = Literal["prompt", "chat", "task", "rag", "thread", "workflow"]
 
-DEFAULT_AGENT_TEMPLATE: AgentTemplate = "prompt"
+DEFAULT_AGENT_TYPE: AgentType = "prompt"
 
 # JSON schema for a single tool call (OpenAI-style)
 TOOL_CALL_SCHEMA: dict[str, Any] = {
@@ -120,7 +120,7 @@ MESSAGE_SCHEMA: dict[str, Any] = {
     },
 }
 
-AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
+AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
     "prompt": {
         "input": {
             "type": "object",
@@ -306,6 +306,6 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
     },
 }
 
-# Default input/output schemas (same as prompt template)
-DEFAULT_AGENT_INPUT: dict[str, Any] = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE]["input"]
-DEFAULT_AGENT_OUTPUT: dict[str, Any] = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE]["output"]
+# Default input/output schemas (same as prompt type)
+DEFAULT_AGENT_INPUT: dict[str, Any] = AGENT_TYPES[DEFAULT_AGENT_TYPE]["input"]
+DEFAULT_AGENT_OUTPUT: dict[str, Any] = AGENT_TYPES[DEFAULT_AGENT_TYPE]["output"]

@@ -7,7 +7,7 @@ from langgraph.errors import GraphInterrupt
 from langgraph.types import Command, Interrupt
 
 from reminix_langgraph import LangGraphWorkflowAgent
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 class TestLangGraphWorkflowAgent:
@@ -35,13 +35,13 @@ class TestLangGraphWorkflowAgent:
         assert agent.name == "my-workflow"
 
     def test_workflow_template_metadata(self):
-        """LangGraphWorkflowAgent should have workflow template metadata."""
+        """LangGraphWorkflowAgent should have workflow type metadata."""
         mock_graph = MagicMock()
         agent = LangGraphWorkflowAgent(mock_graph)
 
-        assert agent.metadata["template"] == "workflow"
-        assert agent.metadata["input"] == AGENT_TEMPLATES["workflow"]["input"]
-        assert agent.metadata["output"] == AGENT_TEMPLATES["workflow"]["output"]
+        assert agent.metadata["type"] == "workflow"
+        assert agent.metadata["input"] == AGENT_TYPES["workflow"]["input"]
+        assert agent.metadata["output"] == AGENT_TYPES["workflow"]["output"]
         assert agent.metadata["framework"] == "langgraph"
 
 

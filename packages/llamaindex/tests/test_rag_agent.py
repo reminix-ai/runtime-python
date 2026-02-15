@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from reminix_llamaindex import LlamaIndexRagAgent
-from reminix_runtime import AGENT_TEMPLATES, AgentRequest
+from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 class TestLlamaIndexRagAgent:
@@ -36,13 +36,13 @@ class TestLlamaIndexRagAgent:
         assert agent.name == "llamaindex-agent"
 
     def test_rag_template_metadata(self):
-        """LlamaIndexRagAgent should have rag template metadata."""
+        """LlamaIndexRagAgent should have rag type metadata."""
         mock_engine = MagicMock()
         mock_engine.achat = AsyncMock()
         agent = LlamaIndexRagAgent(mock_engine)
 
-        assert agent.metadata["template"] == "rag"
-        assert agent.metadata["input"] == AGENT_TEMPLATES["rag"]["input"]
+        assert agent.metadata["type"] == "rag"
+        assert agent.metadata["input"] == AGENT_TYPES["rag"]["input"]
 
 
 class TestLlamaIndexRagAgentInvoke:

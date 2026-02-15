@@ -7,7 +7,7 @@ from typing import Any
 from anthropic import AsyncAnthropic
 
 from reminix_runtime import (
-    AGENT_TEMPLATES,
+    AGENT_TYPES,
     AgentRequest,
     Message,
     build_messages_from_input,
@@ -43,10 +43,10 @@ class AnthropicChatAgent:
         return {
             "description": "anthropic chat agent",
             "capabilities": {"streaming": True},
-            "input": AGENT_TEMPLATES["chat"]["input"],
-            "output": AGENT_TEMPLATES["chat"]["output"],
+            "input": AGENT_TYPES["chat"]["input"],
+            "output": AGENT_TYPES["chat"]["output"],
             "framework": "anthropic",
-            "template": "chat",
+            "type": "chat",
         }
 
     def _extract_system_and_messages(
