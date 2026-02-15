@@ -71,5 +71,5 @@ from reminix_runtime import serve
 model = ChatOpenAI(model="gpt-4o-mini")
 agent = wrap_agent(model, name="langchain-basic")
 
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```

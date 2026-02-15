@@ -26,7 +26,7 @@ async def calculator(a: float, b: float) -> float:
     return a + b
 
 # Serve the agent
-serve(agents=[calculator], port=8080)
+serve(agents=[calculator])
 ```
 
 ## How It Works
@@ -181,7 +181,7 @@ async def assistant(messages: list[Message]) -> str:
     last = messages[-1] if messages else None
     return f"You said: {last.content}" if last and last.role == "user" else "Hello!"
 
-serve(agents=[assistant], port=8080)
+serve(agents=[assistant])
 ```
 
 ### Task-Oriented Agent
@@ -205,7 +205,7 @@ async def process_text(text: str, operation: str = "uppercase") -> str:
         return text.lower()
     return text
 
-serve(agents=[calculator, process_text], port=8080)
+serve(agents=[calculator, process_text])
 ```
 
 The decorator automatically extracts:
@@ -227,7 +227,7 @@ async def streamer(text: str):
     for word in text.split():
         yield word + " "
 
-serve(agents=[streamer], port=8080)
+serve(agents=[streamer])
 ```
 
 For streaming agents:
@@ -265,7 +265,7 @@ async def get_weather(location: str, units: str = "celsius") -> WeatherOutput:
     # Call weather API...
     return WeatherOutput(temp=72, condition="sunny", location=location)
 
-serve(tools=[get_weather], port=8080)
+serve(tools=[get_weather])
 ```
 
 The decorator automatically extracts:
@@ -334,7 +334,7 @@ def calculate(expression: str) -> dict:
     """Perform basic math operations."""
     return {"result": eval(expression)}
 
-serve(agents=[summarizer], tools=[calculate], port=8080)
+serve(agents=[summarizer], tools=[calculate])
 ```
 
 ## Framework Adapters
@@ -495,7 +495,7 @@ my_agent = RuntimeAgent(
     invoke_stream_fn=my_invoke_stream,
 )
 
-serve(agents=[my_agent], port=8080)
+serve(agents=[my_agent])
 ```
 
 ### Tool Factory
@@ -515,7 +515,7 @@ async def get_weather(location: str, units: str = "celsius") -> dict:
     """
     return {"temp": 72, "location": location, "units": units}
 
-serve(tools=[get_weather], port=8080)
+serve(tools=[get_weather])
 ```
 
 ### AgentLike Protocol

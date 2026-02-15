@@ -91,4 +91,4 @@ if __name__ == "__main__":
     print("  POST /agents/echo/invoke")
     print()
 
-    serve(agents=[echo], port=8080)
+    serve(agents=[echo])

@@ -130,4 +130,4 @@ if __name__ == "__main__":
     print("  POST /tools/string_utils/call")
     print()
 
-    serve(tools=[get_weather, calculate, string_utils], port=8080)
+    serve(tools=[get_weather, calculate, string_utils])

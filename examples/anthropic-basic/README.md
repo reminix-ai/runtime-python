@@ -71,5 +71,5 @@ from reminix_runtime import serve
 client = AsyncAnthropic()
 agent = wrap_agent(client, name="anthropic-basic", model="claude-3-haiku-20240307")
 
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```

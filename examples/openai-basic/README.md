@@ -71,5 +71,5 @@ from reminix_runtime import serve
 client = AsyncOpenAI()
 agent = wrap_agent(client, name="openai-basic", model="gpt-4o-mini")
 
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```

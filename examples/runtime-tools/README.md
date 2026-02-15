@@ -81,5 +81,5 @@ async def get_weather(location: str, units: str = "fahrenheit") -> dict:
     # Fetch weather data...
     return {"location": location, "temperature": 72, "condition": "sunny"}
 
-serve(tools=[get_weather], port=8080)
+serve(tools=[get_weather])
 ```

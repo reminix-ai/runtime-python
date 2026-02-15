@@ -55,4 +55,4 @@ if __name__ == "__main__":
     print("  GET  /health")
     print("  GET  /info")
     print("  POST /agents/openai-basic/invoke")
-    serve(agents=[agent], port=8080)
+    serve(agents=[agent])

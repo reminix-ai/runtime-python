@@ -84,5 +84,5 @@ llm = ChatOpenAI(model="gpt-4o-mini")
 graph = create_react_agent(llm, tools=[get_weather])
 agent = wrap_agent(graph, name="langgraph-tools")
 
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```

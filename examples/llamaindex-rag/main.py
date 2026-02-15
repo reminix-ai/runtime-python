@@ -91,4 +91,4 @@ if __name__ == "__main__":
     print("  POST /agents/llamaindex-rag/invoke")
     print("\nAvailable tools:")
     print("  - get_weather(city): Get weather for Paris, London, Tokyo, or New York")
-    serve(agents=[agent], port=8080)
+    serve(agents=[agent])
