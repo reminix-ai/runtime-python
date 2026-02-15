@@ -6,7 +6,7 @@ Deploy to [Reminix Cloud](https://reminix.com) for zero-config hosting, or self-
 
 ---
 
-A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framework and get an execute endpoint with built-in streaming.
+A lightweight runtime for serving AI agents via REST APIs. Turn any LLM framework into a REST API with built-in streaming.
 
 **Features:**
 - **REST API Server**: Execute endpoint powered by [FastAPI](https://fastapi.tiangolo.com)
