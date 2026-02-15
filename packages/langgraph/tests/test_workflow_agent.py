@@ -42,7 +42,7 @@ class TestLangGraphWorkflowAgent:
         assert agent.metadata["template"] == "workflow"
         assert agent.metadata["input"] == AGENT_TEMPLATES["workflow"]["input"]
         assert agent.metadata["output"] == AGENT_TEMPLATES["workflow"]["output"]
-        assert agent.metadata["adapter"] == "langgraph"
+        assert agent.metadata["framework"] == "langgraph"
 
 
 async def _async_iter(items):

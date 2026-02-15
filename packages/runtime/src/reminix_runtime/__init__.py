@@ -3,7 +3,6 @@ __version__ = "0.0.19"
 from .agent import AgentLike, RuntimeAgent, agent
 from .content import build_messages_from_input, message_content_to_text
 from .schemas import (
-    ADAPTER_INPUT,
     AGENT_TEMPLATES,
     CONTENT_PART_SCHEMA,
     DEFAULT_AGENT_INPUT,
@@ -35,7 +34,6 @@ __all__ = [
     "message_content_to_text",
     "build_messages_from_input",
     # Schemas
-    "ADAPTER_INPUT",
     "AgentTemplate",
     "AGENT_TEMPLATES",
     "DEFAULT_AGENT_TEMPLATE",

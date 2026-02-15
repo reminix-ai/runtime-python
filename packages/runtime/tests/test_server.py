@@ -13,7 +13,7 @@ from reminix_runtime import (
 from reminix_runtime.server import create_app
 
 
-class MockTaskAdapter:
+class MockTaskAgent:
     """A mock agent for testing task-style requests."""
 
     def __init__(self, name: str = "mock-agent"):
@@ -27,7 +27,7 @@ class MockTaskAdapter:
     def metadata(self) -> dict[str, Any]:
         return {
             "capabilities": {"streaming": True},
-            "adapter": "mock",
+            "framework": "mock",
             "input": {"type": "object"},
             "output": {"type": "string"},
         }
@@ -40,7 +40,7 @@ class MockTaskAdapter:
         yield ""
 
 
-class MockChatAdapter:
+class MockChatAgent:
     """A mock agent for testing chat-style requests."""
 
     def __init__(self, name: str = "mock-agent"):
@@ -54,7 +54,7 @@ class MockChatAdapter:
     def metadata(self) -> dict[str, Any]:
         return {
             "capabilities": {"streaming": True},
-            "adapter": "mock",
+            "framework": "mock",
             "input": {"type": "object"},
             "output": {"type": "string"},
         }
@@ -77,7 +77,7 @@ class TestCreateApp:
 
     def test_create_app_returns_fastapi_app(self):
         """create_app should return a FastAPI application."""
-        app = create_app(agents=[MockTaskAdapter()])
+        app = create_app(agents=[MockTaskAgent()])
         # FastAPI apps have a 'routes' attribute
         assert hasattr(app, "routes")
 
@@ -104,7 +104,7 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_health_endpoint(self):
         """GET /health should return 200 OK."""
-        app = create_app(agents=[MockTaskAdapter()])
+        app = create_app(agents=[MockTaskAgent()])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/health")
 
@@ -118,7 +118,7 @@ class TestInfoEndpoint:
     @pytest.mark.asyncio
     async def test_info_endpoint(self):
         """GET /info should return runtime info and agents."""
-        app = create_app(agents=[MockTaskAdapter("agent-one"), MockTaskAdapter("agent-two")])
+        app = create_app(agents=[MockTaskAgent("agent-one"), MockTaskAgent("agent-two")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/info")
 
@@ -134,7 +134,7 @@ class TestInfoEndpoint:
         # Check agents
         assert len(data["agents"]) == 2
         assert data["agents"][0]["name"] == "agent-one"
-        assert data["agents"][0]["adapter"] == "mock"
+        assert data["agents"][0]["framework"] == "mock"
         assert data["agents"][0]["capabilities"]["streaming"] is True
 
 
@@ -144,7 +144,7 @@ class TestInvokeEndpoint:
     @pytest.mark.asyncio
     async def test_invoke_success(self):
         """POST /agents/{agent}/invoke should return invoke response."""
-        app = create_app(agents=[MockTaskAdapter("my-agent")])
+        app = create_app(agents=[MockTaskAgent("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
@@ -158,7 +158,7 @@ class TestInvokeEndpoint:
     @pytest.mark.asyncio
     async def test_invoke_with_context(self):
         """POST /agents/{agent}/invoke should accept context."""
-        app = create_app(agents=[MockTaskAdapter("my-agent")])
+        app = create_app(agents=[MockTaskAgent("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
@@ -173,7 +173,7 @@ class TestInvokeEndpoint:
     @pytest.mark.asyncio
     async def test_invoke_unknown_agent_returns_404(self):
         """POST /agents/{agent}/invoke should return 404 for unknown agent."""
-        app = create_app(agents=[MockTaskAdapter("my-agent")])
+        app = create_app(agents=[MockTaskAgent("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/unknown-agent/invoke",
@@ -186,7 +186,7 @@ class TestInvokeEndpoint:
     @pytest.mark.asyncio
     async def test_invoke_with_messages_input(self):
         """POST /agents/{agent}/invoke should handle chat-style input."""
-        app = create_app(agents=[MockChatAdapter("my-agent")])
+        app = create_app(agents=[MockChatAgent("my-agent")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
                 "/agents/my-agent/invoke",
@@ -336,7 +336,7 @@ class TestInfoEndpointWithTools:
             """A test tool."""
             return {"param": param}
 
-        app = create_app(agents=[MockTaskAdapter("my-agent")], tools=[my_tool])
+        app = create_app(agents=[MockTaskAgent("my-agent")], tools=[my_tool])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/info")
 

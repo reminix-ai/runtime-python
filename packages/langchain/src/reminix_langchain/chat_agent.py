@@ -62,7 +62,7 @@ class LangChainChatAgent:
             "capabilities": {"streaming": True},
             "input": AGENT_TEMPLATES["chat"]["input"],
             "output": AGENT_TEMPLATES["chat"]["output"],
-            "adapter": "langchain",
+            "framework": "langchain",
             "template": "chat",
         }
 

@@ -45,7 +45,7 @@ class AnthropicChatAgent:
             "capabilities": {"streaming": True},
             "input": AGENT_TEMPLATES["chat"]["input"],
             "output": AGENT_TEMPLATES["chat"]["output"],
-            "adapter": "anthropic",
+            "framework": "anthropic",
             "template": "chat",
         }
 

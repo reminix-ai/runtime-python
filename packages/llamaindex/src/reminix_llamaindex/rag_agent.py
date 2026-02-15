@@ -39,7 +39,7 @@ class LlamaIndexRagAgent:
             "capabilities": {"streaming": True},
             "input": AGENT_TEMPLATES["rag"]["input"],
             "output": {"type": "string"},
-            "adapter": "llamaindex",
+            "framework": "llamaindex",
             "template": "rag",
         }
 

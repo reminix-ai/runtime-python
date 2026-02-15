@@ -10,7 +10,7 @@ from reminix_runtime import create_app
 
 
 @pytest.mark.openai
-class TestOpenAIAdapter:
+class TestOpenAIAgents:
     """Integration tests for OpenAI agents."""
 
     @pytest.fixture

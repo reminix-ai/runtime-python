@@ -32,7 +32,7 @@ class LangGraphThreadAgent:
             "capabilities": {"streaming": True},
             "input": AGENT_TEMPLATES["thread"]["input"],
             "output": {"type": "string"},
-            "adapter": "langgraph",
+            "framework": "langgraph",
             "template": "thread",
         }
 

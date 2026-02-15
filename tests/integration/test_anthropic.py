@@ -10,7 +10,7 @@ from reminix_runtime import create_app
 
 
 @pytest.mark.anthropic
-class TestAnthropicAdapter:
+class TestAnthropicAgents:
     """Integration tests for Anthropic agents."""
 
     @pytest.fixture

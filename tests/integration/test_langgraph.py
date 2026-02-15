@@ -24,7 +24,7 @@ def get_weather(city: str) -> str:
 
 
 @pytest.mark.langgraph
-class TestLangGraphAdapter:
+class TestLangGraphAgents:
     """Integration tests for LangGraph agents."""
 
     @pytest.fixture

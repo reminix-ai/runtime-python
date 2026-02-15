@@ -30,7 +30,7 @@ class LangGraphWorkflowAgent:
             "capabilities": {"streaming": False},
             "input": AGENT_TEMPLATES["workflow"]["input"],
             "output": AGENT_TEMPLATES["workflow"]["output"],
-            "adapter": "langgraph",
+            "framework": "langgraph",
             "template": "workflow",
         }
 

@@ -38,7 +38,7 @@ class OpenAITaskAgent:
             "capabilities": {"streaming": False},
             "input": AGENT_TEMPLATES["task"]["input"],
             "output": AGENT_TEMPLATES["task"]["output"],
-            "adapter": "openai",
+            "framework": "openai",
             "template": "task",
         }
 

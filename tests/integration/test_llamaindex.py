@@ -41,7 +41,7 @@ class ChatEngineWrapper:
 
 
 @pytest.mark.llamaindex
-class TestLlamaIndexAdapter:
+class TestLlamaIndexAgents:
     """Integration tests for LlamaIndex agents."""
 
     @pytest.fixture

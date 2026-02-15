@@ -23,7 +23,7 @@ def get_weather(city: str) -> str:
 
 
 @pytest.mark.langchain
-class TestLangChainAdapter:
+class TestLangChainAgents:
     """Integration tests for LangChain agents."""
 
     @pytest.fixture

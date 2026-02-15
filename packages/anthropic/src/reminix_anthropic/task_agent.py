@@ -40,7 +40,7 @@ class AnthropicTaskAgent:
             "capabilities": {"streaming": False},
             "input": AGENT_TEMPLATES["task"]["input"],
             "output": AGENT_TEMPLATES["task"]["output"],
-            "adapter": "anthropic",
+            "framework": "anthropic",
             "template": "task",
         }
 

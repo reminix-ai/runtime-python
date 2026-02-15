@@ -50,7 +50,7 @@ class OpenAIThreadAgent:
             "capabilities": {"streaming": False},
             "input": AGENT_TEMPLATES["thread"]["input"],
             "output": AGENT_TEMPLATES["thread"]["output"],
-            "adapter": "openai",
+            "framework": "openai",
             "template": "thread",
         }
 
