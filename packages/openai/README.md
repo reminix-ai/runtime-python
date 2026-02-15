@@ -1,6 +1,6 @@
 # reminix-openai
 
-Reminix Runtime adapter for the [OpenAI API](https://platform.openai.com/docs). Serve OpenAI models as a REST API.
+Reminix Runtime agents for the [OpenAI API](https://platform.openai.com/docs). Serve OpenAI models as a REST API with chat, task, and thread agents.
 
 > **Ready to go live?** [Deploy to Reminix Cloud](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
 
@@ -14,6 +14,10 @@ This will also install `reminix-runtime` as a dependency.
 
 ## Quick Start
 
+### Chat Agent
+
+The chat agent follows the chat template and supports streaming responses.
+
 ```python
 from openai import AsyncOpenAI
 from reminix_openai import OpenAIChatAgent
@@ -24,14 +28,56 @@ agent = OpenAIChatAgent(client, name="my-chatbot", model="gpt-4o")
 serve(agents=[agent])
 ```
 
-Your agent is now available at:
-- `POST /agents/my-chatbot/invoke` - Execute the agent
+### Task Agent
+
+The task agent follows the task template and returns structured output. Streaming is not supported.
+
+```python
+from openai import AsyncOpenAI
+from pydantic import BaseModel
+from reminix_openai import OpenAITaskAgent
+from reminix_runtime import serve
+
+class Summary(BaseModel):
+    title: str
+    bullet_points: list[str]
+
+client = AsyncOpenAI()
+agent = OpenAITaskAgent(client, output_schema=Summary, name="summarizer", model="gpt-4o")
+serve(agents=[agent])
+```
+
+### Thread Agent
+
+The thread agent follows the thread template and supports tool use over multiple turns. Streaming is not supported.
+
+```python
+from openai import AsyncOpenAI
+from reminix_openai import OpenAIThreadAgent
+from reminix_runtime import serve
+
+def get_weather(location: str) -> str:
+    return f"The weather in {location} is sunny."
+
+client = AsyncOpenAI()
+agent = OpenAIThreadAgent(
+    client,
+    tools=[get_weather],
+    name="assistant",
+    model="gpt-4o",
+    max_turns=10,
+)
+serve(agents=[agent])
+```
+
+Your agents are now available at:
+- `POST /agents/{name}/invoke` - Execute the agent
 
 ## API Reference
 
 ### `OpenAIChatAgent(client, name, model)`
 
-Create an OpenAI chat agent.
+Create an OpenAI chat agent. Follows the chat template and supports streaming.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -39,7 +85,34 @@ Create an OpenAI chat agent.
 | `name` | `str` | `"openai-agent"` | Name for the agent (used in URL path) |
 | `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
 
-**Returns:** `OpenAIChatAgent` - A Reminix agent instance
+**Returns:** `OpenAIChatAgent` - A Reminix chat agent instance
+
+### `OpenAITaskAgent(client, output_schema, name, model)`
+
+Create an OpenAI task agent. Follows the task template and returns structured output. Streaming is not supported.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `client` | `AsyncOpenAI` | required | An OpenAI async client |
+| `output_schema` | `type[BaseModel]` | required | A Pydantic model defining the structured output |
+| `name` | `str` | `"openai-task-agent"` | Name for the agent (used in URL path) |
+| `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
+
+**Returns:** `OpenAITaskAgent` - A Reminix task agent instance
+
+### `OpenAIThreadAgent(client, tools, name, model, max_turns)`
+
+Create an OpenAI thread agent. Follows the thread template and supports tool use over multiple turns. Streaming is not supported.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `client` | `AsyncOpenAI` | required | An OpenAI async client |
+| `tools` | `list` | required | A list of tool functions the agent can call |
+| `name` | `str` | `"openai-thread-agent"` | Name for the agent (used in URL path) |
+| `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
+| `max_turns` | `int` | `10` | Maximum number of tool-use turns before stopping |
+
+**Returns:** `OpenAIThreadAgent` - A Reminix thread agent instance
 
 ### Example with Custom Configuration
 
@@ -94,7 +167,7 @@ Execute the agent with a prompt or messages.
 
 ### Streaming
 
-For streaming responses, set `stream: true` in the request:
+For streaming responses, set `stream: true` in the request (chat agent only):
 
 ```json
 {

@@ -1,4 +1,4 @@
-"""Anthropic thread adapter for Reminix Runtime."""
+"""Anthropic thread agent for Reminix Runtime."""
 
 import json
 from typing import Any
@@ -18,7 +18,7 @@ from reminix_runtime import (
 
 
 class AnthropicThreadAgent:
-    """Thread agent adapter for Anthropic with tool execution loop."""
+    """Anthropic thread agent with tool execution loop."""
 
     def __init__(
         self,
@@ -48,7 +48,7 @@ class AnthropicThreadAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "anthropic thread adapter",
+            "description": "anthropic thread agent",
             "capabilities": {"streaming": False},
             "input": AGENT_TEMPLATES["thread"]["input"],
             "output": AGENT_TEMPLATES["thread"]["output"],

@@ -1,4 +1,4 @@
-"""LlamaIndex RAG adapter for Reminix Runtime."""
+"""LlamaIndex RAG agent for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -22,7 +22,7 @@ class ChatEngine(Protocol):
 
 
 class LlamaIndexRagAgent:
-    """RAG agent adapter for LlamaIndex chat engines."""
+    """LlamaIndex RAG agent for chat engines."""
 
     def __init__(self, engine: ChatEngine, name: str = "llamaindex-agent") -> None:
         self._engine = engine
@@ -35,7 +35,7 @@ class LlamaIndexRagAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "llamaindex adapter",
+            "description": "llamaindex rag agent",
             "capabilities": {"streaming": True},
             "input": AGENT_TEMPLATES["rag"]["input"],
             "output": {"type": "string"},

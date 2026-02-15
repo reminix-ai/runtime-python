@@ -1,4 +1,4 @@
-"""OpenAI thread adapter for Reminix Runtime."""
+"""OpenAI thread agent for Reminix Runtime."""
 
 import json
 from typing import Any
@@ -18,7 +18,7 @@ from reminix_runtime import (
 
 
 class OpenAIThreadAgent:
-    """Thread agent adapter for OpenAI with tool execution loop."""
+    """OpenAI thread agent with tool execution loop."""
 
     def __init__(
         self,
@@ -46,7 +46,7 @@ class OpenAIThreadAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "openai thread adapter",
+            "description": "openai thread agent",
             "capabilities": {"streaming": False},
             "input": AGENT_TEMPLATES["thread"]["input"],
             "output": AGENT_TEMPLATES["thread"]["output"],

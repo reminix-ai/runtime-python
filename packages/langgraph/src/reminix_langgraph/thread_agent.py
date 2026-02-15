@@ -1,4 +1,4 @@
-"""LangGraph thread adapter for Reminix Runtime."""
+"""LangGraph thread agent for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -15,7 +15,7 @@ from reminix_runtime import (
 
 
 class LangGraphThreadAgent:
-    """Thread agent adapter for LangGraph compiled graphs."""
+    """LangGraph thread agent for compiled graphs."""
 
     def __init__(self, graph: Any, name: str = "langgraph-agent") -> None:
         self._graph = graph
@@ -28,7 +28,7 @@ class LangGraphThreadAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "langgraph adapter",
+            "description": "langgraph thread agent",
             "capabilities": {"streaming": True},
             "input": AGENT_TEMPLATES["thread"]["input"],
             "output": {"type": "string"},

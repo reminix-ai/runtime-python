@@ -1,4 +1,4 @@
-"""Anthropic task adapter for Reminix Runtime."""
+"""Anthropic task agent for Reminix Runtime."""
 
 import json
 from typing import Any
@@ -9,7 +9,7 @@ from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
 class AnthropicTaskAgent:
-    """Task agent adapter for Anthropic tool-use structured output."""
+    """Anthropic task agent using tool-use structured output."""
 
     def __init__(
         self,
@@ -36,7 +36,7 @@ class AnthropicTaskAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "anthropic task adapter",
+            "description": "anthropic task agent",
             "capabilities": {"streaming": False},
             "input": AGENT_TEMPLATES["task"]["input"],
             "output": AGENT_TEMPLATES["task"]["output"],

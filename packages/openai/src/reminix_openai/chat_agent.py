@@ -1,4 +1,4 @@
-"""OpenAI chat adapter for Reminix Runtime."""
+"""OpenAI chat agent for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -16,7 +16,7 @@ from reminix_runtime import (
 
 
 class OpenAIChatAgent:
-    """Chat agent adapter for OpenAI chat completions."""
+    """OpenAI chat agent using chat completions."""
 
     def __init__(
         self,
@@ -39,7 +39,7 @@ class OpenAIChatAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "openai adapter",
+            "description": "openai chat agent",
             "capabilities": {"streaming": True},
             "input": AGENT_TEMPLATES["chat"]["input"],
             "output": AGENT_TEMPLATES["chat"]["output"],

@@ -12,23 +12,23 @@ A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framewor
 - **REST API Server**: Execute endpoint powered by [FastAPI](https://fastapi.tiangolo.com)
 - **Streaming Support**: Server-Sent Events (SSE) out of the box
 - **Agent Templates**: Standard patterns (prompt, chat, task, rag, thread, workflow) for common agent I/O
-- **Framework Adapters**: Pre-built integrations for LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex
+- **Framework Integrations**: Pre-built agents for LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
 | [`reminix-runtime`](./packages/runtime) | Core runtime with `@agent` and `@tool` decorators and agent templates |
-| [`reminix-langchain`](./packages/langchain) | LangChain adapter |
+| [`reminix-langchain`](./packages/langchain) | LangChain chat agent |
 | [`reminix-langgraph`](./packages/langgraph) | LangGraph thread and workflow agents |
-| [`reminix-openai`](./packages/openai) | OpenAI Agents adapter |
-| [`reminix-anthropic`](./packages/anthropic) | Anthropic adapter |
-| [`reminix-llamaindex`](./packages/llamaindex) | LlamaIndex adapter |
+| [`reminix-openai`](./packages/openai) | OpenAI chat, task, and thread agents |
+| [`reminix-anthropic`](./packages/anthropic) | Anthropic chat, task, and thread agents |
+| [`reminix-llamaindex`](./packages/llamaindex) | LlamaIndex RAG agent |
 
 ## Installation
 
 ```bash
-# Install the adapter for your framework (runtime is included as a dependency)
+# Install the package for your framework (runtime is included as a dependency)
 pip install reminix-langchain
 ```
 

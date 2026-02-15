@@ -1,4 +1,4 @@
-"""LangChain chat adapter for Reminix Runtime."""
+"""LangChain chat agent for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -26,7 +26,7 @@ from reminix_runtime import (
 def to_langchain_message(message: Message) -> BaseMessage:
     """Convert a Reminix message to a LangChain message.
 
-    This is exported for reuse by the langgraph adapter.
+    This is exported for reuse by the langgraph package.
     """
     role = message.role
     content = message_content_to_text(message.content)
@@ -45,7 +45,7 @@ def to_langchain_message(message: Message) -> BaseMessage:
 
 
 class LangChainChatAgent:
-    """Chat agent adapter for LangChain agents and runnables."""
+    """LangChain chat agent for agents and runnables."""
 
     def __init__(self, agent: Runnable, name: str = "langchain-agent") -> None:
         self._agent = agent
@@ -58,7 +58,7 @@ class LangChainChatAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "langchain adapter",
+            "description": "langchain chat agent",
             "capabilities": {"streaming": True},
             "input": AGENT_TEMPLATES["chat"]["input"],
             "output": AGENT_TEMPLATES["chat"]["output"],

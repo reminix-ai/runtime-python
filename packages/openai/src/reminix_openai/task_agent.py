@@ -1,4 +1,4 @@
-"""OpenAI task adapter for Reminix Runtime."""
+"""OpenAI task agent for Reminix Runtime."""
 
 import json
 from typing import Any
@@ -9,7 +9,7 @@ from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
 class OpenAITaskAgent:
-    """Task agent adapter for OpenAI structured outputs (JSON schema)."""
+    """OpenAI task agent using structured outputs (JSON schema)."""
 
     def __init__(
         self,
@@ -34,7 +34,7 @@ class OpenAITaskAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "openai task adapter",
+            "description": "openai task agent",
             "capabilities": {"streaming": False},
             "input": AGENT_TEMPLATES["task"]["input"],
             "output": AGENT_TEMPLATES["task"]["output"],

@@ -1,4 +1,4 @@
-"""LangGraph workflow adapter for Reminix Runtime."""
+"""LangGraph workflow agent for Reminix Runtime."""
 
 from typing import Any
 
@@ -9,7 +9,7 @@ from reminix_runtime import AGENT_TEMPLATES, AgentRequest
 
 
 class LangGraphWorkflowAgent:
-    """Workflow agent adapter for LangGraph compiled graphs.
+    """LangGraph workflow agent for compiled graphs.
 
     Maps LangGraph's streaming per-node outputs and interrupt/resume
     to the workflow template's {status, steps, result, pendingAction} output schema.
@@ -26,7 +26,7 @@ class LangGraphWorkflowAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "langgraph workflow adapter",
+            "description": "langgraph workflow agent",
             "capabilities": {"streaming": False},
             "input": AGENT_TEMPLATES["workflow"]["input"],
             "output": AGENT_TEMPLATES["workflow"]["output"],

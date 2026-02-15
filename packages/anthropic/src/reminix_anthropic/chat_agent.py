@@ -1,4 +1,4 @@
-"""Anthropic chat adapter for Reminix Runtime."""
+"""Anthropic chat agent for Reminix Runtime."""
 
 import json
 from collections.abc import AsyncIterator
@@ -16,7 +16,7 @@ from reminix_runtime import (
 
 
 class AnthropicChatAgent:
-    """Chat agent adapter for Anthropic messages API."""
+    """Anthropic chat agent using the messages API."""
 
     def __init__(
         self,
@@ -41,7 +41,7 @@ class AnthropicChatAgent:
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "description": "anthropic adapter",
+            "description": "anthropic chat agent",
             "capabilities": {"streaming": True},
             "input": AGENT_TEMPLATES["chat"]["input"],
             "output": AGENT_TEMPLATES["chat"]["output"],
