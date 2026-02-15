@@ -117,7 +117,7 @@ def wrap_agent(agent: Runnable, name: str = "langchain-agent") -> LangChainAgent
 
         llm = ChatOpenAI(model="gpt-4")
         agent = wrap_agent(llm, name="my-agent")
-        serve(agents=[agent], port=8080)
+        serve(agents=[agent])
         ```
     """
     return LangChainAgentAdapter(agent, name=name)

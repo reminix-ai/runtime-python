@@ -43,7 +43,7 @@ from reminix_runtime import serve
 
 agent = ChatOpenAI(model="gpt-4o")
 
-serve(agents=[wrap_agent(agent, name="my-agent")], port=8080)
+serve(agents=[wrap_agent(agent, name="my-agent")])
 ```
 
 ### With Decorators (No Framework)
@@ -56,7 +56,7 @@ async def calculator(a: float, b: float) -> float:
     """Add two numbers."""
     return a + b
 
-serve(agents=[calculator], port=8080)
+serve(agents=[calculator])
 ```
 
 Your agent is now available at:

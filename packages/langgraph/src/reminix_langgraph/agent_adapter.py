@@ -101,7 +101,7 @@ def wrap_agent(graph: Any, name: str = "langgraph-agent") -> LangGraphAgentAdapt
         llm = ChatOpenAI(model="gpt-4")
         graph = create_react_agent(llm, tools=[])
         agent = wrap_agent(graph, name="my-agent")
-        serve(agents=[agent], port=8080)
+        serve(agents=[agent])
         ```
     """
     return LangGraphAgentAdapter(graph, name=name)

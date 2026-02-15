@@ -19,7 +19,7 @@ from langchain_openai import ChatOpenAI
 from reminix_langchain import serve_agent
 
 llm = ChatOpenAI(model="gpt-4o")
-serve_agent(llm, name="my-chatbot", port=8080)
+serve_agent(llm, name="my-chatbot")
 ```
 
 For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
@@ -31,7 +31,7 @@ from reminix_runtime import serve
 
 llm = ChatOpenAI(model="gpt-4o")
 agent = wrap_agent(llm, name="my-chatbot")
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```
 
 Your agent is now available at:
@@ -79,7 +79,7 @@ chain = prompt | llm
 
 # Wrap and serve
 agent = wrap_agent(chain, name="my-chain")
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```
 
 ## Endpoint Input/Output Formats

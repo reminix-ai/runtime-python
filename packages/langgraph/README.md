@@ -21,7 +21,7 @@ from reminix_langgraph import serve_agent
 
 llm = ChatOpenAI(model="gpt-4o")
 graph = create_react_agent(llm, tools=[])
-serve_agent(graph, name="my-agent", port=8080)
+serve_agent(graph, name="my-agent")
 ```
 
 For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
@@ -35,7 +35,7 @@ from reminix_runtime import serve
 llm = ChatOpenAI(model="gpt-4o")
 graph = create_react_agent(llm, tools=[])
 agent = wrap_agent(graph, name="my-agent")
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```
 
 Your agent is now available at:

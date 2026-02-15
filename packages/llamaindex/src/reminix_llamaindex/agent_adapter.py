@@ -101,7 +101,7 @@ def wrap_agent(engine: ChatEngine, name: str = "llamaindex-agent") -> LlamaIndex
         llm = OpenAI(model="gpt-4")
         engine = SimpleChatEngine.from_defaults(llm=llm)
         agent = wrap_agent(engine, name="my-agent")
-        serve(agents=[agent], port=8080)
+        serve(agents=[agent])
         ```
     """
     return LlamaIndexAgentAdapter(engine, name=name)

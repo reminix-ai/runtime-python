@@ -107,7 +107,7 @@ def wrap_agent(
 
         client = AsyncOpenAI()
         agent = wrap_agent(client, name="my-agent", model="gpt-4o")
-        serve(agents=[agent], port=8080)
+        serve(agents=[agent])
         ```
     """
     return OpenAIAgentAdapter(client, name=name, model=model)

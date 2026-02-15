@@ -19,7 +19,7 @@ from openai import AsyncOpenAI
 from reminix_openai import serve_agent
 
 client = AsyncOpenAI()
-serve_agent(client, name="my-chatbot", model="gpt-4o", port=8080)
+serve_agent(client, name="my-chatbot", model="gpt-4o")
 ```
 
 For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
@@ -31,7 +31,7 @@ from reminix_runtime import serve
 
 client = AsyncOpenAI()
 agent = wrap_agent(client, name="my-chatbot", model="gpt-4o")
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```
 
 Your agent is now available at:
@@ -81,7 +81,7 @@ agent = wrap_agent(
     model="gpt-4o"
 )
 
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```
 
 ## Endpoint Input/Output Formats

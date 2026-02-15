@@ -121,7 +121,7 @@ def wrap_agent(
 
         client = AsyncAnthropic()
         agent = wrap_agent(client, name="my-agent", model="claude-sonnet-4-20250514")
-        serve(agents=[agent], port=8080)
+        serve(agents=[agent])
         ```
     """
     return AnthropicAgentAdapter(client, name=name, model=model, max_tokens=max_tokens)

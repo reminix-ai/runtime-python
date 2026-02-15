@@ -19,7 +19,7 @@ from anthropic import AsyncAnthropic
 from reminix_anthropic import serve_agent
 
 client = AsyncAnthropic()
-serve_agent(client, name="my-claude", model="claude-sonnet-4-20250514", port=8080)
+serve_agent(client, name="my-claude", model="claude-sonnet-4-20250514")
 ```
 
 For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
@@ -31,7 +31,7 @@ from reminix_runtime import serve
 
 client = AsyncAnthropic()
 agent = wrap_agent(client, name="my-claude", model="claude-sonnet-4-20250514")
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```
 
 Your agent is now available at:

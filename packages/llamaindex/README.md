@@ -21,7 +21,7 @@ from reminix_llamaindex import serve_agent
 
 llm = OpenAI(model="gpt-4o")
 engine = SimpleChatEngine.from_defaults(llm=llm)
-serve_agent(engine, name="my-chatbot", port=8080)
+serve_agent(engine, name="my-chatbot")
 ```
 
 For more flexibility (e.g., serving multiple agents), use `wrap_agent` and `serve` separately:
@@ -35,7 +35,7 @@ from reminix_runtime import serve
 llm = OpenAI(model="gpt-4o")
 engine = SimpleChatEngine.from_defaults(llm=llm)
 agent = wrap_agent(engine, name="my-chatbot")
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```
 
 Your agent is now available at:
@@ -82,7 +82,7 @@ engine = index.as_chat_engine(llm=OpenAI(model="gpt-4o"))
 
 # Wrap and serve
 agent = wrap_agent(engine, name="rag-chatbot")
-serve(agents=[agent], port=8080)
+serve(agents=[agent])
 ```
 
 ## Endpoint Input/Output Formats
