@@ -473,85 +473,92 @@ async def my_tool(param: str, context: dict | None = None) -> dict:
 
 ## Advanced
 
-### Agent Class
+### RuntimeAgent
 
-For more control, you can use the `Agent` class directly:
-
-```python
-from reminix_runtime import Agent, ExecuteRequest, ExecuteResponse, serve
-
-agent = Agent("my-agent", metadata={"version": "1.0"})
-
-@agent.handler
-async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
-    return ExecuteResponse(output="Hello!")
-
-# Optional: streaming handler
-@agent.stream_handler
-async def handle_execute_stream(request: ExecuteRequest):
-    yield "Hello"
-    yield " world!"
-
-serve(agents=[agent], port=8080)
-```
-
-### Tool Class
-
-For programmatic tool creation:
+For programmatic agent creation without decorators, use `RuntimeAgent` directly:
 
 ```python
-from reminix_runtime import Tool, ToolSchema, ToolExecuteRequest, ToolExecuteResponse, serve
+from reminix_runtime import RuntimeAgent, AgentRequest, serve
 
-async def execute_handler(request: ToolExecuteRequest) -> ToolExecuteResponse:
-    location = request.input.get("location", "unknown")
-    return ToolExecuteResponse(output={"temp": 72, "location": location})
+async def my_invoke(request: AgentRequest) -> dict:
+    prompt = request.input.get("prompt", "")
+    return {"output": f"Hello, {prompt}!"}
 
-my_tool = Tool(
-    execute_handler,
-    name="get_weather",
-    description="Get weather for a location",
+async def my_invoke_stream(request: AgentRequest):
+    for word in "Hello streaming world!".split():
+        yield word + " "
+
+my_agent = RuntimeAgent(
+    name="my-agent",
+    metadata={"description": "A programmatic agent", "version": "1.0"},
+    invoke_fn=my_invoke,
+    invoke_stream_fn=my_invoke_stream,
 )
 
-serve(tools=[my_tool], port=8080)
+serve(agents=[my_agent], port=8080)
 ```
 
-### AgentAdapter
+### Tool Factory
 
-For building framework integrations. See the [framework adapter packages](#framework-adapters) for examples.
+For tools with explicit schemas, use the `tool()` factory with keyword arguments:
 
 ```python
-from reminix_runtime import AgentAdapter, ExecuteRequest, ExecuteResponse
+from reminix_runtime import tool, serve
 
-class MyFrameworkAdapter(AgentAdapter):
-    adapter_name = "my-framework"
+@tool(name="get_weather", description="Get weather for a location")
+async def get_weather(location: str, units: str = "celsius") -> dict:
+    """Get current weather.
+
+    Args:
+        location: City name
+        units: Temperature units
+    """
+    return {"temp": 72, "location": location, "units": units}
+
+serve(tools=[get_weather], port=8080)
+```
+
+### AgentLike Protocol
+
+For building framework integrations, implement the `AgentLike` protocol. See the [framework adapter packages](#framework-adapters) for examples.
+
+```python
+from reminix_runtime import AgentLike, AgentRequest, RuntimeAgent
+
+class MyFrameworkAdapter:
+    """Wraps a framework client as an AgentLike."""
 
     def __init__(self, client, name: str = "my-framework"):
         self._client = client
         self._name = name
 
-    @property
-    def name(self) -> str:
-        return self._name
+    def to_agent(self) -> AgentLike:
+        async def invoke(request: AgentRequest) -> dict:
+            result = await self._client.run(request.input)
+            return {"output": result}
 
-    async def execute(self, request: ExecuteRequest) -> ExecuteResponse:
-        result = await self._client.run(request.input)
-        return ExecuteResponse(output=result)
+        return RuntimeAgent(
+            name=self._name,
+            metadata={"description": "My framework agent"},
+            invoke_fn=invoke,
+        )
 ```
 
 ### Serverless Deployment
 
-Use `to_asgi()` for serverless deployments:
+Use `create_app()` for serverless deployments:
 
 ```python
 # AWS Lambda with Mangum
 from mangum import Mangum
-from reminix_runtime import agent, ExecuteResponse
+from reminix_runtime import agent, create_app
 
 @agent
 async def my_agent(task: str) -> str:
     return f"Completed: {task}"
 
-handler = Mangum(my_agent.to_asgi())
+app = create_app(agents=[my_agent])
+handler = Mangum(app)
 ```
 
 ## Deployment

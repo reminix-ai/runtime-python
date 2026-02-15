@@ -1,6 +1,6 @@
 # Custom Agent Example
 
-This example demonstrates how to create a custom agent using the decorator-based `Agent` class from `reminix-runtime`.
+This example demonstrates how to create a custom agent using the `@agent` decorator from `reminix-runtime`.
 
 ## Running
 

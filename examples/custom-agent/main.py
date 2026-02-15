@@ -1,8 +1,8 @@
 """
 Custom Agent Example
 
-This example shows how to create a custom agent using the decorator-based
-Agent class from reminix-runtime.
+This example shows how to create a custom agent using the @agent decorator
+from reminix-runtime.
 
 Usage:
     python main.py
@@ -37,58 +37,38 @@ Then test the endpoints:
 
 import json
 
-from reminix_runtime import (
-    Agent,
-    ExecuteRequest,
-    ExecuteResponse,
-    serve,
-)
-
-# Create an agent with metadata
-agent = Agent(
-    "echo",
-    metadata={
-        "description": "A simple echo agent that demonstrates the decorator pattern",
-        "version": "1.0.0",
-    },
-)
+from reminix_runtime import agent, serve
 
 
-@agent.handler
-async def handle_execute(request: ExecuteRequest) -> ExecuteResponse:
-    """Handle execute requests."""
+@agent(name="echo")
+async def echo(
+    message: str = "",
+    messages: list | None = None,
+    context: dict | None = None,
+):
+    """A simple echo agent that demonstrates the decorator pattern.
+
+    Supports both task-style (message) and chat-style (messages) requests,
+    with optional streaming.
+
+    Args:
+        message: A message to echo back
+        messages: Chat-style messages list
+        context: Optional request context
+    """
     # Check if this is a chat-style request (has messages)
-    if "messages" in request.input and isinstance(request.input["messages"], list):
-        messages = request.input["messages"]
-        user_message = messages[-1]["content"] if messages else ""
-        return ExecuteResponse(output=f"You said: {user_message}")
-
-    # Otherwise treat as task-style request
-    message = request.input.get("message", "")
-
-    # Access optional context
-    user_id = None
-    if request.context:
-        user_id = request.context.get("user_id")
-
-    output = f"Echo: {message}"
-    if user_id:
-        output += f" (from user {user_id})"
-
-    return ExecuteResponse(output=output)
-
-
-@agent.stream_handler
-async def handle_execute_stream(request: ExecuteRequest):
-    """Handle streaming execute requests."""
-    # Check if this is a chat-style request (has messages)
-    if "messages" in request.input and isinstance(request.input["messages"], list):
-        messages = request.input["messages"]
+    if messages and isinstance(messages, list):
         user_message = messages[-1]["content"] if messages else ""
         response = f"You said: {user_message}"
     else:
-        message = request.input.get("message", "")
+        # Access optional context
+        user_id = None
+        if context:
+            user_id = context.get("user_id")
+
         response = f"Echo: {message}"
+        if user_id:
+            response += f" (from user {user_id})"
 
     # Stream the response word by word
     words = response.split()
@@ -100,8 +80,8 @@ async def handle_execute_stream(request: ExecuteRequest):
 if __name__ == "__main__":
     print("Custom Agent Example")
     print("=" * 40)
-    print(f"Agent: {agent.name}")
-    print(f"Streaming: {agent.streaming}")
+    print(f"Agent: {echo.name}")
+    print(f"Streaming: {echo.metadata.get('capabilities', {}).get('streaming', False)}")
     print()
     print("Server running on http://localhost:8080")
     print()
@@ -111,4 +91,4 @@ if __name__ == "__main__":
     print("  POST /agents/echo/invoke")
     print()
 
-    serve(agents=[agent], port=8080)
+    serve(agents=[echo], port=8080)
