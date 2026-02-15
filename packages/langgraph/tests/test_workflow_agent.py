@@ -211,6 +211,7 @@ class TestLangGraphWorkflowAgentInvoke:
         assert output["status"] == "failed"
         assert len(output["steps"]) == 1
         assert output["steps"][0]["status"] == "failed"
+        assert output["error"] == "Graph execution failed"
 
     @pytest.mark.asyncio
     async def test_thread_id_in_context(self):

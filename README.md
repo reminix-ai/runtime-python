@@ -20,7 +20,7 @@ A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framewor
 |---------|-------------|
 | [`reminix-runtime`](./packages/runtime) | Core runtime with `@agent` and `@tool` decorators and agent templates |
 | [`reminix-langchain`](./packages/langchain) | LangChain adapter |
-| [`reminix-langgraph`](./packages/langgraph) | LangGraph adapter |
+| [`reminix-langgraph`](./packages/langgraph) | LangGraph thread and workflow agents |
 | [`reminix-openai`](./packages/openai) | OpenAI Agents adapter |
 | [`reminix-anthropic`](./packages/anthropic) | Anthropic adapter |
 | [`reminix-llamaindex`](./packages/llamaindex) | LlamaIndex adapter |

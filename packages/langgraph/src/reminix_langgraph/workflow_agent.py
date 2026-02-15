@@ -109,7 +109,7 @@ class LangGraphWorkflowAgent:
                 },
             }
 
-        except Exception:
+        except Exception as exc:
             # 5. Handle errors
             if steps:
                 steps[-1]["status"] = "failed"
@@ -118,6 +118,7 @@ class LangGraphWorkflowAgent:
                 "output": {
                     "status": "failed",
                     "steps": steps,
+                    "error": str(exc),
                 },
             }
 
