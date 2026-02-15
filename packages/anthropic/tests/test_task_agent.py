@@ -1,4 +1,4 @@
-"""Tests for the Anthropic task adapter."""
+"""Tests for the Anthropic task agent."""
 
 from unittest.mock import AsyncMock, MagicMock
 

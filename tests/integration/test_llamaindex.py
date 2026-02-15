@@ -1,4 +1,4 @@
-"""Integration tests for LlamaIndex adapter with tool calling."""
+"""Integration tests for LlamaIndex agents with tool calling."""
 
 import httpx
 import pytest
@@ -42,7 +42,7 @@ class ChatEngineWrapper:
 
 @pytest.mark.llamaindex
 class TestLlamaIndexAdapter:
-    """Integration tests for LlamaIndex adapter."""
+    """Integration tests for LlamaIndex agents."""
 
     @pytest.fixture
     def agent(self, openai_api_key):

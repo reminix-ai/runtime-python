@@ -1,7 +1,7 @@
 [project]
 name = "reminix-anthropic"
 version = "0.0.19"
-description = "Reminix adapter for Anthropic - serve agents as REST APIs"
+description = "Reminix agents for Anthropic - serve AI agents as REST APIs"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"

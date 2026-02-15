@@ -1,4 +1,4 @@
-"""Integration tests for Anthropic adapter."""
+"""Integration tests for Anthropic agents."""
 
 import httpx
 import pytest
@@ -11,7 +11,7 @@ from reminix_runtime import create_app
 
 @pytest.mark.anthropic
 class TestAnthropicAdapter:
-    """Integration tests for Anthropic adapter."""
+    """Integration tests for Anthropic agents."""
 
     @pytest.fixture
     def agent(self, anthropic_api_key):

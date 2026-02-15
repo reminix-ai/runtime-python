@@ -1,4 +1,4 @@
-"""Tests for the OpenAI task adapter."""
+"""Tests for the OpenAI task agent."""
 
 import json
 from unittest.mock import AsyncMock, MagicMock

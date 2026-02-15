@@ -1,6 +1,6 @@
 # reminix-langgraph
 
-Reminix Runtime adapters for [LangGraph](https://langchain-ai.github.io/langgraph/). Serve any LangGraph agent as a REST API.
+Reminix agents for [LangGraph](https://langchain-ai.github.io/langgraph/). Serve any LangGraph agent as a REST API.
 
 > **Ready to go live?** [Deploy to Reminix Cloud](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
 
@@ -55,7 +55,7 @@ Create a LangGraph thread agent for chat-style interactions.
 
 **Returns:** `LangGraphThreadAgent` - A Reminix thread agent instance
 
-The thread adapter:
+The thread agent:
 1. Converts incoming messages to LangChain message format
 2. Invokes the graph with `{"messages": [...]}`
 3. Extracts the last AI message from the response
@@ -72,7 +72,7 @@ Create a LangGraph workflow agent for multi-step execution with interrupt/resume
 
 **Returns:** `LangGraphWorkflowAgent` - A Reminix workflow agent instance
 
-The workflow adapter:
+The workflow agent:
 1. Streams the graph and collects per-node outputs as steps
 2. Maps `GraphInterrupt` to `pendingAction` with status `"paused"`
 3. Accepts `resume` input to continue interrupted graphs via `Command`

@@ -32,7 +32,7 @@ def message_content_to_text(
 def build_messages_from_input(request: AgentRequest) -> list[Message]:
     """Extract a list of Messages from an AgentRequest's input dict.
 
-    Handles three input shapes that all adapters accept:
+    Handles three input shapes that all agents accept:
     - ``{ "messages": [...] }`` — chat-style, returned as Message list
     - ``{ "prompt": "..." }`` — single prompt, wrapped as a user message
     - anything else — stringified and wrapped as a user message

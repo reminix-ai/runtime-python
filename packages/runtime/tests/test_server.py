@@ -14,7 +14,7 @@ from reminix_runtime.server import create_app
 
 
 class MockTaskAdapter:
-    """A mock adapter for testing task-style requests."""
+    """A mock agent for testing task-style requests."""
 
     def __init__(self, name: str = "mock-agent"):
         self._name = name
@@ -41,7 +41,7 @@ class MockTaskAdapter:
 
 
 class MockChatAdapter:
-    """A mock adapter for testing chat-style requests."""
+    """A mock agent for testing chat-style requests."""
 
     def __init__(self, name: str = "mock-agent"):
         self._name = name

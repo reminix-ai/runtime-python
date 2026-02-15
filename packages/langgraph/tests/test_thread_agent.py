@@ -1,4 +1,4 @@
-"""Tests for the LangGraph thread adapter."""
+"""Tests for the LangGraph thread agent."""
 
 from unittest.mock import AsyncMock, MagicMock
 

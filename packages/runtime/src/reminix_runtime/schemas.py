@@ -310,7 +310,7 @@ AGENT_TEMPLATES: dict[AgentTemplate, dict[str, Any]] = {
 DEFAULT_AGENT_INPUT: dict[str, Any] = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE]["input"]
 DEFAULT_AGENT_OUTPUT: dict[str, Any] = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE]["output"]
 
-# Shared input schema for adapters (accepts messages or prompt)
+# Shared input schema for agents (accepts messages or prompt)
 ADAPTER_INPUT: dict[str, Any] = {
     "type": "object",
     "properties": {

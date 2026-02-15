@@ -1,6 +1,6 @@
 # reminix-langchain
 
-Reminix Runtime adapter for [LangChain](https://langchain.com). Serve any LangChain runnable as a REST API.
+Reminix agent for [LangChain](https://langchain.com). Serve any LangChain runnable as a REST API.
 
 > **Ready to go live?** [Deploy to Reminix Cloud](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
 

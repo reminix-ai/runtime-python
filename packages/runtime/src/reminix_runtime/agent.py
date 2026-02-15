@@ -33,10 +33,10 @@ class AgentLike(Protocol):
 
 
 class RuntimeAgent:
-    """Agent object produced by @agent decorator and adapter wrap_agent().
+    """Agent object produced by @agent decorator and framework agents.
 
     This is the concrete implementation that both the @agent decorator
-    and framework adapters produce. The server accepts anything matching
+    and framework agents produce. The server accepts anything matching
     the AgentLike protocol.
     """
 

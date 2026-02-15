@@ -1,6 +1,6 @@
 # reminix-openai
 
-Reminix Runtime agents for the [OpenAI API](https://platform.openai.com/docs). Serve OpenAI models as a REST API with chat, task, and thread agents.
+Reminix agents for the [OpenAI API](https://platform.openai.com/docs). Serve OpenAI models as a REST API with chat, task, and thread agents.
 
 > **Ready to go live?** [Deploy to Reminix Cloud](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
 

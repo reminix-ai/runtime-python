@@ -1,4 +1,4 @@
-"""Tests for the LangGraph workflow adapter."""
+"""Tests for the LangGraph workflow agent."""
 
 from unittest.mock import MagicMock
 

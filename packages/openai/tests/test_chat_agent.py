@@ -1,4 +1,4 @@
-"""Tests for the OpenAI chat adapter."""
+"""Tests for the OpenAI chat agent."""
 
 from unittest.mock import AsyncMock, MagicMock
 

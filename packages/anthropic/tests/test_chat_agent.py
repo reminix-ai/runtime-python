@@ -1,4 +1,4 @@
-"""Tests for the Anthropic chat adapter."""
+"""Tests for the Anthropic chat agent."""
 
 from unittest.mock import AsyncMock, MagicMock
 

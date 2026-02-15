@@ -1,4 +1,4 @@
-"""Integration tests for LangChain adapter with tool calling."""
+"""Integration tests for LangChain agents with tool calling."""
 
 import httpx
 import pytest
@@ -24,7 +24,7 @@ def get_weather(city: str) -> str:
 
 @pytest.mark.langchain
 class TestLangChainAdapter:
-    """Integration tests for LangChain adapter."""
+    """Integration tests for LangChain agents."""
 
     @pytest.fixture
     def agent(self, openai_api_key):

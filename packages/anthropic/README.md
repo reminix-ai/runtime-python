@@ -1,6 +1,6 @@
 # reminix-anthropic
 
-Reminix Runtime agents for the [Anthropic API](https://docs.anthropic.com/). Serve Claude models as a REST API.
+Reminix agents for the [Anthropic API](https://docs.anthropic.com/). Serve Claude models as a REST API.
 
 > **Ready to go live?** [Deploy to Reminix Cloud](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
 

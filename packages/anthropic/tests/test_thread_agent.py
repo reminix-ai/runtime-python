@@ -1,4 +1,4 @@
-"""Tests for the Anthropic thread adapter."""
+"""Tests for the Anthropic thread agent."""
 
 from unittest.mock import AsyncMock, MagicMock
 

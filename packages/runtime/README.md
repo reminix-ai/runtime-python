@@ -337,9 +337,9 @@ def calculate(expression: str) -> dict:
 serve(agents=[summarizer], tools=[calculate])
 ```
 
-## Framework Adapters
+## Framework Agents
 
-Already using a framework? Use our pre-built adapters:
+Already using a framework? Use our pre-built agents:
 
 | Package | Framework |
 |---------|-----------|
@@ -520,12 +520,12 @@ serve(tools=[get_weather])
 
 ### AgentLike Protocol
 
-For building framework integrations, implement the `AgentLike` protocol. See the [framework adapter packages](#framework-adapters) for examples.
+For building framework integrations, implement the `AgentLike` protocol. See the [framework agent packages](#framework-agents) for examples.
 
 ```python
 from reminix_runtime import AgentLike, AgentRequest, RuntimeAgent
 
-class MyFrameworkAdapter:
+class MyFrameworkAgent:
     """Wraps a framework client as an AgentLike."""
 
     def __init__(self, client, name: str = "my-framework"):

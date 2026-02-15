@@ -1,4 +1,4 @@
-"""Integration tests for LangGraph adapter with tool calling."""
+"""Integration tests for LangGraph agents with tool calling."""
 
 import httpx
 import pytest
@@ -25,7 +25,7 @@ def get_weather(city: str) -> str:
 
 @pytest.mark.langgraph
 class TestLangGraphAdapter:
-    """Integration tests for LangGraph adapter."""
+    """Integration tests for LangGraph agents."""
 
     @pytest.fixture
     def agent(self, openai_api_key):

@@ -1,4 +1,4 @@
-"""Integration tests for OpenAI adapter."""
+"""Integration tests for OpenAI agents."""
 
 import httpx
 import pytest
@@ -11,7 +11,7 @@ from reminix_runtime import create_app
 
 @pytest.mark.openai
 class TestOpenAIAdapter:
-    """Integration tests for OpenAI adapter."""
+    """Integration tests for OpenAI agents."""
 
     @pytest.fixture
     def agent(self, openai_api_key):

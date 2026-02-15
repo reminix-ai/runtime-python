@@ -1,4 +1,4 @@
-"""Tests for the LlamaIndex RAG adapter."""
+"""Tests for the LlamaIndex RAG agent."""
 
 from unittest.mock import AsyncMock, MagicMock
 

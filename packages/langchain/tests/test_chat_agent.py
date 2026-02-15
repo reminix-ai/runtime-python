@@ -1,4 +1,4 @@
-"""Tests for the LangChain chat adapter."""
+"""Tests for the LangChain chat agent."""
 
 from unittest.mock import AsyncMock, MagicMock
 
