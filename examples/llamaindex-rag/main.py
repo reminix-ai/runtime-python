@@ -38,8 +38,7 @@ from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.workflow import Context
 from llama_index.llms.openai import OpenAI
 
-from reminix_llamaindex import wrap
-from reminix_runtime import serve
+from reminix_llamaindex import serve_agent
 
 # Load environment variables from root .env file
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
@@ -79,9 +78,6 @@ llm = OpenAI(model="gpt-4o-mini")
 react_agent = ReActAgent(tools=[get_weather], llm=llm)
 engine = ChatEngineWrapper(react_agent)
 
-# Wrap the engine with the Reminix adapter
-agent = wrap(engine, name="llamaindex-rag")
-
 # Serve the agent
 if __name__ == "__main__":
     print("Server running on http://localhost:8080")
@@ -91,4 +87,4 @@ if __name__ == "__main__":
     print("  POST /agents/llamaindex-rag/invoke")
     print("\nAvailable tools:")
     print("  - get_weather(city): Get weather for Paris, London, Tokyo, or New York")
-    serve(agents=[agent])
+    serve_agent(engine, name="llamaindex-rag")

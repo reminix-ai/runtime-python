@@ -60,16 +60,13 @@ curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
 ## How it works
 
 1. Create a LangChain chat model using `langchain-openai`
-2. Wrap it with `reminix-langchain`
-3. Serve it with `reminix-runtime`
+2. Serve it with `reminix-langchain`
 
 ```python
 from langchain_openai import ChatOpenAI
-from reminix_langchain import wrap_agent
-from reminix_runtime import serve
+from reminix_langchain import serve_agent
 
 model = ChatOpenAI(model="gpt-4o-mini")
-agent = wrap_agent(model, name="langchain-basic")
 
-serve(agents=[agent])
+serve_agent(model, name="langchain-basic")
 ```

@@ -38,8 +38,7 @@ from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from reminix_langgraph import wrap
-from reminix_runtime import serve
+from reminix_langgraph import serve_agent
 
 # Load environment variables from root .env file
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
@@ -62,9 +61,6 @@ def get_weather(city: str) -> str:
 llm = ChatOpenAI(model="gpt-4o-mini")
 graph = create_react_agent(llm, tools=[get_weather])
 
-# Wrap the graph with the Reminix adapter
-agent = wrap(graph, name="langgraph-tools")
-
 # Serve the agent
 if __name__ == "__main__":
     print("Server running on http://localhost:8080")
@@ -74,4 +70,4 @@ if __name__ == "__main__":
     print("  POST /agents/langgraph-tools/invoke")
     print("\nAvailable tools:")
     print("  - get_weather(city): Get weather for Paris, London, Tokyo, or New York")
-    serve(agents=[agent])
+    serve_agent(graph, name="langgraph-tools")

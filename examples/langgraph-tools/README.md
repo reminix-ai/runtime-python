@@ -65,15 +65,13 @@ curl -X POST http://localhost:8080/agents/langgraph-tools/invoke \
 
 1. Define tools using `@tool` decorator from LangChain
 2. Create a LangGraph ReAct agent using `create_react_agent`
-3. Wrap it with `reminix-langgraph`
-4. Serve it with `reminix-runtime`
+3. Serve it with `reminix-langgraph`
 
 ```python
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
-from reminix_langgraph import wrap_agent
-from reminix_runtime import serve
+from reminix_langgraph import serve_agent
 
 @tool
 def get_weather(city: str) -> str:
@@ -82,7 +80,6 @@ def get_weather(city: str) -> str:
 
 llm = ChatOpenAI(model="gpt-4o-mini")
 graph = create_react_agent(llm, tools=[get_weather])
-agent = wrap_agent(graph, name="langgraph-tools")
 
-serve(agents=[agent])
+serve_agent(graph, name="langgraph-tools")
 ```

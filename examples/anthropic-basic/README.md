@@ -60,16 +60,13 @@ curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
 ## How it works
 
 1. Create an Anthropic client using `anthropic`
-2. Wrap it with `reminix-anthropic`
-3. Serve it with `reminix-runtime`
+2. Serve it with `reminix-anthropic`
 
 ```python
 from anthropic import AsyncAnthropic
-from reminix_anthropic import wrap_agent
-from reminix_runtime import serve
+from reminix_anthropic import serve_agent
 
 client = AsyncAnthropic()
-agent = wrap_agent(client, name="anthropic-basic", model="claude-3-haiku-20240307")
 
-serve(agents=[agent])
+serve_agent(client, name="anthropic-basic", model="claude-3-haiku-20240307")
 ```

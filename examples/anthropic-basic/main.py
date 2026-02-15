@@ -36,17 +36,13 @@ from pathlib import Path
 from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
 
-from reminix_anthropic import wrap
-from reminix_runtime import serve
+from reminix_anthropic import serve_agent
 
 # Load environment variables from root .env file
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 # Create an Anthropic client
 client = AsyncAnthropic()
-
-# Wrap the client with the Reminix adapter
-agent = wrap(client, name="anthropic-basic", model="claude-3-haiku-20240307")
 
 # Serve the agent
 if __name__ == "__main__":
@@ -55,4 +51,4 @@ if __name__ == "__main__":
     print("  GET  /health")
     print("  GET  /info")
     print("  POST /agents/anthropic-basic/invoke")
-    serve(agents=[agent])
+    serve_agent(client, name="anthropic-basic", model="claude-3-haiku-20240307")

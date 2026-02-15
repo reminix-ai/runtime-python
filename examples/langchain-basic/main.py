@@ -36,17 +36,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
-from reminix_langchain import wrap
-from reminix_runtime import serve
+from reminix_langchain import serve_agent
 
 # Load environment variables from root .env file
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 # Create a LangChain chat model
 model = ChatOpenAI(model="gpt-4o-mini")
-
-# Wrap the model with the Reminix adapter
-agent = wrap(model, name="langchain-basic")
 
 # Serve the agent
 if __name__ == "__main__":
@@ -55,4 +51,4 @@ if __name__ == "__main__":
     print("  GET  /health")
     print("  GET  /info")
     print("  POST /agents/langchain-basic/invoke")
-    serve(agents=[agent])
+    serve_agent(model, name="langchain-basic")

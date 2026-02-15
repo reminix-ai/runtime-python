@@ -36,17 +36,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from reminix_openai import wrap
-from reminix_runtime import serve
+from reminix_openai import serve_agent
 
 # Load environment variables from root .env file
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 # Create an OpenAI client
 client = AsyncOpenAI()
-
-# Wrap the client with the Reminix adapter
-agent = wrap(client, name="openai-basic", model="gpt-4o-mini")
 
 # Serve the agent
 if __name__ == "__main__":
@@ -55,4 +51,4 @@ if __name__ == "__main__":
     print("  GET  /health")
     print("  GET  /info")
     print("  POST /agents/openai-basic/invoke")
-    serve(agents=[agent])
+    serve_agent(client, name="openai-basic", model="gpt-4o-mini")

@@ -60,16 +60,13 @@ curl -X POST http://localhost:8080/agents/openai-basic/invoke \
 ## How it works
 
 1. Create an OpenAI client using `openai`
-2. Wrap it with `reminix-openai`
-3. Serve it with `reminix-runtime`
+2. Serve it with `reminix-openai`
 
 ```python
 from openai import AsyncOpenAI
-from reminix_openai import wrap_agent
-from reminix_runtime import serve
+from reminix_openai import serve_agent
 
 client = AsyncOpenAI()
-agent = wrap_agent(client, name="openai-basic", model="gpt-4o-mini")
 
-serve(agents=[agent])
+serve_agent(client, name="openai-basic", model="gpt-4o-mini")
 ```
