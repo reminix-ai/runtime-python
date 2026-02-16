@@ -16,7 +16,7 @@ class TestOpenAIAgents:
     @pytest.fixture
     def agent(self, openai_api_key):
         client = AsyncOpenAI(api_key=openai_api_key)
-        return OpenAIChatAgent(client, name="test-openai", model="gpt-4.1-nano")
+        return OpenAIChatAgent(client, name="test-openai", model="gpt-4o-mini")
 
     @pytest.fixture
     def app(self, agent):

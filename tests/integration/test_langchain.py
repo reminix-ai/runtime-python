@@ -28,7 +28,7 @@ class TestLangChainAgents:
 
     @pytest.fixture
     def agent(self, openai_api_key):
-        llm = ChatOpenAI(model="gpt-4.1-nano", api_key=openai_api_key)
+        llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_api_key)
         llm_with_tools = llm.bind_tools([get_weather])
         return LangChainChatAgent(llm_with_tools, name="test-langchain")
 

@@ -29,7 +29,7 @@ class TestLangGraphAgents:
 
     @pytest.fixture
     def agent(self, openai_api_key):
-        llm = ChatOpenAI(model="gpt-4.1-nano", api_key=openai_api_key)
+        llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_api_key)
         graph = create_react_agent(llm, tools=[get_weather])
         return LangGraphThreadAgent(graph, name="test-langgraph")
 

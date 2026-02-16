@@ -19,7 +19,7 @@ class TestAnthropicAgents:
         return AnthropicChatAgent(
             client,
             name="test-anthropic",
-            model="claude-3-haiku-20240307",
+            model="claude-sonnet-4-20250514",
             max_tokens=100,
         )
 
