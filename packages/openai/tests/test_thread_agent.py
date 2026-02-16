@@ -10,7 +10,7 @@ from reminix_runtime import AGENT_TYPES, AgentRequest
 
 
 def make_mock_tool(name: str = "get_weather", result: dict | None = None):
-    """Create a mock ToolLike."""
+    """Create a mock Tool."""
     tool = MagicMock()
     tool.name = name
     tool.metadata = {

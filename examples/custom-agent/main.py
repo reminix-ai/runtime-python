@@ -35,8 +35,6 @@ Then test the endpoints:
       -d '{"input": {"message": "Hello!"}, "stream": true}'
 """
 
-import json
-
 from reminix_runtime import agent, serve
 
 
@@ -74,7 +72,7 @@ async def echo(
     words = response.split()
     for i, word in enumerate(words):
         chunk = word if i == 0 else f" {word}"
-        yield json.dumps({"chunk": chunk})
+        yield chunk
 
 
 if __name__ == "__main__":

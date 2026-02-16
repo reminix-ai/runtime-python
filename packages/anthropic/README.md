@@ -121,7 +121,7 @@ Create an Anthropic thread agent with a tool-calling loop. Does not support stre
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `client` | `AsyncAnthropic` | required | An Anthropic async client |
-| `tools` | `list[ToolLike]` | required | List of tools available to the agent |
+| `tools` | `list[Tool]` | required | List of tools available to the agent |
 | `name` | `str` | `"anthropic-thread-agent"` | Name for the agent (used in URL path) |
 | `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
 | `max_tokens` | `int` | `4096` | Maximum tokens in response |

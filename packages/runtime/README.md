@@ -473,29 +473,25 @@ async def my_tool(param: str, context: dict | None = None) -> dict:
 
 ## Advanced
 
-### RuntimeAgent
+### Agent Base Class
 
-For programmatic agent creation without decorators, use `RuntimeAgent` directly:
+For building framework integrations, extend the `Agent` base class. See the [framework agent packages](#framework-agents) for examples.
 
 ```python
-from reminix_runtime import RuntimeAgent, AgentRequest, serve
+from reminix_runtime import Agent, AgentRequest, serve
 
-async def my_invoke(request: AgentRequest) -> dict:
-    prompt = request.input.get("prompt", "")
-    return {"output": f"Hello, {prompt}!"}
+class MyFrameworkAgent(Agent):
+    """Wraps a framework client as an Agent."""
 
-async def my_invoke_stream(request: AgentRequest):
-    for word in "Hello streaming world!".split():
-        yield word + " "
+    def __init__(self, client, name: str = "my-framework"):
+        super().__init__(name=name, description="My framework agent")
+        self._client = client
 
-my_agent = RuntimeAgent(
-    name="my-agent",
-    metadata={"description": "A programmatic agent", "version": "1.0"},
-    invoke_fn=my_invoke,
-    invoke_stream_fn=my_invoke_stream,
-)
+    async def invoke(self, request: AgentRequest) -> dict:
+        result = await self._client.run(request.input)
+        return {"output": result}
 
-serve(agents=[my_agent])
+serve(agents=[MyFrameworkAgent(client)])
 ```
 
 ### Tool Factory
@@ -516,32 +512,6 @@ async def get_weather(location: str, units: str = "celsius") -> dict:
     return {"temp": 72, "location": location, "units": units}
 
 serve(tools=[get_weather])
-```
-
-### AgentLike Protocol
-
-For building framework integrations, implement the `AgentLike` protocol. See the [framework agent packages](#framework-agents) for examples.
-
-```python
-from reminix_runtime import AgentLike, AgentRequest, RuntimeAgent
-
-class MyFrameworkAgent:
-    """Wraps a framework client as an AgentLike."""
-
-    def __init__(self, client, name: str = "my-framework"):
-        self._client = client
-        self._name = name
-
-    def to_agent(self) -> AgentLike:
-        async def invoke(request: AgentRequest) -> dict:
-            result = await self._client.run(request.input)
-            return {"output": result}
-
-        return RuntimeAgent(
-            name=self._name,
-            metadata={"description": "My framework agent"},
-            invoke_fn=invoke,
-        )
 ```
 
 ### Serverless Deployment
