@@ -67,30 +67,22 @@ Returns runtime information, available agents, and tools:
   "agents": [
     {
       "name": "calculator",
-      "type": "agent",
       "description": "Add two numbers.",
+      "capabilities": { "streaming": false },
       "input": {
         "type": "object",
         "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
         "required": ["a", "b"]
       },
-      "output": {
-        "type": "object",
-        "properties": { "content": { "type": "number" } },
-        "required": ["content"]
-      },
-      "requestKeys": ["a", "b"],
-      "responseKeys": ["content"],
-      "streaming": false
+      "output": { "type": "number" }
     }
   ],
   "tools": [
     {
       "name": "get_weather",
-      "type": "tool",
       "description": "Get current weather for a location",
-      "input": { ... },
-      "output": { ... }
+      "input": { "type": "object", "properties": { "location": { "type": "string" } }, "required": ["location"] },
+      "output": { "type": "object", "properties": { "temp": { "type": "integer" }, "condition": { "type": "string" } } }
     }
   ]
 }
@@ -112,7 +104,7 @@ curl -X POST http://localhost:8080/agents/calculator/invoke \
 **Response:**
 ```json
 {
-  "content": 8.0
+  "output": 8.0
 }
 ```
 
@@ -133,7 +125,7 @@ curl -X POST http://localhost:8080/agents/assistant/invoke \
 **Response (chat):**
 ```json
 {
-  "content": "You said: Hello!"
+  "output": "You said: Hello!"
 }
 ```
 
@@ -150,7 +142,7 @@ curl -X POST http://localhost:8080/tools/get_weather/call \
 **Response:**
 ```json
 {
-  "content": { "temp": 72, "condition": "sunny" }
+  "output": { "temp": 72, "condition": "sunny" }
 }
 ```
 
@@ -450,18 +442,18 @@ async def my_tool(param: str, context: dict | None = None) -> dict:
 ### Request/Response Types
 
 ```python
-# Request: top-level keys based on agent's requestKeys (derived from input schema)
+# Request: input keys from the agent's input schema, plus stream/context
 # For a calculator agent with input schema { a: float, b: float }:
 # {
-#   "a": 5,                         # Top-level key from input schema
-#   "b": 3,                         # Top-level key from input schema  
+#   "a": 5,                         # From input schema
+#   "b": 3,                         # From input schema
 #   "stream": false,                # Whether to stream the response
 #   "context": { ... }              # Optional metadata
 # }
 
 # For a chat agent:
 # {
-#   "messages": [...],              # Top-level key (requestKeys: ['messages'])
+#   "messages": [...],              # From input schema
 #   "stream": false,
 #   "context": { ... }
 # }

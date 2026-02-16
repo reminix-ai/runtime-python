@@ -12,7 +12,7 @@ class LangGraphWorkflowAgent(Agent):
     """LangGraph workflow agent for compiled graphs.
 
     Maps LangGraph's streaming per-node outputs and interrupt/resume
-    to the workflow template's {status, steps, result, pendingAction} output schema.
+    to the workflow type's {status, steps, result, pendingAction} output schema.
     """
 
     def __init__(
