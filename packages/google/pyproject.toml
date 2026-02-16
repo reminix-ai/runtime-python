@@ -1,0 +1,28 @@
+[project]
+name = "reminix-google"
+version = "0.0.19"
+description = "Reminix agents for Google Gemini - serve AI agents as REST APIs"
+requires-python = ">=3.10"
+authors = [{ name = "Reminix Team", email = "team@reminix.com" }]
+keywords = ["ai", "agents", "google", "gemini", "llm", "reminix"]
+dependencies = [
+    "reminix-runtime~=0.0.19",
+    "google-genai>=0.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/reminix_google"]
