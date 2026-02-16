@@ -94,9 +94,11 @@ The workflow agent:
 **Request:**
 ```json
 {
-  "messages": [
-    {"role": "user", "content": "Hello!"}
-  ]
+  "input": {
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ]
+  }
 }
 ```
 
@@ -146,7 +148,9 @@ For streaming responses (thread agent only), set `stream: true` in the request:
 
 ```json
 {
-  "messages": [{"role": "user", "content": "Hello!"}],
+  "input": {
+    "messages": [{"role": "user", "content": "Hello!"}]
+  },
   "stream": true
 }
 ```

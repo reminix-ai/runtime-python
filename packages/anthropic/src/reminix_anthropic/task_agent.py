@@ -14,7 +14,7 @@ class AnthropicTaskAgent(Agent):
     def __init__(
         self,
         client: AsyncAnthropic,
-        response_schema: dict[str, Any],
+        output_schema: dict[str, Any],
         *,
         name: str = "anthropic-task-agent",
         model: str = "claude-sonnet-4-20250514",
@@ -37,7 +37,7 @@ class AnthropicTaskAgent(Agent):
             metadata=metadata,
         )
         self._client = client
-        self._response_schema = response_schema
+        self._user_output_schema = output_schema
         self._model = model
         self._max_tokens = max_tokens
 
@@ -62,7 +62,7 @@ class AnthropicTaskAgent(Agent):
                 {
                     "name": "task_result",
                     "description": "Return the structured result of the task",
-                    "input_schema": self._response_schema,
+                    "input_schema": self._user_output_schema,
                 }
             ],
             "tool_choice": {"type": "tool", "name": "task_result"},

@@ -75,14 +75,18 @@ Execute the agent with a query or prompt.
 **Request with query:**
 ```json
 {
-  "query": "What is the capital of France?"
+  "input": {
+    "query": "What is the capital of France?"
+  }
 }
 ```
 
 **Request with prompt:**
 ```json
 {
-  "prompt": "Summarize this text: ..."
+  "input": {
+    "prompt": "Summarize this text: ..."
+  }
 }
 ```
 
@@ -99,7 +103,9 @@ For streaming responses, set `stream: true` in the request:
 
 ```json
 {
-  "query": "Tell me about Paris",
+  "input": {
+    "query": "Tell me about Paris"
+  },
   "stream": true
 }
 ```

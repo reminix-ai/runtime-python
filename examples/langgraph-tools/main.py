@@ -26,9 +26,9 @@ Then test the endpoints:
     # Chat endpoint (conversational)
     curl -X POST http://localhost:8080/agents/langgraph-tools/invoke \
       -H "Content-Type: application/json" \
-      -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
+      -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}}'
 
-    # Response: {"output": "The weather in Tokyo is rainy with a temperature of 18°C.", "messages": [...]}
+    # Response: {"output": "The weather in Tokyo is rainy with a temperature of 18°C."}
 """
 
 from pathlib import Path

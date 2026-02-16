@@ -26,9 +26,9 @@ Then test the endpoints:
     # Chat endpoint (conversational)
     curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
       -H "Content-Type: application/json" \
-      -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
+      -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
 
-    # Response: {"output": "Hello! How can I help you today?", "messages": [...]}
+    # Response: {"output": "Hello! How can I help you today?"}
 """
 
 from pathlib import Path

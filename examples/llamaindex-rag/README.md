@@ -57,7 +57,7 @@ curl -X POST http://localhost:8080/agents/llamaindex-rag/invoke \
 # Chat
 curl -X POST http://localhost:8080/agents/llamaindex-rag/invoke \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
+  -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}}'
 ```
 
 ## How it works

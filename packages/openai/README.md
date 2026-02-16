@@ -34,16 +34,20 @@ The task agent follows the task type and returns structured output. Streaming is
 
 ```python
 from openai import AsyncOpenAI
-from pydantic import BaseModel
 from reminix_openai import OpenAITaskAgent
 from reminix_runtime import serve
 
-class Summary(BaseModel):
-    title: str
-    bullet_points: list[str]
+summary_schema = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string"},
+        "bullet_points": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["title", "bullet_points"],
+}
 
 client = AsyncOpenAI()
-agent = OpenAITaskAgent(client, output_schema=Summary, name="summarizer", model="gpt-4o")
+agent = OpenAITaskAgent(client, summary_schema, name="summarizer", model="gpt-4o")
 serve(agents=[agent])
 ```
 
@@ -98,7 +102,7 @@ Create an OpenAI task agent. Follows the task type and returns structured output
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `client` | `AsyncOpenAI` | required | An OpenAI async client |
-| `output_schema` | `type[BaseModel]` | required | A Pydantic model defining the structured output |
+| `output_schema` | `dict` | required | A JSON Schema dict defining the structured output |
 | `name` | `str` | `"openai-task-agent"` | Name for the agent (used in URL path) |
 | `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
 | `description` | `str` | `"openai task agent"` | Description shown in agent metadata |
@@ -156,17 +160,21 @@ Execute the agent with a prompt or messages.
 **Request with prompt:**
 ```json
 {
-  "prompt": "Summarize this text: ..."
+  "input": {
+    "prompt": "Summarize this text: ..."
+  }
 }
 ```
 
 **Request with messages:**
 ```json
 {
-  "messages": [
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "Hello!"}
-  ]
+  "input": {
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Hello!"}
+    ]
+  }
 }
 ```
 
@@ -183,7 +191,9 @@ For streaming responses, set `stream: true` in the request (chat agent only):
 
 ```json
 {
-  "prompt": "Tell me a story",
+  "input": {
+    "prompt": "Tell me a story"
+  },
   "stream": true
 }
 ```

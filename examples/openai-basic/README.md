@@ -53,7 +53,7 @@ curl -X POST http://localhost:8080/agents/openai-basic/invoke \
 # Chat
 curl -X POST http://localhost:8080/agents/openai-basic/invoke \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
+  -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
 ```
 
 ## How it works

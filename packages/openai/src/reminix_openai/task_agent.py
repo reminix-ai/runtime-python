@@ -14,7 +14,7 @@ class OpenAITaskAgent(Agent):
     def __init__(
         self,
         client: AsyncOpenAI,
-        response_schema: dict[str, Any],
+        output_schema: dict[str, Any],
         *,
         name: str = "openai-task-agent",
         model: str = "gpt-4o-mini",
@@ -36,7 +36,7 @@ class OpenAITaskAgent(Agent):
             metadata=metadata,
         )
         self._client = client
-        self._response_schema = response_schema
+        self._user_output_schema = output_schema
         self._model = model
 
     @property
@@ -63,7 +63,7 @@ class OpenAITaskAgent(Agent):
                 "type": "json_schema",
                 "json_schema": {
                     "name": "task_result",
-                    "schema": self._response_schema,
+                    "schema": self._user_output_schema,
                 },
             },  # type: ignore
         )

@@ -92,13 +92,13 @@ Returns runtime information, available agents, and tools:
 
 `POST /agents/{name}/invoke` - Invoke an agent.
 
-Request keys are defined by the agent's input schema. For example, a calculator agent with input schema `{ properties: { a, b } }` expects `a` and `b` at the top level:
+Request body contains an `input` object with keys defined by the agent's input schema, plus optional top-level `stream` and `context` fields. For example, a calculator agent with input schema `{ properties: { a, b } }` expects `a` and `b` inside the `input` object:
 
 **Task-oriented agent:**
 ```bash
 curl -X POST http://localhost:8080/agents/calculator/invoke \
   -H "Content-Type: application/json" \
-  -d '{"a": 5, "b": 3}'
+  -d '{"input": {"a": 5, "b": 3}}'
 ```
 
 **Response:**
@@ -110,15 +110,17 @@ curl -X POST http://localhost:8080/agents/calculator/invoke \
 
 **Chat agent:**
 
-Chat agents (type `chat` or `thread`) expect `messages` at the top level. Messages are OpenAI-style: `role` (`user` | `assistant` | `system` | `tool`), `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the `Message` and `ToolCall` types from `reminix_runtime` in your handler. Chat returns a string; thread returns a list of messages.
+Chat agents (type `chat` or `thread`) expect `messages` inside the `input` object. Messages are OpenAI-style: `role` (`user` | `assistant` | `system` | `tool`), `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the `Message` and `ToolCall` types from `reminix_runtime` in your handler. Chat returns a string; thread returns a list of messages.
 
 ```bash
 curl -X POST http://localhost:8080/agents/assistant/invoke \
   -H "Content-Type: application/json" \
   -d '{
-    "messages": [
-      {"role": "user", "content": "Hello!"}
-    ]
+    "input": {
+      "messages": [
+        {"role": "user", "content": "Hello!"}
+      ]
+    }
   }'
 ```
 
@@ -136,7 +138,7 @@ curl -X POST http://localhost:8080/agents/assistant/invoke \
 ```bash
 curl -X POST http://localhost:8080/tools/get_weather/call \
   -H "Content-Type: application/json" \
-  -d '{"location": "San Francisco"}'
+  -d '{"input": {"location": "San Francisco"}}'
 ```
 
 **Response:**
@@ -442,18 +444,22 @@ async def my_tool(param: str, context: dict | None = None) -> dict:
 ### Request/Response Types
 
 ```python
-# Request: input keys from the agent's input schema, plus stream/context
+# Request: { "input": { ... }, "stream": bool, "context": { ... } }
 # For a calculator agent with input schema { a: float, b: float }:
 # {
-#   "a": 5,                         # From input schema
-#   "b": 3,                         # From input schema
+#   "input": {
+#     "a": 5,                       # From input schema
+#     "b": 3                        # From input schema
+#   },
 #   "stream": false,                # Whether to stream the response
 #   "context": { ... }              # Optional metadata
 # }
 
 # For a chat agent:
 # {
-#   "messages": [...],              # From input schema
+#   "input": {
+#     "messages": [...]             # From input schema
+#   },
 #   "stream": false,
 #   "context": { ... }
 # }
