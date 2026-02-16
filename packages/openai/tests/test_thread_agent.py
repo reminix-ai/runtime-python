@@ -51,28 +51,28 @@ class TestOpenAIThreadAgent:
 
     def test_instantiation(self):
         mock_client = MagicMock()
-        agent = OpenAIThreadAgent(mock_client, [make_mock_tool()])
+        agent = OpenAIThreadAgent(mock_client, tools=[make_mock_tool()])
         assert isinstance(agent, OpenAIThreadAgent)
 
     def test_custom_name(self):
         mock_client = MagicMock()
-        agent = OpenAIThreadAgent(mock_client, [make_mock_tool()], name="my-thread-agent")
+        agent = OpenAIThreadAgent(mock_client, tools=[make_mock_tool()], name="my-thread-agent")
         assert agent.name == "my-thread-agent"
 
     def test_custom_model(self):
         mock_client = MagicMock()
-        agent = OpenAIThreadAgent(mock_client, [make_mock_tool()], model="gpt-4o")
+        agent = OpenAIThreadAgent(mock_client, tools=[make_mock_tool()], model="gpt-4o")
         assert agent.model == "gpt-4o"
 
     def test_default_values(self):
         mock_client = MagicMock()
-        agent = OpenAIThreadAgent(mock_client, [make_mock_tool()])
+        agent = OpenAIThreadAgent(mock_client, tools=[make_mock_tool()])
         assert agent.name == "openai-thread-agent"
         assert agent.model == "gpt-4o-mini"
 
     def test_thread_type_metadata(self):
         mock_client = MagicMock()
-        agent = OpenAIThreadAgent(mock_client, [make_mock_tool()])
+        agent = OpenAIThreadAgent(mock_client, tools=[make_mock_tool()])
         assert agent.metadata["type"] == "thread"
         assert agent.metadata["input"] == AGENT_TYPES["thread"]["input"]
         assert agent.metadata["output"] == AGENT_TYPES["thread"]["output"]
@@ -88,7 +88,7 @@ class TestOpenAIThreadAgentInvoke:
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(return_value=make_response("Hello!"))
 
-        agent = OpenAIThreadAgent(mock_client, [make_mock_tool()])
+        agent = OpenAIThreadAgent(mock_client, tools=[make_mock_tool()])
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
         result = await agent.invoke(request)
@@ -119,7 +119,7 @@ class TestOpenAIThreadAgentInvoke:
         )
 
         tool = make_mock_tool()
-        agent = OpenAIThreadAgent(mock_client, [tool])
+        agent = OpenAIThreadAgent(mock_client, tools=[tool])
         request = AgentRequest(
             input={"messages": [{"role": "user", "content": "What's the weather in London?"}]}
         )
@@ -158,7 +158,7 @@ class TestOpenAIThreadAgentInvoke:
 
         tool = make_mock_tool()
         tool.call = AsyncMock(side_effect=Exception("API timeout"))
-        agent = OpenAIThreadAgent(mock_client, [tool])
+        agent = OpenAIThreadAgent(mock_client, tools=[tool])
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Weather?"}]})
 
         result = await agent.invoke(request)
@@ -184,7 +184,7 @@ class TestOpenAIThreadAgentInvoke:
         )
 
         tool = make_mock_tool()
-        agent = OpenAIThreadAgent(mock_client, [tool], max_turns=3)
+        agent = OpenAIThreadAgent(mock_client, tools=[tool], max_turns=3)
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Loop"}]})
 
         await agent.invoke(request)
@@ -198,7 +198,7 @@ class TestOpenAIThreadAgentInvoke:
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(return_value=make_response("Hi"))
 
-        agent = OpenAIThreadAgent(mock_client, [make_mock_tool()], model="gpt-4o")
+        agent = OpenAIThreadAgent(mock_client, tools=[make_mock_tool()], model="gpt-4o")
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
         await agent.invoke(request)
@@ -213,7 +213,7 @@ class TestOpenAIThreadAgentInvoke:
         mock_client.chat.completions.create = AsyncMock(return_value=make_response("Hi"))
 
         tool = make_mock_tool("get_weather")
-        agent = OpenAIThreadAgent(mock_client, [tool])
+        agent = OpenAIThreadAgent(mock_client, tools=[tool])
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
         await agent.invoke(request)

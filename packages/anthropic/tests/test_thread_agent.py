@@ -56,30 +56,30 @@ class TestAnthropicThreadAgent:
 
     def test_instantiation(self):
         mock_client = MagicMock()
-        agent = AnthropicThreadAgent(mock_client, [make_mock_tool()])
+        agent = AnthropicThreadAgent(mock_client, tools=[make_mock_tool()])
         assert isinstance(agent, AnthropicThreadAgent)
 
     def test_custom_name(self):
         mock_client = MagicMock()
-        agent = AnthropicThreadAgent(mock_client, [make_mock_tool()], name="my-thread-agent")
+        agent = AnthropicThreadAgent(mock_client, tools=[make_mock_tool()], name="my-thread-agent")
         assert agent.name == "my-thread-agent"
 
     def test_custom_model(self):
         mock_client = MagicMock()
         agent = AnthropicThreadAgent(
-            mock_client, [make_mock_tool()], model="claude-opus-4-20250514"
+            mock_client, tools=[make_mock_tool()], model="claude-opus-4-20250514"
         )
         assert agent.model == "claude-opus-4-20250514"
 
     def test_default_values(self):
         mock_client = MagicMock()
-        agent = AnthropicThreadAgent(mock_client, [make_mock_tool()])
+        agent = AnthropicThreadAgent(mock_client, tools=[make_mock_tool()])
         assert agent.name == "anthropic-thread-agent"
         assert agent.model == "claude-sonnet-4-20250514"
 
     def test_thread_type_metadata(self):
         mock_client = MagicMock()
-        agent = AnthropicThreadAgent(mock_client, [make_mock_tool()])
+        agent = AnthropicThreadAgent(mock_client, tools=[make_mock_tool()])
         assert agent.metadata["type"] == "thread"
         assert agent.metadata["input"] == AGENT_TYPES["thread"]["input"]
         assert agent.metadata["output"] == AGENT_TYPES["thread"]["output"]
@@ -97,7 +97,7 @@ class TestAnthropicThreadAgentInvoke:
             return_value=make_response(make_text_block("Hello!"))
         )
 
-        agent = AnthropicThreadAgent(mock_client, [make_mock_tool()])
+        agent = AnthropicThreadAgent(mock_client, tools=[make_mock_tool()])
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
         result = await agent.invoke(request)
@@ -125,7 +125,7 @@ class TestAnthropicThreadAgentInvoke:
         )
 
         tool = make_mock_tool()
-        agent = AnthropicThreadAgent(mock_client, [tool])
+        agent = AnthropicThreadAgent(mock_client, tools=[tool])
         request = AgentRequest(
             input={"messages": [{"role": "user", "content": "What's the weather in London?"}]}
         )
@@ -160,7 +160,7 @@ class TestAnthropicThreadAgentInvoke:
 
         tool = make_mock_tool()
         tool.call = AsyncMock(side_effect=Exception("API timeout"))
-        agent = AnthropicThreadAgent(mock_client, [tool])
+        agent = AnthropicThreadAgent(mock_client, tools=[tool])
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Weather?"}]})
 
         result = await agent.invoke(request)
@@ -182,7 +182,7 @@ class TestAnthropicThreadAgentInvoke:
         )
 
         tool = make_mock_tool()
-        agent = AnthropicThreadAgent(mock_client, [tool], max_turns=3)
+        agent = AnthropicThreadAgent(mock_client, tools=[tool], max_turns=3)
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Loop"}]})
 
         await agent.invoke(request)
@@ -196,7 +196,7 @@ class TestAnthropicThreadAgentInvoke:
         mock_client.messages.create = AsyncMock(return_value=make_response(make_text_block("Hi")))
 
         agent = AnthropicThreadAgent(
-            mock_client, [make_mock_tool()], model="claude-opus-4-20250514"
+            mock_client, tools=[make_mock_tool()], model="claude-opus-4-20250514"
         )
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
@@ -212,7 +212,7 @@ class TestAnthropicThreadAgentInvoke:
         mock_client.messages.create = AsyncMock(return_value=make_response(make_text_block("Hi")))
 
         tool = make_mock_tool("get_weather")
-        agent = AnthropicThreadAgent(mock_client, [tool])
+        agent = AnthropicThreadAgent(mock_client, tools=[tool])
         request = AgentRequest(input={"messages": [{"role": "user", "content": "Hi"}]})
 
         await agent.invoke(request)
@@ -228,7 +228,7 @@ class TestAnthropicThreadAgentInvoke:
         mock_client = MagicMock()
         mock_client.messages.create = AsyncMock(return_value=make_response(make_text_block("Hi")))
 
-        agent = AnthropicThreadAgent(mock_client, [make_mock_tool()])
+        agent = AnthropicThreadAgent(mock_client, tools=[make_mock_tool()])
         request = AgentRequest(
             input={
                 "messages": [

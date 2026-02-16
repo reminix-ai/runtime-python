@@ -14,8 +14,8 @@ class AnthropicTaskAgent(Agent):
     def __init__(
         self,
         client: AsyncAnthropic,
-        output_schema: dict[str, Any],
         *,
+        output_schema: dict[str, Any],
         name: str = "anthropic-task-agent",
         model: str = "claude-sonnet-4-20250514",
         max_tokens: int = 4096,

@@ -23,28 +23,30 @@ class TestAnthropicTaskAgent:
     def test_instantiation(self):
         """AnthropicTaskAgent should be instantiable."""
         mock_client = MagicMock()
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = AnthropicTaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
 
         assert isinstance(agent, AnthropicTaskAgent)
 
     def test_custom_name(self):
         """AnthropicTaskAgent should accept a custom name."""
         mock_client = MagicMock()
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA, name="my-task-agent")
+        agent = AnthropicTaskAgent(mock_client, output_schema=SAMPLE_SCHEMA, name="my-task-agent")
 
         assert agent.name == "my-task-agent"
 
     def test_custom_model(self):
         """AnthropicTaskAgent should accept a custom model."""
         mock_client = MagicMock()
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA, model="claude-opus-4-20250514")
+        agent = AnthropicTaskAgent(
+            mock_client, output_schema=SAMPLE_SCHEMA, model="claude-opus-4-20250514"
+        )
 
         assert agent.model == "claude-opus-4-20250514"
 
     def test_default_values(self):
         """AnthropicTaskAgent should use default values if not provided."""
         mock_client = MagicMock()
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = AnthropicTaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
 
         assert agent.name == "anthropic-task-agent"
         assert agent.model == "claude-sonnet-4-20250514"
@@ -52,7 +54,7 @@ class TestAnthropicTaskAgent:
     def test_task_type_metadata(self):
         """AnthropicTaskAgent should have task type metadata."""
         mock_client = MagicMock()
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = AnthropicTaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
 
         assert agent.metadata["type"] == "task"
         assert agent.metadata["input"] == AGENT_TYPES["task"]["input"]
@@ -73,7 +75,7 @@ class TestAnthropicTaskAgentInvoke:
         ]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = AnthropicTaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
         request = AgentRequest(input={"task": "Analyze sentiment of: I love this!"})
 
         await agent.invoke(request)
@@ -89,7 +91,7 @@ class TestAnthropicTaskAgentInvoke:
         mock_response.content = [MagicMock(type="tool_use", input=result)]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = AnthropicTaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
         request = AgentRequest(input={"task": "Analyze sentiment"})
 
         response = await agent.invoke(request)
@@ -104,7 +106,7 @@ class TestAnthropicTaskAgentInvoke:
         mock_response.content = [MagicMock(type="tool_use", input={})]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = AnthropicTaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
         request = AgentRequest(input={"task": "Do something"})
 
         await agent.invoke(request)
@@ -123,7 +125,9 @@ class TestAnthropicTaskAgentInvoke:
         mock_response.content = [MagicMock(type="tool_use", input={})]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA, model="claude-opus-4-20250514")
+        agent = AnthropicTaskAgent(
+            mock_client, output_schema=SAMPLE_SCHEMA, model="claude-opus-4-20250514"
+        )
         request = AgentRequest(input={"task": "Do something"})
 
         await agent.invoke(request)
@@ -139,7 +143,7 @@ class TestAnthropicTaskAgentInvoke:
         mock_response.content = [MagicMock(type="tool_use", input={})]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = AnthropicTaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
         request = AgentRequest(input={"task": "Analyze", "text": "Hello world", "language": "en"})
 
         await agent.invoke(request)
@@ -157,7 +161,7 @@ class TestAnthropicTaskAgentInvoke:
         mock_response.content = [MagicMock(type="text", text="Some text")]
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = AnthropicTaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
         request = AgentRequest(input={"task": "Do something"})
 
         response = await agent.invoke(request)

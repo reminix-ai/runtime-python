@@ -24,8 +24,8 @@ class OpenAIThreadAgent(Agent):
     def __init__(
         self,
         client: AsyncOpenAI,
-        tools: list[Tool],
         *,
+        tools: list[Tool],
         name: str = "openai-thread-agent",
         model: str = "gpt-4o-mini",
         max_turns: int = 10,

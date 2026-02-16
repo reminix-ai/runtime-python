@@ -24,28 +24,28 @@ class TestOpenAITaskAgent:
     def test_instantiation(self):
         """OpenAITaskAgent should be instantiable."""
         mock_client = MagicMock()
-        agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
 
         assert isinstance(agent, OpenAITaskAgent)
 
     def test_custom_name(self):
         """OpenAITaskAgent should accept a custom name."""
         mock_client = MagicMock()
-        agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA, name="my-task-agent")
+        agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA, name="my-task-agent")
 
         assert agent.name == "my-task-agent"
 
     def test_custom_model(self):
         """OpenAITaskAgent should accept a custom model."""
         mock_client = MagicMock()
-        agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA, model="gpt-4o")
+        agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA, model="gpt-4o")
 
         assert agent.model == "gpt-4o"
 
     def test_default_values(self):
         """OpenAITaskAgent should use default values if not provided."""
         mock_client = MagicMock()
-        agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
 
         assert agent.name == "openai-task-agent"
         assert agent.model == "gpt-4o-mini"
@@ -53,7 +53,7 @@ class TestOpenAITaskAgent:
     def test_task_type_metadata(self):
         """OpenAITaskAgent should have task type metadata."""
         mock_client = MagicMock()
-        agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
 
         assert agent.metadata["type"] == "task"
         assert agent.metadata["input"] == AGENT_TYPES["task"]["input"]
@@ -76,7 +76,7 @@ class TestOpenAITaskAgentInvoke:
         ]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
         request = AgentRequest(input={"task": "Analyze sentiment of: I love this!"})
 
         await agent.invoke(request)
@@ -92,7 +92,7 @@ class TestOpenAITaskAgentInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content=json.dumps(result)))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
         request = AgentRequest(input={"task": "Analyze sentiment"})
 
         response = await agent.invoke(request)
@@ -107,7 +107,7 @@ class TestOpenAITaskAgentInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="{}"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
         request = AgentRequest(input={"task": "Do something"})
 
         await agent.invoke(request)
@@ -124,7 +124,7 @@ class TestOpenAITaskAgentInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="{}"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA, model="gpt-4o")
+        agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA, model="gpt-4o")
         request = AgentRequest(input={"task": "Do something"})
 
         await agent.invoke(request)
@@ -140,7 +140,7 @@ class TestOpenAITaskAgentInvoke:
         mock_response.choices = [MagicMock(message=MagicMock(content="{}"))]
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA)
+        agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
         request = AgentRequest(input={"task": "Analyze", "text": "Hello world", "language": "en"})
 
         await agent.invoke(request)

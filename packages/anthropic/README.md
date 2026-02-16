@@ -90,7 +90,7 @@ The chat agent:
 3. Returns the assistant's text response
 4. Supports streaming via Server-Sent Events
 
-### `AnthropicTaskAgent(client, output_schema, *, name, model, max_tokens, description, instructions, tags, metadata)`
+### `AnthropicTaskAgent(client, *, output_schema, name, model, max_tokens, description, instructions, tags, metadata)`
 
 Create an Anthropic task agent. Returns structured output via tool-use. Does not support streaming.
 
@@ -114,7 +114,7 @@ The task agent:
 3. Forces a tool call using the provided `output_schema`
 4. Extracts and returns the structured result from the tool-use block
 
-### `AnthropicThreadAgent(client, tools, *, name, model, max_tokens, max_turns, description, instructions, tags, metadata)`
+### `AnthropicThreadAgent(client, *, tools, name, model, max_tokens, max_turns, description, instructions, tags, metadata)`
 
 Create an Anthropic thread agent with a tool-calling loop. Does not support streaming.
 

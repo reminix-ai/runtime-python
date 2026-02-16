@@ -47,7 +47,7 @@ summary_schema = {
 }
 
 client = AsyncOpenAI()
-agent = OpenAITaskAgent(client, summary_schema, name="summarizer", model="gpt-4o")
+agent = OpenAITaskAgent(client, output_schema=summary_schema, name="summarizer", model="gpt-4o")
 serve(agents=[agent])
 ```
 
@@ -95,7 +95,7 @@ Create an OpenAI chat agent. Follows the chat type and supports streaming.
 
 **Returns:** `OpenAIChatAgent` - A Reminix chat agent instance
 
-### `OpenAITaskAgent(client, output_schema, *, name, model, description, instructions, tags, metadata)`
+### `OpenAITaskAgent(client, *, output_schema, name, model, description, instructions, tags, metadata)`
 
 Create an OpenAI task agent. Follows the task type and returns structured output. Streaming is not supported.
 
@@ -112,7 +112,7 @@ Create an OpenAI task agent. Follows the task type and returns structured output
 
 **Returns:** `OpenAITaskAgent` - A Reminix task agent instance
 
-### `OpenAIThreadAgent(client, tools, *, name, model, max_turns, description, instructions, tags, metadata)`
+### `OpenAIThreadAgent(client, *, tools, name, model, max_turns, description, instructions, tags, metadata)`
 
 Create an OpenAI thread agent. Follows the thread type and supports tool use over multiple turns. Streaming is not supported.
 

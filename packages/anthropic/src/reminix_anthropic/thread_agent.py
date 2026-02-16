@@ -24,8 +24,8 @@ class AnthropicThreadAgent(Agent):
     def __init__(
         self,
         client: AsyncAnthropic,
-        tools: list[Tool],
         *,
+        tools: list[Tool],
         name: str = "anthropic-thread-agent",
         model: str = "claude-sonnet-4-20250514",
         max_tokens: int = 4096,

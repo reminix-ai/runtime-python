@@ -14,8 +14,8 @@ class OpenAITaskAgent(Agent):
     def __init__(
         self,
         client: AsyncOpenAI,
-        output_schema: dict[str, Any],
         *,
+        output_schema: dict[str, Any],
         name: str = "openai-task-agent",
         model: str = "gpt-4o-mini",
         description: str | None = None,
