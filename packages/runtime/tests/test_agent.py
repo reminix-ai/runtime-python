@@ -1,129 +1,12 @@
-"""Tests for the RuntimeAgent class and @agent decorator."""
+"""Tests for the Agent class and @agent decorator."""
 
 import pytest
 
 from reminix_runtime import (
-    AgentLike,
+    Agent,
     AgentRequest,
-    RuntimeAgent,
     agent,
 )
-
-# =============================================================================
-# Tests for RuntimeAgent
-# =============================================================================
-
-
-class TestRuntimeAgentCreation:
-    """Tests for RuntimeAgent instantiation."""
-
-    def test_runtime_agent_has_name(self):
-        """RuntimeAgent stores its name."""
-
-        async def _invoke(request: AgentRequest) -> dict:
-            return {"output": "test"}
-
-        a = RuntimeAgent(
-            name="my-agent",
-            metadata={"capabilities": {"streaming": False}, "input": {}, "output": {}},
-            invoke_fn=_invoke,
-        )
-        assert a.name == "my-agent"
-
-    def test_runtime_agent_has_metadata(self):
-        """RuntimeAgent stores its metadata."""
-
-        async def _invoke(request: AgentRequest) -> dict:
-            return {"output": "test"}
-
-        metadata = {
-            "capabilities": {"streaming": False},
-            "input": {"type": "object"},
-            "output": {"type": "string"},
-        }
-        a = RuntimeAgent(name="my-agent", metadata=metadata, invoke_fn=_invoke)
-        assert a.metadata["capabilities"]["streaming"] is False
-        assert a.metadata["input"]["type"] == "object"
-
-    def test_runtime_agent_conforms_to_agent_like(self):
-        """RuntimeAgent conforms to the AgentLike protocol."""
-
-        async def _invoke(request: AgentRequest) -> dict:
-            return {"output": "test"}
-
-        a = RuntimeAgent(
-            name="my-agent",
-            metadata={"capabilities": {"streaming": False}, "input": {}, "output": {}},
-            invoke_fn=_invoke,
-        )
-        assert isinstance(a, AgentLike)
-
-
-class TestRuntimeAgentInvoke:
-    """Tests for RuntimeAgent invoke functionality."""
-
-    @pytest.mark.asyncio
-    async def test_invoke_calls_provided_function(self):
-        """invoke() delegates to the provided invoke function."""
-
-        async def _invoke(request: AgentRequest) -> dict:
-            task = request.input.get("task", "unknown")
-            return {"output": f"Completed: {task}"}
-
-        a = RuntimeAgent(
-            name="test-agent",
-            metadata={"capabilities": {"streaming": False}, "input": {}, "output": {}},
-            invoke_fn=_invoke,
-        )
-        request = AgentRequest(input={"task": "summarize"})
-        response = await a.invoke(request)
-
-        assert response["output"] == "Completed: summarize"
-
-    @pytest.mark.asyncio
-    async def test_invoke_stream_calls_provided_function(self):
-        """invoke_stream() delegates to the provided stream function."""
-
-        async def _invoke(request: AgentRequest) -> dict:
-            return {"output": "test"}
-
-        async def _stream(request: AgentRequest):
-            yield "Hello"
-            yield " world"
-
-        a = RuntimeAgent(
-            name="test-agent",
-            metadata={"capabilities": {"streaming": True}, "input": {}, "output": {}},
-            invoke_fn=_invoke,
-            invoke_stream_fn=_stream,
-        )
-        request = AgentRequest(input={"task": "test"})
-        chunks = []
-        async for chunk in a.invoke_stream(request):
-            chunks.append(chunk)
-
-        assert chunks == ["Hello", " world"]
-
-    @pytest.mark.asyncio
-    async def test_invoke_stream_without_function_raises(self):
-        """invoke_stream() raises NotImplementedError when no stream function provided."""
-
-        async def _invoke(request: AgentRequest) -> dict:
-            return {"output": "test"}
-
-        a = RuntimeAgent(
-            name="test-agent",
-            metadata={"capabilities": {"streaming": False}, "input": {}, "output": {}},
-            invoke_fn=_invoke,
-        )
-        request = AgentRequest(input={"task": "test"})
-
-        with pytest.raises(NotImplementedError) as exc_info:
-            async for _ in a.invoke_stream(request):
-                pass
-
-        assert "test-agent" in str(exc_info.value)
-
 
 # =============================================================================
 # Tests for @agent decorator
@@ -133,15 +16,15 @@ class TestRuntimeAgentInvoke:
 class TestAgentDecorator:
     """Tests for the @agent decorator."""
 
-    def test_agent_decorator_creates_runtime_agent(self):
-        """@agent decorator creates a RuntimeAgent instance."""
+    def test_agent_decorator_creates_agent(self):
+        """@agent decorator creates an Agent instance."""
 
         @agent
         async def calculator(a: float, b: float) -> float:
             """Add two numbers."""
             return a + b
 
-        assert isinstance(calculator, RuntimeAgent)
+        assert isinstance(calculator, Agent)
         assert calculator.name == "calculator"
 
     def test_agent_decorator_with_custom_name(self):

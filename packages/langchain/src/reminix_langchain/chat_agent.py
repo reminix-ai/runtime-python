@@ -16,6 +16,7 @@ from langchain_core.runnables import Runnable
 
 from reminix_runtime import (
     AGENT_TYPES,
+    Agent,
     AgentRequest,
     Message,
     build_messages_from_input,
@@ -44,7 +45,7 @@ def to_langchain_message(message: Message) -> BaseMessage:
         return HumanMessage(content=content)
 
 
-class LangChainChatAgent:
+class LangChainChatAgent(Agent):
     """LangChain chat agent for agents and runnables."""
 
     def __init__(
@@ -57,32 +58,19 @@ class LangChainChatAgent:
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(
+            name,
+            description=description or "langchain chat agent",
+            streaming=True,
+            input_schema=AGENT_TYPES["chat"]["input"],
+            output_schema=AGENT_TYPES["chat"]["output"],
+            type="chat",
+            framework="langchain",
+            instructions=instructions,
+            tags=tags,
+            metadata=metadata,
+        )
         self._agent = agent
-        self._name = name
-        self._description = description or "langchain chat agent"
-        self._instructions = instructions
-        self._tags = tags
-        self._extra_metadata = metadata
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "description": self._description,
-            "capabilities": {"streaming": True},
-            "input": AGENT_TYPES["chat"]["input"],
-            "output": AGENT_TYPES["chat"]["output"],
-            "framework": "langchain",
-            "type": "chat",
-        }
-        if self._tags:
-            result["tags"] = self._tags
-        if self._extra_metadata:
-            result.update(self._extra_metadata)
-        return result
 
     def _build_langchain_input(self, request: AgentRequest) -> Any:
         """Build LangChain input from invoke request."""
@@ -91,8 +79,8 @@ class LangChainChatAgent:
         # If input had messages, convert to LangChain format
         if "messages" in request.input:
             lc_messages = [to_langchain_message(m) for m in messages]
-            if self._instructions:
-                lc_messages.insert(0, SystemMessage(content=self._instructions))
+            if self.instructions:
+                lc_messages.insert(0, SystemMessage(content=self.instructions))
             return lc_messages
         elif "prompt" in request.input:
             return request.input["prompt"]

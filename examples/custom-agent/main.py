@@ -13,7 +13,7 @@ Then test the endpoints:
     curl http://localhost:8080/health
 
     # Discovery
-    curl http://localhost:8080/info
+    curl http://localhost:8080/manifest
 
     # Execute endpoint
     curl -X POST http://localhost:8080/agents/echo/invoke \
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     print()
     print("Endpoints:")
     print("  GET  /health")
-    print("  GET  /info")
+    print("  GET  /manifest")
     print("  POST /agents/echo/invoke")
     print()
 

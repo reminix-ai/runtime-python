@@ -5,16 +5,16 @@ from typing import Any
 
 from openai import AsyncOpenAI
 
-from reminix_runtime import AGENT_TYPES, AgentRequest
+from reminix_runtime import AGENT_TYPES, Agent, AgentRequest
 
 
-class OpenAITaskAgent:
+class OpenAITaskAgent(Agent):
     """OpenAI task agent using structured outputs (JSON schema)."""
 
     def __init__(
         self,
         client: AsyncOpenAI,
-        output_schema: dict[str, Any],
+        response_schema: dict[str, Any],
         *,
         name: str = "openai-task-agent",
         model: str = "gpt-4o-mini",
@@ -23,38 +23,25 @@ class OpenAITaskAgent:
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(
+            name,
+            description=description or "openai task agent",
+            streaming=False,
+            input_schema=AGENT_TYPES["task"]["input"],
+            output_schema=AGENT_TYPES["task"]["output"],
+            type="task",
+            framework="openai",
+            instructions=instructions,
+            tags=tags,
+            metadata=metadata,
+        )
         self._client = client
-        self._output_schema = output_schema
-        self._name = name
+        self._response_schema = response_schema
         self._model = model
-        self._description = description or "openai task agent"
-        self._instructions = instructions
-        self._tags = tags
-        self._extra_metadata = metadata
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def model(self) -> str:
         return self._model
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "description": self._description,
-            "capabilities": {"streaming": False},
-            "input": AGENT_TYPES["task"]["input"],
-            "output": AGENT_TYPES["task"]["output"],
-            "framework": "openai",
-            "type": "task",
-        }
-        if self._tags:
-            result["tags"] = self._tags
-        if self._extra_metadata:
-            result.update(self._extra_metadata)
-        return result
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         task = request.input["task"]
@@ -66,8 +53,8 @@ class OpenAITaskAgent:
             prompt += f"\n\nContext:\n{json.dumps(extra, indent=2)}"
 
         messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
-        if self._instructions:
-            messages.insert(0, {"role": "system", "content": self._instructions})
+        if self.instructions:
+            messages.insert(0, {"role": "system", "content": self.instructions})
 
         response = await self._client.chat.completions.create(
             model=self._model,
@@ -76,7 +63,7 @@ class OpenAITaskAgent:
                 "type": "json_schema",
                 "json_schema": {
                     "name": "task_result",
-                    "schema": self._output_schema,
+                    "schema": self._response_schema,
                 },
             },  # type: ignore
         )

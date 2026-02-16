@@ -2,52 +2,46 @@
 
 import inspect
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
 
-from .schemas import AGENT_TYPES, DEFAULT_AGENT_OUTPUT, AgentType
+from .schemas import AGENT_TYPES, DEFAULT_AGENT_INPUT, DEFAULT_AGENT_OUTPUT, AgentType
 from .tool import _extract_schema_from_function
 from .types import AgentRequest
 
-# === AgentLike Protocol ===
+# === Agent Base Class ===
 
 
-@runtime_checkable
-class AgentLike(Protocol):
-    """Protocol defining what the server accepts as an agent."""
+class Agent:
+    """Base class for all agents.
 
-    @property
-    def name(self) -> str: ...
-
-    @property
-    def metadata(self) -> dict[str, Any]: ...
-
-    async def invoke(self, request: AgentRequest) -> dict[str, Any]: ...
-
-    def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]: ...
-
-
-# === RuntimeAgent ===
-
-
-class RuntimeAgent:
-    """Agent object produced by @agent decorator and framework agents.
-
-    This is the concrete implementation that both the @agent decorator
-    and framework agents produce. The server accepts anything matching
-    the AgentLike protocol.
+    Framework agents extend this class. The agent() factory creates
+    a private _FunctionAgent subclass internally.
     """
 
     def __init__(
         self,
         name: str,
-        metadata: dict[str, Any],
-        invoke_fn: Callable[[AgentRequest], Awaitable[dict[str, Any]]],
-        invoke_stream_fn: Callable[[AgentRequest], AsyncIterator[str]] | None = None,
-    ):
+        *,
+        description: str = "",
+        streaming: bool = False,
+        input_schema: dict[str, Any] | None = None,
+        output_schema: dict[str, Any] | None = None,
+        type: AgentType | None = None,
+        framework: str | None = None,
+        instructions: str | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
         self._name = name
-        self._metadata = metadata
-        self._invoke_fn = invoke_fn
-        self._invoke_stream_fn = invoke_stream_fn
+        self._description = description
+        self._streaming = streaming
+        self._input_schema = input_schema or DEFAULT_AGENT_INPUT
+        self._output_schema = output_schema or DEFAULT_AGENT_OUTPUT
+        self._type = type
+        self._framework = framework
+        self.instructions = instructions
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -55,7 +49,62 @@ class RuntimeAgent:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return self._metadata
+        result: dict[str, Any] = {
+            "description": self._description,
+            "capabilities": {"streaming": self._streaming},
+            "input": self._input_schema,
+            "output": self._output_schema,
+        }
+        if self._type:
+            result["type"] = self._type
+        if self._framework:
+            result["framework"] = self._framework
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
+
+    async def invoke(self, request: AgentRequest) -> dict[str, Any]:
+        raise NotImplementedError
+
+    async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:  # noqa: ARG002
+        raise NotImplementedError
+        yield  # unreachable; makes this an async generator
+
+
+# === _FunctionAgent (private) ===
+
+
+class _FunctionAgent(Agent):
+    """Agent created by the agent() factory from a function."""
+
+    def __init__(
+        self,
+        *,
+        name: str,
+        description: str,
+        streaming: bool,
+        input_schema: dict[str, Any],
+        output_schema: dict[str, Any],
+        type: AgentType | None,
+        tags: list[str] | None,
+        metadata: dict[str, Any] | None,
+        invoke_fn: Callable[[AgentRequest], Awaitable[dict[str, Any]]],
+        invoke_stream_fn: Callable[[AgentRequest], AsyncIterator[str]] | None = None,
+    ):
+        super().__init__(
+            name=name,
+            description=description,
+            streaming=streaming,
+            input_schema=input_schema,
+            output_schema=output_schema,
+            type=type,
+            tags=tags,
+            metadata=metadata,
+        )
+        self._invoke_fn = invoke_fn
+        self._invoke_stream_fn = invoke_stream_fn
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         return await self._invoke_fn(request)
@@ -67,7 +116,7 @@ class RuntimeAgent:
             yield chunk
 
 
-# === @agent decorator ===
+# === agent() factory ===
 
 
 def agent(
@@ -76,7 +125,9 @@ def agent(
     name: str | None = None,
     description: str | None = None,
     type: AgentType | None = None,
-) -> RuntimeAgent | Callable[[Callable[..., Any]], RuntimeAgent]:
+    tags: list[str] | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> Agent | Callable[[Callable[..., Any]], Agent]:
     """Decorator to create an agent from a function.
 
     The function parameters become the agent's input schema (like @tool),
@@ -115,9 +166,11 @@ def agent(
         type: Optional agent type (prompt, chat, task, rag, thread, workflow).
             When set, uses that type's input/output schema instead of
             deriving from the function signature.
+        tags: Optional list of tags for categorization.
+        metadata: Optional extra metadata to include in the agent's metadata.
 
     Returns:
-        A RuntimeAgent instance that handles invoke requests.
+        An Agent instance that handles invoke requests.
     """
 
     def _call_with_request(f: Callable[..., Any], request: AgentRequest) -> dict[str, Any]:
@@ -128,7 +181,7 @@ def agent(
             kwargs["context"] = request.context
         return kwargs
 
-    def decorator(f: Callable[..., Any]) -> RuntimeAgent:
+    def decorator(f: Callable[..., Any]) -> Agent:
         agent_name = name or f.__name__
         agent_description = description or (f.__doc__ or "").strip().split("\n\n")[0].strip()
 
@@ -145,16 +198,6 @@ def agent(
                 f, skip_params={"messages", "context"}
             )
             output_schema = output_schema or DEFAULT_AGENT_OUTPUT
-
-        # Build metadata
-        metadata: dict[str, Any] = {
-            "description": agent_description,
-            "input": input_schema,
-            "output": output_schema,
-            "capabilities": {"streaming": is_streaming},
-        }
-        if type is not None:
-            metadata["type"] = type
 
         # Build handler functions
         invoke_fn: Callable[[AgentRequest], Awaitable[dict[str, Any]]]
@@ -189,8 +232,14 @@ def agent(
 
             invoke_fn = _invoke
 
-        agent_instance = RuntimeAgent(
+        agent_instance = _FunctionAgent(
             name=agent_name,
+            description=agent_description,
+            streaming=is_streaming,
+            input_schema=input_schema,
+            output_schema=output_schema,
+            type=type,
+            tags=tags,
             metadata=metadata,
             invoke_fn=invoke_fn,
             invoke_stream_fn=invoke_stream_fn,

@@ -4,12 +4,10 @@ import inspect
 from collections.abc import Callable
 from typing import (
     Any,
-    Protocol,
     get_args,
     get_origin,
     get_type_hints,
     is_typeddict,
-    runtime_checkable,
 )
 
 from docstring_parser import parse as parse_docstring
@@ -175,37 +173,31 @@ def _extract_schema_from_function(
     return description, input_schema, output_schema
 
 
-# === ToolLike Protocol ===
-
-
-@runtime_checkable
-class ToolLike(Protocol):
-    """Protocol defining what the server accepts as a tool."""
-
-    @property
-    def name(self) -> str: ...
-
-    @property
-    def metadata(self) -> dict[str, Any]: ...
-
-    async def call(self, request: ToolRequest) -> dict[str, Any]: ...
-
-
-# === Tool ===
+# === Tool Base Class ===
 
 
 class Tool:
-    """A tool created from a function using the @tool decorator."""
+    """Base class for all tools.
+
+    The tool() factory creates a private _FunctionTool subclass internally.
+    """
 
     def __init__(
         self,
         name: str,
-        metadata: dict[str, Any],
-        call_fn: Callable[[ToolRequest], Any],
-    ):
+        *,
+        description: str = "",
+        input_schema: dict[str, Any] | None = None,
+        output_schema: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
         self._name = name
-        self._metadata = metadata
-        self._call_fn = call_fn
+        self._description = description
+        self._input_schema = input_schema or {"type": "object", "properties": {}, "required": []}
+        self._output_schema = output_schema or {"type": "string"}
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -213,13 +205,53 @@ class Tool:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return self._metadata
+        result: dict[str, Any] = {
+            "description": self._description,
+            "input": self._input_schema,
+            "output": self._output_schema,
+        }
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
+
+    async def call(self, request: ToolRequest) -> dict[str, Any]:
+        raise NotImplementedError
+
+
+# === _FunctionTool (private) ===
+
+
+class _FunctionTool(Tool):
+    """Tool created by the tool() factory from a function."""
+
+    def __init__(
+        self,
+        *,
+        name: str,
+        description: str,
+        input_schema: dict[str, Any],
+        output_schema: dict[str, Any],
+        tags: list[str] | None,
+        metadata: dict[str, Any] | None,
+        call_fn: Callable[[ToolRequest], Any],
+    ):
+        super().__init__(
+            name=name,
+            description=description,
+            input_schema=input_schema,
+            output_schema=output_schema,
+            tags=tags,
+            metadata=metadata,
+        )
+        self._call_fn = call_fn
 
     async def call(self, request: ToolRequest) -> dict[str, Any]:
         return await self._call_fn(request)
 
 
-# === @tool decorator ===
+# === tool() factory ===
 
 
 def tool(
@@ -227,6 +259,8 @@ def tool(
     *,
     name: str | None = None,
     description: str | None = None,
+    tags: list[str] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> Tool | Callable[[Callable[..., Any]], Tool]:
     """Decorator to create a tool from a function.
 
@@ -246,6 +280,8 @@ def tool(
         func: The function to wrap (when used without parentheses).
         name: Optional name override. Defaults to function name.
         description: Optional description override. Defaults to docstring.
+        tags: Optional list of tags for categorization.
+        metadata: Optional extra metadata to include in the tool's metadata.
 
     Returns:
         A Tool instance with input and output schemas extracted from type hints.
@@ -258,12 +294,6 @@ def tool(
         )
         tool_description = description or extracted_desc
 
-        metadata = {
-            "description": tool_description,
-            "input": input_schema,
-            "output": output_schema or {"type": "string"},
-        }
-
         async def call_fn(request: ToolRequest) -> dict[str, Any]:
             kwargs = dict(request.input)
             sig = inspect.signature(f)
@@ -275,7 +305,15 @@ def tool(
                 result = f(**kwargs)
             return {"output": result}
 
-        tool_instance = Tool(name=tool_name, metadata=metadata, call_fn=call_fn)
+        tool_instance = _FunctionTool(
+            name=tool_name,
+            description=tool_description,
+            input_schema=input_schema,
+            output_schema=output_schema or {"type": "string"},
+            tags=tags,
+            metadata=metadata,
+            call_fn=call_fn,
+        )
 
         # Preserve function metadata
         tool_instance.__doc__ = f.__doc__

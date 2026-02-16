@@ -7,23 +7,24 @@ from openai import AsyncOpenAI
 
 from reminix_runtime import (
     AGENT_TYPES,
+    Agent,
     AgentRequest,
     Message,
+    Tool,
     ToolCall,
-    ToolLike,
     ToolRequest,
     build_messages_from_input,
     message_content_to_text,
 )
 
 
-class OpenAIThreadAgent:
+class OpenAIThreadAgent(Agent):
     """OpenAI thread agent with tool execution loop."""
 
     def __init__(
         self,
         client: AsyncOpenAI,
-        tools: list[ToolLike],
+        tools: list[Tool],
         *,
         name: str = "openai-thread-agent",
         model: str = "gpt-4o-mini",
@@ -33,44 +34,31 @@ class OpenAIThreadAgent:
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(
+            name,
+            description=description or "openai thread agent",
+            streaming=False,
+            input_schema=AGENT_TYPES["thread"]["input"],
+            output_schema=AGENT_TYPES["thread"]["output"],
+            type="thread",
+            framework="openai",
+            instructions=instructions,
+            tags=tags,
+            metadata=metadata,
+        )
         self._client = client
         self._tools = {t.name: t for t in tools}
         self._tool_definitions = [self._to_openai_tool(t) for t in tools]
-        self._name = name
         self._model = model
         self._max_turns = max_turns
-        self._description = description or "openai thread agent"
-        self._instructions = instructions
-        self._tags = tags
-        self._extra_metadata = metadata
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def model(self) -> str:
         return self._model
 
-    @property
-    def metadata(self) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "description": self._description,
-            "capabilities": {"streaming": False},
-            "input": AGENT_TYPES["thread"]["input"],
-            "output": AGENT_TYPES["thread"]["output"],
-            "framework": "openai",
-            "type": "thread",
-        }
-        if self._tags:
-            result["tags"] = self._tags
-        if self._extra_metadata:
-            result.update(self._extra_metadata)
-        return result
-
     @staticmethod
-    def _to_openai_tool(tool: ToolLike) -> dict[str, Any]:
-        """Convert a ToolLike to OpenAI tool definition."""
+    def _to_openai_tool(tool: Tool) -> dict[str, Any]:
+        """Convert a Tool to OpenAI tool definition."""
         return {
             "type": "function",
             "function": {
@@ -118,8 +106,8 @@ class OpenAIThreadAgent:
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
         openai_messages = [self._to_openai_message(m) for m in messages]
-        if self._instructions:
-            openai_messages.insert(0, {"role": "system", "content": self._instructions})
+        if self.instructions:
+            openai_messages.insert(0, {"role": "system", "content": self.instructions})
 
         for _ in range(self._max_turns):
             response = await self._client.chat.completions.create(

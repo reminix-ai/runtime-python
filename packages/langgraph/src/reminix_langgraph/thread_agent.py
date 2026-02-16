@@ -9,12 +9,13 @@ from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage, Syst
 from reminix_langchain import to_langchain_message
 from reminix_runtime import (
     AGENT_TYPES,
+    Agent,
     AgentRequest,
     build_messages_from_input,
 )
 
 
-class LangGraphThreadAgent:
+class LangGraphThreadAgent(Agent):
     """LangGraph thread agent for compiled graphs."""
 
     def __init__(
@@ -27,32 +28,19 @@ class LangGraphThreadAgent:
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(
+            name,
+            description=description or "langgraph thread agent",
+            streaming=True,
+            input_schema=AGENT_TYPES["thread"]["input"],
+            output_schema={"type": "string"},
+            type="thread",
+            framework="langgraph",
+            instructions=instructions,
+            tags=tags,
+            metadata=metadata,
+        )
         self._graph = graph
-        self._name = name
-        self._description = description or "langgraph thread agent"
-        self._instructions = instructions
-        self._tags = tags
-        self._extra_metadata = metadata
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "description": self._description,
-            "capabilities": {"streaming": True},
-            "input": AGENT_TYPES["thread"]["input"],
-            "output": {"type": "string"},
-            "framework": "langgraph",
-            "type": "thread",
-        }
-        if self._tags:
-            result["tags"] = self._tags
-        if self._extra_metadata:
-            result.update(self._extra_metadata)
-        return result
 
     def _get_last_ai_content(self, messages: list[BaseMessage]) -> str:
         """Extract content from the last AI message."""
@@ -66,8 +54,8 @@ class LangGraphThreadAgent:
         if "messages" in request.input:
             messages = build_messages_from_input(request)
             lc_messages = [to_langchain_message(m) for m in messages]
-            if self._instructions:
-                lc_messages.insert(0, SystemMessage(content=self._instructions))
+            if self.instructions:
+                lc_messages.insert(0, SystemMessage(content=self.instructions))
             return {"messages": lc_messages}
         else:
             return request.input

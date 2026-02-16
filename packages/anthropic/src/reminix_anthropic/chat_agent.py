@@ -8,6 +8,7 @@ from anthropic import AsyncAnthropic
 
 from reminix_runtime import (
     AGENT_TYPES,
+    Agent,
     AgentRequest,
     Message,
     build_messages_from_input,
@@ -15,7 +16,7 @@ from reminix_runtime import (
 )
 
 
-class AnthropicChatAgent:
+class AnthropicChatAgent(Agent):
     """Anthropic chat agent using the messages API."""
 
     def __init__(
@@ -30,38 +31,25 @@ class AnthropicChatAgent:
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(
+            name,
+            description=description or "anthropic chat agent",
+            streaming=True,
+            input_schema=AGENT_TYPES["chat"]["input"],
+            output_schema=AGENT_TYPES["chat"]["output"],
+            type="chat",
+            framework="anthropic",
+            instructions=instructions,
+            tags=tags,
+            metadata=metadata,
+        )
         self._client = client
-        self._name = name
         self._model = model
         self._max_tokens = max_tokens
-        self._description = description or "anthropic chat agent"
-        self._instructions = instructions
-        self._tags = tags
-        self._extra_metadata = metadata
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def model(self) -> str:
         return self._model
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "description": self._description,
-            "capabilities": {"streaming": True},
-            "input": AGENT_TYPES["chat"]["input"],
-            "output": AGENT_TYPES["chat"]["output"],
-            "framework": "anthropic",
-            "type": "chat",
-        }
-        if self._tags:
-            result["tags"] = self._tags
-        if self._extra_metadata:
-            result.update(self._extra_metadata)
-        return result
 
     def _extract_system_and_messages(
         self, messages: list[Message]
@@ -89,10 +77,8 @@ class AnthropicChatAgent:
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
         system_message, anthropic_messages = self._extract_system_and_messages(messages)
-        if self._instructions:
-            system_message = self._instructions + (
-                "\n\n" + system_message if system_message else ""
-            )
+        if self.instructions:
+            system_message = self.instructions + ("\n\n" + system_message if system_message else "")
 
         kwargs: dict[str, Any] = {
             "model": self._model,
@@ -109,10 +95,8 @@ class AnthropicChatAgent:
     async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
         messages = build_messages_from_input(request)
         system_message, anthropic_messages = self._extract_system_and_messages(messages)
-        if self._instructions:
-            system_message = self._instructions + (
-                "\n\n" + system_message if system_message else ""
-            )
+        if self.instructions:
+            system_message = self.instructions + ("\n\n" + system_message if system_message else "")
 
         kwargs: dict[str, Any] = {
             "model": self._model,

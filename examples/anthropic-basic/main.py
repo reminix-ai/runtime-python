@@ -52,6 +52,6 @@ if __name__ == "__main__":
     print("Server running on http://localhost:8080")
     print("\nEndpoints:")
     print("  GET  /health")
-    print("  GET  /info")
+    print("  GET  /manifest")
     print("  POST /agents/anthropic-basic/invoke")
     serve(agents=[agent])

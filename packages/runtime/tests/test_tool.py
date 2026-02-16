@@ -595,18 +595,3 @@ class TestToolErrorHandling:
         request = ToolRequest(input={})
         with pytest.raises(TypeError, match="required_param"):
             await my_tool.call(request)
-
-
-class TestToolLikeProtocol:
-    """Tests for ToolLike protocol conformance."""
-
-    def test_tool_conforms_to_protocol(self):
-        """Tool created by @tool decorator conforms to ToolLike."""
-        from reminix_runtime import ToolLike
-
-        @tool
-        async def my_tool(param: str) -> dict:
-            """Test tool."""
-            return {}
-
-        assert isinstance(my_tool, ToolLike)

@@ -5,10 +5,10 @@ from typing import Any
 from langgraph.errors import GraphInterrupt
 from langgraph.types import Command
 
-from reminix_runtime import AGENT_TYPES, AgentRequest
+from reminix_runtime import AGENT_TYPES, Agent, AgentRequest
 
 
-class LangGraphWorkflowAgent:
+class LangGraphWorkflowAgent(Agent):
     """LangGraph workflow agent for compiled graphs.
 
     Maps LangGraph's streaming per-node outputs and interrupt/resume
@@ -25,32 +25,19 @@ class LangGraphWorkflowAgent:
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(
+            name,
+            description=description or "langgraph workflow agent",
+            streaming=False,
+            input_schema=AGENT_TYPES["workflow"]["input"],
+            output_schema=AGENT_TYPES["workflow"]["output"],
+            type="workflow",
+            framework="langgraph",
+            instructions=instructions,
+            tags=tags,
+            metadata=metadata,
+        )
         self._graph = graph
-        self._name = name
-        self._description = description or "langgraph workflow agent"
-        self._instructions = instructions
-        self._tags = tags
-        self._extra_metadata = metadata
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "description": self._description,
-            "capabilities": {"streaming": False},
-            "input": AGENT_TYPES["workflow"]["input"],
-            "output": AGENT_TYPES["workflow"]["output"],
-            "framework": "langgraph",
-            "type": "workflow",
-        }
-        if self._tags:
-            result["tags"] = self._tags
-        if self._extra_metadata:
-            result.update(self._extra_metadata)
-        return result
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         # 1. Extract thread_id from request.context for checkpointed graphs

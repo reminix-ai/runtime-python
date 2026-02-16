@@ -86,7 +86,7 @@ if __name__ == "__main__":
     print("Server running on http://localhost:8080")
     print("\nEndpoints:")
     print("  GET  /health")
-    print("  GET  /info")
+    print("  GET  /manifest")
     print("  POST /agents/llamaindex-rag/invoke")
     print("\nAvailable tools:")
     print("  - get_weather(city): Get weather for Paris, London, Tokyo, or New York")

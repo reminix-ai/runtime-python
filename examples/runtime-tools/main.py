@@ -13,7 +13,7 @@ Then test the endpoints:
     curl http://localhost:8080/health
 
     # Discovery (shows available tools)
-    curl http://localhost:8080/info
+    curl http://localhost:8080/manifest
 
     # Execute the weather tool
     curl -X POST http://localhost:8080/tools/get_weather/call \
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     print()
     print("Endpoints:")
     print("  GET  /health")
-    print("  GET  /info")
+    print("  GET  /manifest")
     print("  POST /tools/get_weather/call")
     print("  POST /tools/calculate/call")
     print("  POST /tools/string_utils/call")

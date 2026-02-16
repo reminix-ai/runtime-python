@@ -7,23 +7,24 @@ from anthropic import AsyncAnthropic
 
 from reminix_runtime import (
     AGENT_TYPES,
+    Agent,
     AgentRequest,
     Message,
+    Tool,
     ToolCall,
-    ToolLike,
     ToolRequest,
     build_messages_from_input,
     message_content_to_text,
 )
 
 
-class AnthropicThreadAgent:
+class AnthropicThreadAgent(Agent):
     """Anthropic thread agent with tool execution loop."""
 
     def __init__(
         self,
         client: AsyncAnthropic,
-        tools: list[ToolLike],
+        tools: list[Tool],
         *,
         name: str = "anthropic-thread-agent",
         model: str = "claude-sonnet-4-20250514",
@@ -34,45 +35,32 @@ class AnthropicThreadAgent:
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(
+            name,
+            description=description or "anthropic thread agent",
+            streaming=False,
+            input_schema=AGENT_TYPES["thread"]["input"],
+            output_schema=AGENT_TYPES["thread"]["output"],
+            type="thread",
+            framework="anthropic",
+            instructions=instructions,
+            tags=tags,
+            metadata=metadata,
+        )
         self._client = client
         self._tools = {t.name: t for t in tools}
         self._tool_definitions = [self._to_anthropic_tool(t) for t in tools]
-        self._name = name
         self._model = model
         self._max_tokens = max_tokens
         self._max_turns = max_turns
-        self._description = description or "anthropic thread agent"
-        self._instructions = instructions
-        self._tags = tags
-        self._extra_metadata = metadata
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def model(self) -> str:
         return self._model
 
-    @property
-    def metadata(self) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "description": self._description,
-            "capabilities": {"streaming": False},
-            "input": AGENT_TYPES["thread"]["input"],
-            "output": AGENT_TYPES["thread"]["output"],
-            "framework": "anthropic",
-            "type": "thread",
-        }
-        if self._tags:
-            result["tags"] = self._tags
-        if self._extra_metadata:
-            result.update(self._extra_metadata)
-        return result
-
     @staticmethod
-    def _to_anthropic_tool(tool: ToolLike) -> dict[str, Any]:
-        """Convert a ToolLike to Anthropic tool definition."""
+    def _to_anthropic_tool(tool: Tool) -> dict[str, Any]:
+        """Convert a Tool to Anthropic tool definition."""
         return {
             "name": tool.name,
             "description": tool.metadata.get("description", ""),
@@ -124,10 +112,8 @@ class AnthropicThreadAgent:
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
         system_message, anthropic_messages = self._extract_system_and_messages(messages)
-        if self._instructions:
-            system_message = self._instructions + (
-                "\n\n" + system_message if system_message else ""
-            )
+        if self.instructions:
+            system_message = self.instructions + ("\n\n" + system_message if system_message else "")
 
         for _ in range(self._max_turns):
             kwargs: dict[str, Any] = {

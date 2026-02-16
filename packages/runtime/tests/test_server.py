@@ -6,6 +6,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from reminix_runtime import (
+    Agent,
     AgentRequest,
     __version__,
     tool,
@@ -13,24 +14,17 @@ from reminix_runtime import (
 from reminix_runtime.server import create_app
 
 
-class MockTaskAgent:
+class MockTaskAgent(Agent):
     """A mock agent for testing task-style requests."""
 
     def __init__(self, name: str = "mock-agent"):
-        self._name = name
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        return {
-            "capabilities": {"streaming": True},
-            "framework": "mock",
-            "input": {"type": "object"},
-            "output": {"type": "string"},
-        }
+        super().__init__(
+            name=name,
+            streaming=True,
+            framework="mock",
+            input_schema={"type": "object"},
+            output_schema={"type": "string"},
+        )
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         task = request.input.get("task", "unknown")
@@ -40,24 +34,17 @@ class MockTaskAgent:
         yield ""
 
 
-class MockChatAgent:
+class MockChatAgent(Agent):
     """A mock agent for testing chat-style requests."""
 
     def __init__(self, name: str = "mock-agent"):
-        self._name = name
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        return {
-            "capabilities": {"streaming": True},
-            "framework": "mock",
-            "input": {"type": "object"},
-            "output": {"type": "string"},
-        }
+        super().__init__(
+            name=name,
+            streaming=True,
+            framework="mock",
+            input_schema={"type": "object"},
+            output_schema={"type": "string"},
+        )
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = request.input.get("messages", [])
@@ -112,15 +99,15 @@ class TestHealthEndpoint:
         assert response.json() == {"status": "ok"}
 
 
-class TestInfoEndpoint:
+class TestManifestEndpoint:
     """Tests for the discovery endpoint."""
 
     @pytest.mark.asyncio
-    async def test_info_endpoint(self):
-        """GET /info should return runtime info and agents."""
+    async def test_manifest_endpoint(self):
+        """GET /manifest should return runtime info and agents."""
         app = create_app(agents=[MockTaskAgent("agent-one"), MockTaskAgent("agent-two")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.get("/info")
+            response = await client.get("/manifest")
 
         assert response.status_code == 200
         data = response.json()
@@ -302,12 +289,12 @@ class TestToolCallEndpoint:
         assert data["output"] == 5
 
 
-class TestInfoEndpointWithTools:
-    """Tests for the info endpoint with tools."""
+class TestManifestEndpointWithTools:
+    """Tests for the manifest endpoint with tools."""
 
     @pytest.mark.asyncio
-    async def test_info_includes_tools(self):
-        """GET /info should include tools."""
+    async def test_manifest_includes_tools(self):
+        """GET /manifest should include tools."""
 
         @tool
         async def my_tool(param: str) -> dict:
@@ -316,7 +303,7 @@ class TestInfoEndpointWithTools:
 
         app = create_app(tools=[my_tool])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.get("/info")
+            response = await client.get("/manifest")
 
         assert response.status_code == 200
         data = response.json()
@@ -328,8 +315,8 @@ class TestInfoEndpointWithTools:
         assert "input" in data["tools"][0]
 
     @pytest.mark.asyncio
-    async def test_info_with_agents_and_tools(self):
-        """GET /info should include both agents and tools."""
+    async def test_manifest_with_agents_and_tools(self):
+        """GET /manifest should include both agents and tools."""
 
         @tool
         async def my_tool(param: str) -> dict:
@@ -338,7 +325,7 @@ class TestInfoEndpointWithTools:
 
         app = create_app(agents=[MockTaskAgent("my-agent")], tools=[my_tool])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.get("/info")
+            response = await client.get("/manifest")
 
         assert response.status_code == 200
         data = response.json()

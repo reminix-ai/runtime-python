@@ -10,8 +10,8 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from . import __version__
-from .agent import AgentLike
-from .tool import ToolLike
+from .agent import Agent
+from .tool import Tool
 from .types import AgentRequest, ToolRequest
 
 # Enable debug mode via environment variable to include stack traces in error responses
@@ -62,8 +62,8 @@ async def _sse_generator(stream: AsyncIterator[str]) -> AsyncIterator[bytes]:
 
 def create_app(
     *,
-    agents: list[AgentLike] | None = None,
-    tools: list[ToolLike] | None = None,
+    agents: list[Agent] | None = None,
+    tools: list[Tool] | None = None,
 ) -> FastAPI:
     """Create a FastAPI application with agent and tool endpoints.
 
@@ -85,13 +85,13 @@ def create_app(
         raise ValueError("At least one agent or tool is required")
 
     # Build lookup dicts by name (with duplicate detection)
-    agent_map: dict[str, AgentLike] = {}
+    agent_map: dict[str, Agent] = {}
     for a in agents:
         if a.name in agent_map:
             raise ValueError(f"Duplicate agent name: '{a.name}'")
         agent_map[a.name] = a
 
-    tool_map: dict[str, ToolLike] = {}
+    tool_map: dict[str, Tool] = {}
     for t in tools:
         if t.name in tool_map:
             raise ValueError(f"Duplicate tool name: '{t.name}'")
@@ -104,8 +104,8 @@ def create_app(
         """Health check endpoint."""
         return {"status": "ok"}
 
-    @app.get("/info")
-    async def info() -> dict[str, Any]:
+    @app.get("/manifest")
+    async def manifest() -> dict[str, Any]:
         """Runtime discovery endpoint."""
         return {
             "runtime": {
@@ -209,8 +209,8 @@ def create_app(
 
 def serve(
     *,
-    agents: list[AgentLike] | None = None,
-    tools: list[ToolLike] | None = None,
+    agents: list[Agent] | None = None,
+    tools: list[Tool] | None = None,
     port: int | None = None,
     host: str | None = None,
 ) -> None:

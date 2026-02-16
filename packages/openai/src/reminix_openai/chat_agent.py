@@ -8,6 +8,7 @@ from openai import AsyncOpenAI
 
 from reminix_runtime import (
     AGENT_TYPES,
+    Agent,
     AgentRequest,
     Message,
     build_messages_from_input,
@@ -15,7 +16,7 @@ from reminix_runtime import (
 )
 
 
-class OpenAIChatAgent:
+class OpenAIChatAgent(Agent):
     """OpenAI chat agent using chat completions."""
 
     def __init__(
@@ -29,37 +30,24 @@ class OpenAIChatAgent:
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(
+            name,
+            description=description or "openai chat agent",
+            streaming=True,
+            input_schema=AGENT_TYPES["chat"]["input"],
+            output_schema=AGENT_TYPES["chat"]["output"],
+            type="chat",
+            framework="openai",
+            instructions=instructions,
+            tags=tags,
+            metadata=metadata,
+        )
         self._client = client
-        self._name = name
         self._model = model
-        self._description = description or "openai chat agent"
-        self._instructions = instructions
-        self._tags = tags
-        self._extra_metadata = metadata
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def model(self) -> str:
         return self._model
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "description": self._description,
-            "capabilities": {"streaming": True},
-            "input": AGENT_TYPES["chat"]["input"],
-            "output": AGENT_TYPES["chat"]["output"],
-            "framework": "openai",
-            "type": "chat",
-        }
-        if self._tags:
-            result["tags"] = self._tags
-        if self._extra_metadata:
-            result.update(self._extra_metadata)
-        return result
 
     def _to_openai_message(self, message: Message) -> dict[str, Any]:
         """Convert a Reminix message to OpenAI format."""
@@ -81,8 +69,8 @@ class OpenAIChatAgent:
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
         openai_messages = [self._to_openai_message(m) for m in messages]
-        if self._instructions:
-            openai_messages.insert(0, {"role": "system", "content": self._instructions})
+        if self.instructions:
+            openai_messages.insert(0, {"role": "system", "content": self.instructions})
 
         response = await self._client.chat.completions.create(
             model=self._model,
@@ -95,8 +83,8 @@ class OpenAIChatAgent:
     async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
         messages = build_messages_from_input(request)
         openai_messages = [self._to_openai_message(m) for m in messages]
-        if self._instructions:
-            openai_messages.insert(0, {"role": "system", "content": self._instructions})
+        if self.instructions:
+            openai_messages.insert(0, {"role": "system", "content": self.instructions})
 
         stream = await self._client.chat.completions.create(
             model=self._model,

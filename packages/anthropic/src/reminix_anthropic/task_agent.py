@@ -5,16 +5,16 @@ from typing import Any
 
 from anthropic import AsyncAnthropic
 
-from reminix_runtime import AGENT_TYPES, AgentRequest
+from reminix_runtime import AGENT_TYPES, Agent, AgentRequest
 
 
-class AnthropicTaskAgent:
+class AnthropicTaskAgent(Agent):
     """Anthropic task agent using tool-use structured output."""
 
     def __init__(
         self,
         client: AsyncAnthropic,
-        output_schema: dict[str, Any],
+        response_schema: dict[str, Any],
         *,
         name: str = "anthropic-task-agent",
         model: str = "claude-sonnet-4-20250514",
@@ -24,39 +24,26 @@ class AnthropicTaskAgent:
         tags: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(
+            name,
+            description=description or "anthropic task agent",
+            streaming=False,
+            input_schema=AGENT_TYPES["task"]["input"],
+            output_schema=AGENT_TYPES["task"]["output"],
+            type="task",
+            framework="anthropic",
+            instructions=instructions,
+            tags=tags,
+            metadata=metadata,
+        )
         self._client = client
-        self._output_schema = output_schema
-        self._name = name
+        self._response_schema = response_schema
         self._model = model
         self._max_tokens = max_tokens
-        self._description = description or "anthropic task agent"
-        self._instructions = instructions
-        self._tags = tags
-        self._extra_metadata = metadata
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def model(self) -> str:
         return self._model
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "description": self._description,
-            "capabilities": {"streaming": False},
-            "input": AGENT_TYPES["task"]["input"],
-            "output": AGENT_TYPES["task"]["output"],
-            "framework": "anthropic",
-            "type": "task",
-        }
-        if self._tags:
-            result["tags"] = self._tags
-        if self._extra_metadata:
-            result.update(self._extra_metadata)
-        return result
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         task = request.input["task"]
@@ -75,13 +62,13 @@ class AnthropicTaskAgent:
                 {
                     "name": "task_result",
                     "description": "Return the structured result of the task",
-                    "input_schema": self._output_schema,
+                    "input_schema": self._response_schema,
                 }
             ],
             "tool_choice": {"type": "tool", "name": "task_result"},
         }
-        if self._instructions:
-            kwargs["system"] = self._instructions
+        if self.instructions:
+            kwargs["system"] = self.instructions
 
         response = await self._client.messages.create(**kwargs)
 
