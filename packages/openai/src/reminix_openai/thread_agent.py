@@ -30,6 +30,8 @@ class OpenAIThreadAgent:
         max_turns: int = 10,
         description: str | None = None,
         instructions: str | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self._client = client
         self._tools = {t.name: t for t in tools}
@@ -39,6 +41,8 @@ class OpenAIThreadAgent:
         self._max_turns = max_turns
         self._description = description or "openai thread agent"
         self._instructions = instructions
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -50,7 +54,7 @@ class OpenAIThreadAgent:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "description": self._description,
             "capabilities": {"streaming": False},
             "input": AGENT_TYPES["thread"]["input"],
@@ -58,6 +62,11 @@ class OpenAIThreadAgent:
             "framework": "openai",
             "type": "thread",
         }
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
 
     @staticmethod
     def _to_openai_tool(tool: ToolLike) -> dict[str, Any]:

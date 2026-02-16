@@ -20,6 +20,8 @@ class OpenAITaskAgent:
         model: str = "gpt-4o-mini",
         description: str | None = None,
         instructions: str | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self._client = client
         self._output_schema = output_schema
@@ -27,6 +29,8 @@ class OpenAITaskAgent:
         self._model = model
         self._description = description or "openai task agent"
         self._instructions = instructions
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -38,7 +42,7 @@ class OpenAITaskAgent:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "description": self._description,
             "capabilities": {"streaming": False},
             "input": AGENT_TYPES["task"]["input"],
@@ -46,6 +50,11 @@ class OpenAITaskAgent:
             "framework": "openai",
             "type": "task",
         }
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         task = request.input["task"]

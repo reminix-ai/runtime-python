@@ -22,11 +22,15 @@ class LangGraphWorkflowAgent:
         name: str = "langgraph-workflow-agent",
         description: str | None = None,
         instructions: str | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self._graph = graph
         self._name = name
         self._description = description or "langgraph workflow agent"
         self._instructions = instructions
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -34,7 +38,7 @@ class LangGraphWorkflowAgent:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "description": self._description,
             "capabilities": {"streaming": False},
             "input": AGENT_TYPES["workflow"]["input"],
@@ -42,6 +46,11 @@ class LangGraphWorkflowAgent:
             "framework": "langgraph",
             "type": "workflow",
         }
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         # 1. Extract thread_id from request.context for checkpointed graphs

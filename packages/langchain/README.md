@@ -29,7 +29,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `LangChainChatAgent(runnable, *, name, description, instructions)`
+### `LangChainChatAgent(runnable, *, name, description, instructions, tags, metadata)`
 
 Create a LangChain chat agent.
 
@@ -39,6 +39,8 @@ Create a LangChain chat agent.
 | `name` | `str` | `"langchain-agent"` | Name for the agent (used in URL path) |
 | `description` | `str` | `"langchain chat agent"` | Description shown in agent metadata |
 | `instructions` | `str` | `None` | System instructions prepended to messages |
+| `tags` | `list[str]` | `None` | Tags for categorizing/filtering agents |
+| `metadata` | `dict` | `None` | Custom metadata merged into agent info |
 
 **Returns:** `LangChainChatAgent` - A Reminix agent instance
 

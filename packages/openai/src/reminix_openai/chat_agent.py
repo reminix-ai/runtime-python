@@ -26,12 +26,16 @@ class OpenAIChatAgent:
         model: str = "gpt-4o-mini",
         description: str | None = None,
         instructions: str | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self._client = client
         self._name = name
         self._model = model
         self._description = description or "openai chat agent"
         self._instructions = instructions
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -43,7 +47,7 @@ class OpenAIChatAgent:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "description": self._description,
             "capabilities": {"streaming": True},
             "input": AGENT_TYPES["chat"]["input"],
@@ -51,6 +55,11 @@ class OpenAIChatAgent:
             "framework": "openai",
             "type": "chat",
         }
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
 
     def _to_openai_message(self, message: Message) -> dict[str, Any]:
         """Convert a Reminix message to OpenAI format."""

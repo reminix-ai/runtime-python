@@ -31,7 +31,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `LlamaIndexRagAgent(engine, *, name, description, instructions)`
+### `LlamaIndexRagAgent(engine, *, name, description, instructions, tags, metadata)`
 
 Create a LlamaIndex RAG agent.
 
@@ -41,6 +41,8 @@ Create a LlamaIndex RAG agent.
 | `name` | `str` | `"llamaindex-agent"` | Name for the agent (used in URL path) |
 | `description` | `str` | `"llamaindex rag agent"` | Description shown in agent metadata |
 | `instructions` | `str` | `None` | Instructions prepended to query string |
+| `tags` | `list[str]` | `None` | Tags for categorizing/filtering agents |
+| `metadata` | `dict` | `None` | Custom metadata merged into agent info |
 
 **Returns:** `LlamaIndexRagAgent` - A Reminix agent instance
 

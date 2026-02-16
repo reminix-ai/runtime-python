@@ -27,6 +27,8 @@ class AnthropicChatAgent:
         max_tokens: int = 4096,
         description: str | None = None,
         instructions: str | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self._client = client
         self._name = name
@@ -34,6 +36,8 @@ class AnthropicChatAgent:
         self._max_tokens = max_tokens
         self._description = description or "anthropic chat agent"
         self._instructions = instructions
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -45,7 +49,7 @@ class AnthropicChatAgent:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "description": self._description,
             "capabilities": {"streaming": True},
             "input": AGENT_TYPES["chat"]["input"],
@@ -53,6 +57,11 @@ class AnthropicChatAgent:
             "framework": "anthropic",
             "type": "chat",
         }
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
 
     def _extract_system_and_messages(
         self, messages: list[Message]

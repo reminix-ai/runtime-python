@@ -86,10 +86,12 @@ Create an OpenAI chat agent. Follows the chat type and supports streaming.
 | `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
 | `description` | `str` | `"openai chat agent"` | Description shown in agent metadata |
 | `instructions` | `str` | `None` | System instructions prepended to messages |
+| `tags` | `list[str]` | `None` | Tags for categorizing/filtering agents |
+| `metadata` | `dict` | `None` | Custom metadata merged into agent info |
 
 **Returns:** `OpenAIChatAgent` - A Reminix chat agent instance
 
-### `OpenAITaskAgent(client, output_schema, *, name, model, description, instructions)`
+### `OpenAITaskAgent(client, output_schema, *, name, model, description, instructions, tags, metadata)`
 
 Create an OpenAI task agent. Follows the task type and returns structured output. Streaming is not supported.
 
@@ -101,10 +103,12 @@ Create an OpenAI task agent. Follows the task type and returns structured output
 | `model` | `str` | `"gpt-4o-mini"` | Model to use for completions |
 | `description` | `str` | `"openai task agent"` | Description shown in agent metadata |
 | `instructions` | `str` | `None` | System instructions prepended to messages |
+| `tags` | `list[str]` | `None` | Tags for categorizing/filtering agents |
+| `metadata` | `dict` | `None` | Custom metadata merged into agent info |
 
 **Returns:** `OpenAITaskAgent` - A Reminix task agent instance
 
-### `OpenAIThreadAgent(client, tools, *, name, model, max_turns, description, instructions)`
+### `OpenAIThreadAgent(client, tools, *, name, model, max_turns, description, instructions, tags, metadata)`
 
 Create an OpenAI thread agent. Follows the thread type and supports tool use over multiple turns. Streaming is not supported.
 
@@ -117,6 +121,8 @@ Create an OpenAI thread agent. Follows the thread type and supports tool use ove
 | `max_turns` | `int` | `10` | Maximum number of tool-use turns before stopping |
 | `description` | `str` | `"openai thread agent"` | Description shown in agent metadata |
 | `instructions` | `str` | `None` | System instructions prepended to messages |
+| `tags` | `list[str]` | `None` | Tags for categorizing/filtering agents |
+| `metadata` | `dict` | `None` | Custom metadata merged into agent info |
 
 **Returns:** `OpenAIThreadAgent` - A Reminix thread agent instance
 

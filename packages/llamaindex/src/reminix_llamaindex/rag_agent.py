@@ -31,11 +31,15 @@ class LlamaIndexRagAgent:
         name: str = "llamaindex-agent",
         description: str | None = None,
         instructions: str | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self._engine = engine
         self._name = name
         self._description = description or "llamaindex rag agent"
         self._instructions = instructions
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -43,7 +47,7 @@ class LlamaIndexRagAgent:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "description": self._description,
             "capabilities": {"streaming": True},
             "input": AGENT_TYPES["rag"]["input"],
@@ -51,6 +55,11 @@ class LlamaIndexRagAgent:
             "framework": "llamaindex",
             "type": "rag",
         }
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
 
     def _get_last_user_message(self, messages: list[Message]) -> str:
         """Get the last user message from the conversation."""

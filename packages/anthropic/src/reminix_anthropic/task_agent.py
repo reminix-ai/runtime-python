@@ -21,6 +21,8 @@ class AnthropicTaskAgent:
         max_tokens: int = 4096,
         description: str | None = None,
         instructions: str | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self._client = client
         self._output_schema = output_schema
@@ -29,6 +31,8 @@ class AnthropicTaskAgent:
         self._max_tokens = max_tokens
         self._description = description or "anthropic task agent"
         self._instructions = instructions
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -40,7 +44,7 @@ class AnthropicTaskAgent:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "description": self._description,
             "capabilities": {"streaming": False},
             "input": AGENT_TYPES["task"]["input"],
@@ -48,6 +52,11 @@ class AnthropicTaskAgent:
             "framework": "anthropic",
             "type": "task",
         }
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         task = request.input["task"]

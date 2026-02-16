@@ -54,11 +54,15 @@ class LangChainChatAgent:
         name: str = "langchain-agent",
         description: str | None = None,
         instructions: str | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self._agent = agent
         self._name = name
         self._description = description or "langchain chat agent"
         self._instructions = instructions
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -66,7 +70,7 @@ class LangChainChatAgent:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "description": self._description,
             "capabilities": {"streaming": True},
             "input": AGENT_TYPES["chat"]["input"],
@@ -74,6 +78,11 @@ class LangChainChatAgent:
             "framework": "langchain",
             "type": "chat",
         }
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
 
     def _build_langchain_input(self, request: AgentRequest) -> Any:
         """Build LangChain input from invoke request."""

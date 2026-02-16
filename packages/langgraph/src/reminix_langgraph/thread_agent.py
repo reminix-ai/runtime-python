@@ -24,11 +24,15 @@ class LangGraphThreadAgent:
         name: str = "langgraph-agent",
         description: str | None = None,
         instructions: str | None = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self._graph = graph
         self._name = name
         self._description = description or "langgraph thread agent"
         self._instructions = instructions
+        self._tags = tags
+        self._extra_metadata = metadata
 
     @property
     def name(self) -> str:
@@ -36,7 +40,7 @@ class LangGraphThreadAgent:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "description": self._description,
             "capabilities": {"streaming": True},
             "input": AGENT_TYPES["thread"]["input"],
@@ -44,6 +48,11 @@ class LangGraphThreadAgent:
             "framework": "langgraph",
             "type": "thread",
         }
+        if self._tags:
+            result["tags"] = self._tags
+        if self._extra_metadata:
+            result.update(self._extra_metadata)
+        return result
 
     def _get_last_ai_content(self, messages: list[BaseMessage]) -> str:
         """Extract content from the last AI message."""
