@@ -27,7 +27,7 @@ class AnthropicThreadAgent(Agent):
         *,
         tools: list[Tool],
         name: str = "anthropic-thread-agent",
-        model: str = "claude-sonnet-4-20250514",
+        model: str = "claude-sonnet-4-5-20250929",
         max_tokens: int = 4096,
         max_turns: int = 10,
         description: str | None = None,

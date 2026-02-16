@@ -46,7 +46,7 @@ class TestLlamaIndexAgents:
 
     @pytest.fixture
     def agent(self, openai_api_key):
-        llm = OpenAI(model="gpt-4o-mini", api_key=openai_api_key)
+        llm = OpenAI(model="gpt-4.1-nano", api_key=openai_api_key)
         react_agent = ReActAgent(tools=[get_weather], llm=llm)
         wrapped_engine = ChatEngineWrapper(react_agent)
         return LlamaIndexRagAgent(wrapped_engine, name="test-llamaindex")

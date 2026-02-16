@@ -38,7 +38,7 @@ class TestAnthropicChatAgent:
         agent = AnthropicChatAgent(mock_client)
 
         assert agent.name == "anthropic-agent"
-        assert agent.model == "claude-sonnet-4-20250514"
+        assert agent.model == "claude-sonnet-4-5-20250929"
 
     def test_chat_type_metadata(self):
         """AnthropicChatAgent should have chat type metadata."""

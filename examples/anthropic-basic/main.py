@@ -46,7 +46,7 @@ load_dotenv(Path(__file__).parent.parent.parent / ".env")
 client = AsyncAnthropic()
 
 # Create and serve the agent
-agent = AnthropicChatAgent(client, name="anthropic-basic", model="claude-sonnet-4-20250514")
+agent = AnthropicChatAgent(client, name="anthropic-basic", model="claude-sonnet-4-5-20250929")
 
 if __name__ == "__main__":
     print("Server running on http://localhost:8080")

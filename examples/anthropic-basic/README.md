@@ -67,6 +67,6 @@ from reminix_anthropic import AnthropicChatAgent
 from reminix_runtime import serve
 
 client = AsyncAnthropic()
-agent = AnthropicChatAgent(client, name="anthropic-basic", model="claude-sonnet-4-20250514")
+agent = AnthropicChatAgent(client, name="anthropic-basic", model="claude-sonnet-4-5-20250929")
 serve(agents=[agent])
 ```

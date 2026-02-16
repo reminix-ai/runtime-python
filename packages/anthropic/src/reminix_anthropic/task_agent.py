@@ -17,7 +17,7 @@ class AnthropicTaskAgent(Agent):
         *,
         output_schema: dict[str, Any],
         name: str = "anthropic-task-agent",
-        model: str = "claude-sonnet-4-20250514",
+        model: str = "claude-sonnet-4-5-20250929",
         max_tokens: int = 4096,
         description: str | None = None,
         instructions: str | None = None,

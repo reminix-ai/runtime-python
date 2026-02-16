@@ -75,7 +75,7 @@ Create an Anthropic chat agent. Supports streaming.
 |-----------|------|---------|-------------|
 | `client` | `AsyncAnthropic` | required | An Anthropic async client |
 | `name` | `str` | `"anthropic-agent"` | Name for the agent (used in URL path) |
-| `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
+| `model` | `str` | `"claude-sonnet-4-5-20250929"` | Model to use |
 | `max_tokens` | `int` | `4096` | Maximum tokens in response |
 | `description` | `str` | `"anthropic chat agent"` | Description shown in agent metadata |
 | `instructions` | `str` | `None` | System instructions merged with system messages |
@@ -99,7 +99,7 @@ Create an Anthropic task agent. Returns structured output via tool-use. Does not
 | `client` | `AsyncAnthropic` | required | An Anthropic async client |
 | `output_schema` | `dict` | required | JSON Schema defining the structured output |
 | `name` | `str` | `"anthropic-task-agent"` | Name for the agent (used in URL path) |
-| `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
+| `model` | `str` | `"claude-sonnet-4-5-20250929"` | Model to use |
 | `max_tokens` | `int` | `4096` | Maximum tokens in response |
 | `description` | `str` | `"anthropic task agent"` | Description shown in agent metadata |
 | `instructions` | `str` | `None` | System instructions passed as `system` parameter |
@@ -123,7 +123,7 @@ Create an Anthropic thread agent with a tool-calling loop. Does not support stre
 | `client` | `AsyncAnthropic` | required | An Anthropic async client |
 | `tools` | `list[Tool]` | required | List of tools available to the agent |
 | `name` | `str` | `"anthropic-thread-agent"` | Name for the agent (used in URL path) |
-| `model` | `str` | `"claude-sonnet-4-20250514"` | Model to use |
+| `model` | `str` | `"claude-sonnet-4-5-20250929"` | Model to use |
 | `max_tokens` | `int` | `4096` | Maximum tokens in response |
 | `max_turns` | `int` | `10` | Maximum number of tool-calling turns |
 | `description` | `str` | `"anthropic thread agent"` | Description shown in agent metadata |

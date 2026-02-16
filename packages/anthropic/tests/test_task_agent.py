@@ -49,7 +49,7 @@ class TestAnthropicTaskAgent:
         agent = AnthropicTaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
 
         assert agent.name == "anthropic-task-agent"
-        assert agent.model == "claude-sonnet-4-20250514"
+        assert agent.model == "claude-sonnet-4-5-20250929"
 
     def test_task_type_metadata(self):
         """AnthropicTaskAgent should have task type metadata."""
