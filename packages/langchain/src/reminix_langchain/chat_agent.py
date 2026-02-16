@@ -112,4 +112,4 @@ class LangChainChatAgent(Agent):
                 content = json.dumps(chunk)
             else:
                 content = str(chunk)
-            yield json.dumps({"chunk": content})
+            yield content

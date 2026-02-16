@@ -1,6 +1,5 @@
 """LlamaIndex RAG agent for Reminix Runtime."""
 
-import json
 from collections.abc import AsyncIterator
 from typing import Any, Protocol, runtime_checkable
 
@@ -40,7 +39,7 @@ class LlamaIndexRagAgent(Agent):
             description=description or "llamaindex rag agent",
             streaming=True,
             input_schema=AGENT_TYPES["rag"]["input"],
-            output_schema={"type": "string"},
+            output_schema=AGENT_TYPES["rag"]["output"],
             type="rag",
             framework="llamaindex",
             instructions=instructions,
@@ -84,4 +83,4 @@ class LlamaIndexRagAgent(Agent):
             query = f"{self.instructions}\n\n{query}"
         response = await self._engine.astream_chat(query)
         async for token in response.async_response_gen():
-            yield json.dumps({"chunk": token})
+            yield token

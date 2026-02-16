@@ -1,6 +1,5 @@
 """OpenAI chat agent for Reminix Runtime."""
 
-import json
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -95,4 +94,4 @@ class OpenAIChatAgent(Agent):
         async for chunk in stream:
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
-                yield json.dumps({"chunk": content})
+                yield content

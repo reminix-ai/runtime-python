@@ -1,6 +1,5 @@
 """Anthropic chat agent for Reminix Runtime."""
 
-import json
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -64,6 +63,19 @@ class AnthropicChatAgent(Agent):
                 system_message = text
             elif message.role in ("user", "assistant"):
                 anthropic_messages.append({"role": message.role, "content": text})
+            elif message.role == "tool":
+                anthropic_messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": message.tool_call_id or "",
+                                "content": text,
+                            }
+                        ],
+                    }
+                )
 
         return system_message, anthropic_messages
 
@@ -108,4 +120,4 @@ class AnthropicChatAgent(Agent):
 
         async with self._client.messages.stream(**kwargs) as stream:
             async for text in stream.text_stream:
-                yield json.dumps({"chunk": text})
+                yield text

@@ -33,7 +33,7 @@ class LangGraphThreadAgent(Agent):
             description=description or "langgraph thread agent",
             streaming=True,
             input_schema=AGENT_TYPES["thread"]["input"],
-            output_schema={"type": "string"},
+            output_schema=AGENT_TYPES["thread"]["output"],
             type="thread",
             framework="langgraph",
             instructions=instructions,
@@ -89,8 +89,8 @@ class LangGraphThreadAgent(Agent):
                                     else str(msg.content)
                                 )
                                 if content:
-                                    yield json.dumps({"chunk": content})
+                                    yield content
                     else:
-                        yield json.dumps({"chunk": json.dumps(node_output)})
+                        yield json.dumps(node_output)
             else:
-                yield json.dumps({"chunk": str(chunk)})
+                yield str(chunk)
