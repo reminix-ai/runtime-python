@@ -40,7 +40,7 @@ class TestAnthropicChatAgent:
         assert agent.name == "anthropic-agent"
         assert agent.model == "claude-sonnet-4-20250514"
 
-    def test_chat_template_metadata(self):
+    def test_chat_type_metadata(self):
         """AnthropicChatAgent should have chat type metadata."""
         mock_client = MagicMock()
         agent = AnthropicChatAgent(mock_client)

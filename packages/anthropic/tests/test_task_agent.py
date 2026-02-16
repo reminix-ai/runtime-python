@@ -49,7 +49,7 @@ class TestAnthropicTaskAgent:
         assert agent.name == "anthropic-task-agent"
         assert agent.model == "claude-sonnet-4-20250514"
 
-    def test_task_template_metadata(self):
+    def test_task_type_metadata(self):
         """AnthropicTaskAgent should have task type metadata."""
         mock_client = MagicMock()
         agent = AnthropicTaskAgent(mock_client, SAMPLE_SCHEMA)

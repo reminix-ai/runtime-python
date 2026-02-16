@@ -40,7 +40,7 @@ class TestOpenAIChatAgent:
         assert agent.name == "openai-agent"
         assert agent.model == "gpt-4o-mini"
 
-    def test_chat_template_metadata(self):
+    def test_chat_type_metadata(self):
         """OpenAIChatAgent should have chat type metadata."""
         mock_client = MagicMock()
         agent = OpenAIChatAgent(mock_client)

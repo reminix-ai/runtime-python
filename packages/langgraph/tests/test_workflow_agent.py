@@ -34,7 +34,7 @@ class TestLangGraphWorkflowAgent:
 
         assert agent.name == "my-workflow"
 
-    def test_workflow_template_metadata(self):
+    def test_workflow_type_metadata(self):
         """LangGraphWorkflowAgent should have workflow type metadata."""
         mock_graph = MagicMock()
         agent = LangGraphWorkflowAgent(mock_graph)

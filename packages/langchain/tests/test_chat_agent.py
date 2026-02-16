@@ -34,7 +34,7 @@ class TestLangChainChatAgent:
 
         assert agent.name == "langchain-agent"
 
-    def test_chat_template_metadata(self):
+    def test_chat_type_metadata(self):
         """LangChainChatAgent should have chat type metadata."""
         mock_runnable = MagicMock(spec=Runnable)
         agent = LangChainChatAgent(mock_runnable)

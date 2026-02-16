@@ -11,14 +11,14 @@ A lightweight runtime for serving AI agents via REST APIs. Turn any LLM framewor
 **Features:**
 - **REST API Server**: Execute endpoint powered by [FastAPI](https://fastapi.tiangolo.com)
 - **Streaming Support**: Server-Sent Events (SSE) out of the box
-- **Agent Templates**: Standard patterns (prompt, chat, task, rag, thread, workflow) for common agent I/O
+- **Agent Types**: Standard patterns (prompt, chat, task, rag, thread, workflow) for common agent I/O
 - **Framework Integrations**: Pre-built agents for LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| [`reminix-runtime`](./packages/runtime) | Core runtime with `@agent` and `@tool` decorators and agent templates |
+| [`reminix-runtime`](./packages/runtime) | Core runtime with `@agent` and `@tool` decorators and agent types |
 | [`reminix-langchain`](./packages/langchain) | LangChain chat agent |
 | [`reminix-langgraph`](./packages/langgraph) | LangGraph thread and workflow agents |
 | [`reminix-openai`](./packages/openai) | OpenAI chat, task, and thread agents |
@@ -62,7 +62,7 @@ serve(agents=[calculator])
 Your agent is now available at:
 - `POST /agents/calculator/invoke` - Execute the calculator agent
 
-See the [runtime package docs](./packages/runtime) for agent templates, tools, streaming, and advanced usage.
+See the [runtime package docs](./packages/runtime) for agent types, tools, streaming, and advanced usage.
 
 ## Development
 

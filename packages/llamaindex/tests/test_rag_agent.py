@@ -35,7 +35,7 @@ class TestLlamaIndexRagAgent:
 
         assert agent.name == "llamaindex-agent"
 
-    def test_rag_template_metadata(self):
+    def test_rag_type_metadata(self):
         """LlamaIndexRagAgent should have rag type metadata."""
         mock_engine = MagicMock()
         mock_engine.achat = AsyncMock()

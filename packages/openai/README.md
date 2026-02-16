@@ -16,7 +16,7 @@ This will also install `reminix-runtime` as a dependency.
 
 ### Chat Agent
 
-The chat agent follows the chat template and supports streaming responses.
+The chat agent follows the chat type and supports streaming responses.
 
 ```python
 from openai import AsyncOpenAI
@@ -30,7 +30,7 @@ serve(agents=[agent])
 
 ### Task Agent
 
-The task agent follows the task template and returns structured output. Streaming is not supported.
+The task agent follows the task type and returns structured output. Streaming is not supported.
 
 ```python
 from openai import AsyncOpenAI
@@ -49,7 +49,7 @@ serve(agents=[agent])
 
 ### Thread Agent
 
-The thread agent follows the thread template and supports tool use over multiple turns. Streaming is not supported.
+The thread agent follows the thread type and supports tool use over multiple turns. Streaming is not supported.
 
 ```python
 from openai import AsyncOpenAI

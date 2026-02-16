@@ -50,7 +50,7 @@ class TestOpenAITaskAgent:
         assert agent.name == "openai-task-agent"
         assert agent.model == "gpt-4o-mini"
 
-    def test_task_template_metadata(self):
+    def test_task_type_metadata(self):
         """OpenAITaskAgent should have task type metadata."""
         mock_client = MagicMock()
         agent = OpenAITaskAgent(mock_client, SAMPLE_SCHEMA)

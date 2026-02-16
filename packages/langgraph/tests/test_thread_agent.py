@@ -33,7 +33,7 @@ class TestLangGraphThreadAgent:
 
         assert agent.name == "langgraph-agent"
 
-    def test_thread_template_metadata(self):
+    def test_thread_type_metadata(self):
         """LangGraphThreadAgent should have thread type metadata."""
         mock_graph = MagicMock()
         agent = LangGraphThreadAgent(mock_graph)

@@ -70,7 +70,7 @@ class TestOpenAIThreadAgent:
         assert agent.name == "openai-thread-agent"
         assert agent.model == "gpt-4o-mini"
 
-    def test_thread_template_metadata(self):
+    def test_thread_type_metadata(self):
         mock_client = MagicMock()
         agent = OpenAIThreadAgent(mock_client, [make_mock_tool()])
         assert agent.metadata["type"] == "thread"

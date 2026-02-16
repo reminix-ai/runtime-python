@@ -77,7 +77,7 @@ class TestAnthropicThreadAgent:
         assert agent.name == "anthropic-thread-agent"
         assert agent.model == "claude-sonnet-4-20250514"
 
-    def test_thread_template_metadata(self):
+    def test_thread_type_metadata(self):
         mock_client = MagicMock()
         agent = AnthropicThreadAgent(mock_client, [make_mock_tool()])
         assert agent.metadata["type"] == "thread"
