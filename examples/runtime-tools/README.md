@@ -25,7 +25,7 @@ Once running, the following endpoints are available:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/info` | GET | Tool discovery |
+| `/manifest` | GET | Tool discovery |
 | `/tools/get_weather/call` | POST | Get weather for a city |
 | `/tools/calculate/call` | POST | Basic math operations |
 | `/tools/string_utils/call` | POST | String manipulation |
@@ -43,7 +43,7 @@ Once running, the following endpoints are available:
 curl http://localhost:8080/health
 
 # Discovery (shows all tools with their schemas)
-curl http://localhost:8080/info
+curl http://localhost:8080/manifest
 
 # Get weather
 curl -X POST http://localhost:8080/tools/get_weather/call \

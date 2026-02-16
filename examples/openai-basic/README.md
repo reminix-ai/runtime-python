@@ -33,7 +33,7 @@ Once running, the following endpoints are available:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/info` | GET | Agent discovery |
+| `/manifest` | GET | Agent discovery |
 | `/agents/openai-basic/invoke` | POST | Execute agent |
 
 ## Testing
@@ -43,7 +43,7 @@ Once running, the following endpoints are available:
 curl http://localhost:8080/health
 
 # Discovery
-curl http://localhost:8080/info
+curl http://localhost:8080/manifest
 
 # Invoke
 curl -X POST http://localhost:8080/agents/openai-basic/invoke \
