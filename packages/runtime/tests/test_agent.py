@@ -300,7 +300,7 @@ class TestAgentTypes:
         input_schema = workflow_handler.metadata["input"]
         assert input_schema["required"] == ["task"]
         assert "task" in input_schema["properties"]
-        assert "steps" in input_schema["properties"]
+        assert "state" in input_schema["properties"]
         assert "resume" in input_schema["properties"]
         assert input_schema["additionalProperties"] is True
 

@@ -209,21 +209,10 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
                     "type": "string",
                     "description": "Workflow task or description",
                 },
-                "steps": {
-                    "type": "array",
-                    "description": "Optional sequence of named steps to execute",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string", "description": "Step name"},
-                            "input": {
-                                "type": "object",
-                                "description": "Optional step input",
-                                "additionalProperties": True,
-                            },
-                        },
-                        "required": ["name"],
-                    },
+                "state": {
+                    "type": "object",
+                    "description": "Previous execution output passed back on resume (steps, result, etc.)",
+                    "additionalProperties": True,
                 },
                 "resume": {
                     "type": "object",
@@ -267,6 +256,10 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
                                 "description": "Step execution status",
                             },
                             "output": {"description": "Step output (any JSON value)"},
+                            "error": {
+                                "type": "string",
+                                "description": "Error message when step status is failed",
+                            },
                         },
                         "required": ["name", "status"],
                     },
@@ -275,6 +268,10 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
                     "type": "object",
                     "description": "Final workflow result",
                     "additionalProperties": True,
+                },
+                "error": {
+                    "type": "string",
+                    "description": "Error message (when status is failed)",
                 },
                 "pendingAction": {
                     "type": "object",
@@ -296,6 +293,15 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
                             "type": "array",
                             "items": {"type": "string"},
                             "description": "Available choices (for decision-type actions)",
+                        },
+                        "inputSchema": {
+                            "type": "object",
+                            "description": "JSON Schema describing expected input (for type: input actions)",
+                            "additionalProperties": True,
+                        },
+                        "assignee": {
+                            "type": "string",
+                            "description": "Who should handle this action (email, user ID, or role)",
                         },
                     },
                     "required": ["step", "type", "message"],
