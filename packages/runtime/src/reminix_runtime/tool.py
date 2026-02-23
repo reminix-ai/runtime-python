@@ -207,8 +207,8 @@ class Tool:
     def metadata(self) -> dict[str, Any]:
         result: dict[str, Any] = {
             "description": self._description,
-            "input": self._input_schema,
-            "output": self._output_schema,
+            "inputSchema": self._input_schema,
+            "outputSchema": self._output_schema,
         }
         if self._tags:
             result["tags"] = self._tags
@@ -295,7 +295,7 @@ def tool(
         tool_description = description or extracted_desc
 
         async def call_fn(request: ToolRequest) -> dict[str, Any]:
-            kwargs = dict(request.input)
+            kwargs = dict(request.arguments)
             sig = inspect.signature(f)
             if "context" in sig.parameters:
                 kwargs["context"] = request.context

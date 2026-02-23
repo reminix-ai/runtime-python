@@ -39,7 +39,7 @@ def setup_mcp(tools: list[Tool]) -> StreamableHTTPSessionManager:
             McpTool(
                 name=t.name,
                 description=t.metadata.get("description", f"Tool: {t.name}"),
-                inputSchema=t.metadata.get("input", {"type": "object", "properties": {}}),
+                inputSchema=t.metadata.get("inputSchema", {"type": "object", "properties": {}}),
             )
             for t in tools
         ]
@@ -50,7 +50,7 @@ def setup_mcp(tools: list[Tool]) -> StreamableHTTPSessionManager:
         if tool is None:
             raise ValueError(f"Tool '{name}' not found")
 
-        request = ToolRequest(input=arguments or {})
+        request = ToolRequest(arguments=arguments or {})
         result = await tool.call(request)
         output = result.get("output", result)
 

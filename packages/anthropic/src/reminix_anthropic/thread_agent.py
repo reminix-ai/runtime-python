@@ -64,7 +64,7 @@ class AnthropicThreadAgent(Agent):
         return {
             "name": tool.name,
             "description": tool.metadata.get("description", ""),
-            "input_schema": tool.metadata.get("input", {}),
+            "input_schema": tool.metadata.get("inputSchema", {}),
         }
 
     def _extract_system_and_messages(
@@ -144,7 +144,7 @@ class AnthropicThreadAgent(Agent):
             for block in tool_use_blocks:
                 try:
                     tool = self._tools[block.name]
-                    result = await tool.call(ToolRequest(input=block.input))
+                    result = await tool.call(ToolRequest(arguments=block.input))
                     tool_result = json.dumps(result.get("output", result))
                 except Exception as e:
                     tool_result = f"Error: {e!s}"

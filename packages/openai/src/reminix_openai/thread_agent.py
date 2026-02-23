@@ -64,7 +64,7 @@ class OpenAIThreadAgent(Agent):
             "function": {
                 "name": tool.name,
                 "description": tool.metadata.get("description", ""),
-                "parameters": tool.metadata.get("input", {}),
+                "parameters": tool.metadata.get("inputSchema", {}),
             },
         }
 
@@ -155,7 +155,7 @@ class OpenAIThreadAgent(Agent):
                 try:
                     args = json.loads(tc.function.arguments)
                     tool = self._tools[tool_name]
-                    result = await tool.call(ToolRequest(input=args))
+                    result = await tool.call(ToolRequest(arguments=args))
                     tool_result = json.dumps(result.get("output", result))
                 except Exception as e:
                     tool_result = f"Error: {e!s}"

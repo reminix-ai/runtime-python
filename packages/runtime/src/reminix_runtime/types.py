@@ -129,7 +129,7 @@ class AgentResponse(BaseModel):
 class ToolRequest(BaseModel):
     """Request type for tool call operations."""
 
-    input: dict[str, Any] = Field(default_factory=dict)
+    arguments: dict[str, Any] = Field(default_factory=dict)
     context: dict[str, Any] | None = None
 
 

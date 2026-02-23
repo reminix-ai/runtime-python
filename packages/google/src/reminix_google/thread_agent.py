@@ -67,7 +67,7 @@ class GoogleThreadAgent(Agent):
         return types.FunctionDeclaration(
             name=tool.name,
             description=tool.metadata.get("description", ""),
-            parameters=cast(types.Schema, tool.metadata.get("input", {})),
+            parameters=cast(types.Schema, tool.metadata.get("inputSchema", {})),
         )
 
     def _extract_system_and_contents(self, messages: list[Message]) -> tuple[str | None, list[Any]]:
@@ -162,7 +162,7 @@ class GoogleThreadAgent(Agent):
                 fc_args = dict(part.function_call.args) if part.function_call.args else {}
                 try:
                     tool = self._tools[fc_name]
-                    result = await tool.call(ToolRequest(input=fc_args))
+                    result = await tool.call(ToolRequest(arguments=fc_args))
                     tool_result = result.get("output", result)
                 except Exception as e:
                     tool_result = {"error": str(e)}
