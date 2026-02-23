@@ -1,5 +1,6 @@
 """Reminix Runtime Server."""
 
+import contextlib
 import json
 import os
 import traceback
@@ -11,8 +12,9 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from . import __version__
 from .agent import Agent
+from .mcp_endpoint import setup_mcp
 from .tool import Tool
-from .types import AgentRequest, ToolRequest
+from .types import AgentRequest
 
 # Enable debug mode via environment variable to include stack traces in error responses
 REMINIX_CLOUD = os.getenv("REMINIX_CLOUD", "").lower() in ("true", "1", "yes")
@@ -97,7 +99,15 @@ def create_app(
             raise ValueError(f"Duplicate tool name: '{t.name}'")
         tool_map[t.name] = t
 
-    app = FastAPI(title="Reminix Runtime")
+    # Set up MCP session manager for tool discovery and execution
+    mcp_session_manager = setup_mcp(tools)
+
+    @contextlib.asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        async with mcp_session_manager.run():
+            yield
+
+    app = FastAPI(title="Reminix Runtime", lifespan=lifespan)
 
     @app.get("/health")
     async def health() -> dict[str, str]:
@@ -120,13 +130,6 @@ def create_app(
                     **a.metadata,
                 }
                 for a in agents
-            ],
-            "tools": [
-                {
-                    "name": t.name,
-                    **t.metadata,
-                }
-                for t in tools
             ],
         }
 
@@ -174,35 +177,14 @@ def create_app(
                 content=_create_error_response(e, type(e).__name__),
             )
 
-    @app.post("/tools/{tool_name}/call", response_model=None)
-    async def call_tool(tool_name: str, body: dict[str, Any]) -> dict[str, Any] | JSONResponse:
-        """Call a tool."""
-        tool = tool_map.get(tool_name)
-        if tool is None:
-            return JSONResponse(
-                status_code=404,
-                content={
-                    "error": {"type": "NotFoundError", "message": f"Tool '{tool_name}' not found"}
-                },
-            )
+    # Mount MCP Streamable HTTP endpoint
+    from mcp.server.fastmcp.server import StreamableHTTPASGIApp
+    from starlette.applications import Starlette
+    from starlette.routing import Route
 
-        request = ToolRequest(
-            input=body.get("input", {}),
-            context=body.get("context"),
-        )
-
-        try:
-            return await tool.call(request)
-        except ValueError as e:
-            return JSONResponse(
-                status_code=400,
-                content=_create_error_response(e, "ValidationError"),
-            )
-        except Exception as e:
-            return JSONResponse(
-                status_code=500,
-                content=_create_error_response(e, type(e).__name__),
-            )
+    mcp_asgi = StreamableHTTPASGIApp(mcp_session_manager)
+    mcp_starlette = Starlette(routes=[Route("/mcp", endpoint=mcp_asgi)])
+    app.mount("/", mcp_starlette)
 
     return app
 
