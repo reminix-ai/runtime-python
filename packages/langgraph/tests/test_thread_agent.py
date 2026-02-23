@@ -39,7 +39,7 @@ class TestLangGraphThreadAgent:
         agent = LangGraphThreadAgent(mock_graph)
 
         assert agent.metadata["type"] == "thread"
-        assert agent.metadata["input"] == AGENT_TYPES["thread"]["input"]
+        assert agent.metadata["inputSchema"] == AGENT_TYPES["thread"]["inputSchema"]
 
 
 class TestLangGraphThreadAgentInvoke:

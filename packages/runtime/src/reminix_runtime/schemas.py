@@ -122,17 +122,17 @@ MESSAGE_SCHEMA: dict[str, Any] = {
 
 AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
     "prompt": {
-        "input": {
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "prompt": {"type": "string", "description": "The prompt or task for the agent"},
             },
             "required": ["prompt"],
         },
-        "output": {"type": "string"},
+        "outputSchema": {"type": "string"},
     },
     "chat": {
-        "input": {
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "messages": {
@@ -143,10 +143,10 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
             },
             "required": ["messages"],
         },
-        "output": {"type": "string"},
+        "outputSchema": {"type": "string"},
     },
     "task": {
-        "input": {
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "task": {
@@ -157,14 +157,14 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
             "required": ["task"],
             "additionalProperties": True,
         },
-        "output": {
+        "outputSchema": {
             "description": "Structured JSON result of stateless, single-shot execution",
             "type": "object",
             "additionalProperties": True,
         },
     },
     "rag": {
-        "input": {
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "The question to answer from documents"},
@@ -181,10 +181,10 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
             },
             "required": ["query"],
         },
-        "output": {"type": "string"},
+        "outputSchema": {"type": "string"},
     },
     "thread": {
-        "input": {
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "messages": {
@@ -195,14 +195,14 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
             },
             "required": ["messages"],
         },
-        "output": {
+        "outputSchema": {
             "type": "array",
             "description": "Updated message thread (OpenAI-style, may include assistant message and tool_calls)",
             "items": MESSAGE_SCHEMA,
         },
     },
     "workflow": {
-        "input": {
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "task": {
@@ -234,7 +234,7 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
             "required": ["task"],
             "additionalProperties": True,
         },
-        "output": {
+        "outputSchema": {
             "type": "object",
             "description": "Workflow execution result with step-level status tracking",
             "properties": {
@@ -313,5 +313,5 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
 }
 
 # Default input/output schemas (same as prompt type)
-DEFAULT_AGENT_INPUT: dict[str, Any] = AGENT_TYPES[DEFAULT_AGENT_TYPE]["input"]
-DEFAULT_AGENT_OUTPUT: dict[str, Any] = AGENT_TYPES[DEFAULT_AGENT_TYPE]["output"]
+DEFAULT_AGENT_INPUT: dict[str, Any] = AGENT_TYPES[DEFAULT_AGENT_TYPE]["inputSchema"]
+DEFAULT_AGENT_OUTPUT: dict[str, Any] = AGENT_TYPES[DEFAULT_AGENT_TYPE]["outputSchema"]

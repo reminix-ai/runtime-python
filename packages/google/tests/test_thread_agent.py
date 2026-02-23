@@ -84,8 +84,8 @@ class TestGoogleThreadAgent:
         mock_client = MagicMock()
         agent = GoogleThreadAgent(mock_client, tools=[make_mock_tool()])
         assert agent.metadata["type"] == "thread"
-        assert agent.metadata["input"] == AGENT_TYPES["thread"]["input"]
-        assert agent.metadata["output"] == AGENT_TYPES["thread"]["output"]
+        assert agent.metadata["inputSchema"] == AGENT_TYPES["thread"]["inputSchema"]
+        assert agent.metadata["outputSchema"] == AGENT_TYPES["thread"]["outputSchema"]
         assert agent.metadata["capabilities"]["streaming"] is False
 
 

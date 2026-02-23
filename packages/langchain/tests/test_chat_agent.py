@@ -40,7 +40,7 @@ class TestLangChainChatAgent:
         agent = LangChainChatAgent(mock_runnable)
 
         assert agent.metadata["type"] == "chat"
-        assert agent.metadata["input"] == AGENT_TYPES["chat"]["input"]
+        assert agent.metadata["inputSchema"] == AGENT_TYPES["chat"]["inputSchema"]
 
 
 class TestLangChainChatAgentInvoke:

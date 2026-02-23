@@ -52,8 +52,8 @@ class Agent:
         result: dict[str, Any] = {
             "description": self._description,
             "capabilities": {"streaming": self._streaming},
-            "input": self._input_schema,
-            "output": self._output_schema,
+            "inputSchema": self._input_schema,
+            "outputSchema": self._output_schema,
         }
         if self._type:
             result["type"] = self._type
@@ -191,8 +191,8 @@ def agent(
         # Resolve input and output schemas: type overrides derivation
         if type is not None and type in AGENT_TYPES:
             t = AGENT_TYPES[type]
-            input_schema = t["input"]
-            output_schema = t["output"]
+            input_schema = t["inputSchema"]
+            output_schema = t["outputSchema"]
         else:
             _, input_schema, output_schema = _extract_schema_from_function(
                 f, skip_params={"messages", "context"}

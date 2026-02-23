@@ -40,8 +40,8 @@ class TestLangGraphWorkflowAgent:
         agent = LangGraphWorkflowAgent(mock_graph)
 
         assert agent.metadata["type"] == "workflow"
-        assert agent.metadata["input"] == AGENT_TYPES["workflow"]["input"]
-        assert agent.metadata["output"] == AGENT_TYPES["workflow"]["output"]
+        assert agent.metadata["inputSchema"] == AGENT_TYPES["workflow"]["inputSchema"]
+        assert agent.metadata["outputSchema"] == AGENT_TYPES["workflow"]["outputSchema"]
         assert agent.metadata["framework"] == "langgraph"
 
 

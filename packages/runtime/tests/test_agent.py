@@ -65,7 +65,7 @@ class TestAgentDecorator:
             """Test agent."""
             return name * count
 
-        input_schema = my_agent.metadata["input"]
+        input_schema = my_agent.metadata["inputSchema"]
         assert input_schema["type"] == "object"
         assert "name" in input_schema["properties"]
         assert "count" in input_schema["properties"]
@@ -81,7 +81,7 @@ class TestAgentDecorator:
             """Add two numbers."""
             return a + b
 
-        output = calculator.metadata.get("output")
+        output = calculator.metadata.get("outputSchema")
         assert output is not None
 
     def test_agent_decorator_default_output(self):
@@ -92,7 +92,7 @@ class TestAgentDecorator:
             """Process something."""
             return x
 
-        assert processor.metadata["output"]["type"] == "string"
+        assert processor.metadata["outputSchema"]["type"] == "string"
 
     @pytest.mark.asyncio
     async def test_agent_decorator_invoke(self):
@@ -219,9 +219,9 @@ class TestAgentTypes:
             return f"You said: {prompt}"
 
         assert echo.metadata["type"] == "prompt"
-        assert echo.metadata["input"]["required"] == ["prompt"]
-        assert echo.metadata["input"]["properties"]["prompt"]["type"] == "string"
-        assert echo.metadata["output"]["type"] == "string"
+        assert echo.metadata["inputSchema"]["required"] == ["prompt"]
+        assert echo.metadata["inputSchema"]["properties"]["prompt"]["type"] == "string"
+        assert echo.metadata["outputSchema"]["type"] == "string"
 
     @pytest.mark.asyncio
     async def test_type_prompt_invoke(self):
@@ -243,9 +243,9 @@ class TestAgentTypes:
             return "ok"
 
         assert chat_handler.metadata["type"] == "chat"
-        assert chat_handler.metadata["input"]["required"] == ["messages"]
-        assert "messages" in chat_handler.metadata["input"]["properties"]
-        assert chat_handler.metadata["output"]["type"] == "string"
+        assert chat_handler.metadata["inputSchema"]["required"] == ["messages"]
+        assert "messages" in chat_handler.metadata["inputSchema"]["properties"]
+        assert chat_handler.metadata["outputSchema"]["type"] == "string"
 
     @pytest.mark.asyncio
     async def test_type_chat_invoke(self):
@@ -268,10 +268,10 @@ class TestAgentTypes:
             return f"Task {task}"
 
         assert task_handler.metadata["type"] == "task"
-        assert task_handler.metadata["input"]["required"] == ["task"]
-        assert "task" in task_handler.metadata["input"]["properties"]
-        assert "description" in task_handler.metadata["output"]
-        assert "stateless, single-shot" in task_handler.metadata["output"]["description"]
+        assert task_handler.metadata["inputSchema"]["required"] == ["task"]
+        assert "task" in task_handler.metadata["inputSchema"]["properties"]
+        assert "description" in task_handler.metadata["outputSchema"]
+        assert "stateless, single-shot" in task_handler.metadata["outputSchema"]["description"]
 
     @pytest.mark.asyncio
     async def test_type_task_invoke(self):
@@ -297,14 +297,14 @@ class TestAgentTypes:
             }
 
         assert workflow_handler.metadata["type"] == "workflow"
-        input_schema = workflow_handler.metadata["input"]
+        input_schema = workflow_handler.metadata["inputSchema"]
         assert input_schema["required"] == ["task"]
         assert "task" in input_schema["properties"]
         assert "state" in input_schema["properties"]
         assert "resume" in input_schema["properties"]
         assert input_schema["additionalProperties"] is True
 
-        output_schema = workflow_handler.metadata["output"]
+        output_schema = workflow_handler.metadata["outputSchema"]
         assert output_schema["required"] == ["status", "steps"]
         assert "status" in output_schema["properties"]
         assert output_schema["properties"]["status"]["enum"] == [
@@ -355,9 +355,9 @@ class TestAgentTypes:
             return a + b
 
         assert "type" not in add.metadata
-        assert "a" in add.metadata["input"]["properties"]
-        assert "b" in add.metadata["input"]["properties"]
-        assert add.metadata["input"]["required"] == ["a", "b"]
+        assert "a" in add.metadata["inputSchema"]["properties"]
+        assert "b" in add.metadata["inputSchema"]["properties"]
+        assert add.metadata["inputSchema"]["required"] == ["a", "b"]
 
     def test_type_rag_metadata(self):
         """type=rag sets query input and string output in metadata."""
@@ -367,9 +367,9 @@ class TestAgentTypes:
             return f"Answer for: {query}"
 
         assert rag_handler.metadata["type"] == "rag"
-        assert rag_handler.metadata["input"]["required"] == ["query"]
-        assert "query" in rag_handler.metadata["input"]["properties"]
-        assert rag_handler.metadata["output"]["type"] == "string"
+        assert rag_handler.metadata["inputSchema"]["required"] == ["query"]
+        assert "query" in rag_handler.metadata["inputSchema"]["properties"]
+        assert rag_handler.metadata["outputSchema"]["type"] == "string"
 
     @pytest.mark.asyncio
     async def test_type_rag_invoke(self):
@@ -391,10 +391,10 @@ class TestAgentTypes:
             return messages + [{"role": "assistant", "content": "ok"}]
 
         assert thread_handler.metadata["type"] == "thread"
-        assert thread_handler.metadata["input"]["required"] == ["messages"]
-        assert "messages" in thread_handler.metadata["input"]["properties"]
-        assert thread_handler.metadata["output"]["type"] == "array"
-        assert "items" in thread_handler.metadata["output"]
+        assert thread_handler.metadata["inputSchema"]["required"] == ["messages"]
+        assert "messages" in thread_handler.metadata["inputSchema"]["properties"]
+        assert thread_handler.metadata["outputSchema"]["type"] == "array"
+        assert "items" in thread_handler.metadata["outputSchema"]
 
     @pytest.mark.asyncio
     async def test_type_thread_invoke(self):

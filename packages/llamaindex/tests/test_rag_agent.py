@@ -42,7 +42,7 @@ class TestLlamaIndexRagAgent:
         agent = LlamaIndexRagAgent(mock_engine)
 
         assert agent.metadata["type"] == "rag"
-        assert agent.metadata["input"] == AGENT_TYPES["rag"]["input"]
+        assert agent.metadata["inputSchema"] == AGENT_TYPES["rag"]["inputSchema"]
 
 
 class TestLlamaIndexRagAgentInvoke:

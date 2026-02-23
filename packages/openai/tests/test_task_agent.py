@@ -56,8 +56,8 @@ class TestOpenAITaskAgent:
         agent = OpenAITaskAgent(mock_client, output_schema=SAMPLE_SCHEMA)
 
         assert agent.metadata["type"] == "task"
-        assert agent.metadata["input"] == AGENT_TYPES["task"]["input"]
-        assert agent.metadata["output"] == AGENT_TYPES["task"]["output"]
+        assert agent.metadata["inputSchema"] == AGENT_TYPES["task"]["inputSchema"]
+        assert agent.metadata["outputSchema"] == AGENT_TYPES["task"]["outputSchema"]
         assert agent.metadata["capabilities"]["streaming"] is False
 
 

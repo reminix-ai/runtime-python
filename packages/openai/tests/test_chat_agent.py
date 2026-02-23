@@ -46,7 +46,7 @@ class TestOpenAIChatAgent:
         agent = OpenAIChatAgent(mock_client)
 
         assert agent.metadata["type"] == "chat"
-        assert agent.metadata["input"] == AGENT_TYPES["chat"]["input"]
+        assert agent.metadata["inputSchema"] == AGENT_TYPES["chat"]["inputSchema"]
 
 
 class TestOpenAIChatAgentInvoke:
