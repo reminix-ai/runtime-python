@@ -64,6 +64,64 @@ Your agent is now available at:
 
 See the [runtime package docs](./packages/runtime) for agent types, tools, streaming, and advanced usage.
 
+## Using Platform Tools via MCP
+
+When deployed to Reminix Cloud, your agents can access platform tools (memory, knowledge search) and your project tools via the MCP server. The environment variables `REMINIX_MCP_URL` and `REMINIX_API_KEY` are injected automatically.
+
+Any framework with MCP client support works — no Reminix-specific SDK needed.
+
+### LangChain
+
+```python
+import os
+import json
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
+
+headers = {
+    "Authorization": f"Bearer {os.environ['REMINIX_API_KEY']}",
+}
+# Optional: scope memory to a specific user
+headers["X-Reminix-Identity"] = json.dumps({"user_id": "u_123"})
+
+async with MultiServerMCPClient({
+    "reminix": {
+        "url": os.environ["REMINIX_MCP_URL"],
+        "headers": headers,
+    }
+}) as client:
+    tools = client.get_tools()
+    agent = create_react_agent(ChatOpenAI(model="gpt-4o"), tools)
+    result = await agent.ainvoke({"messages": [{"role": "user", "content": "What do you know about me?"}]})
+```
+
+### OpenAI Agents SDK
+
+```python
+import os
+import json
+from agents import Agent
+from agents.mcp import MCPServerStreamableHttp
+
+headers = {
+    "Authorization": f"Bearer {os.environ['REMINIX_API_KEY']}",
+}
+# Optional: scope memory to a specific user
+headers["X-Reminix-Identity"] = json.dumps({"user_id": "u_123"})
+
+mcp_server = MCPServerStreamableHttp(
+    url=os.environ["REMINIX_MCP_URL"],
+    headers=headers,
+)
+
+agent = Agent(
+    name="my-agent",
+    instructions="You are a helpful assistant.",
+    mcp_servers=[mcp_server],
+)
+```
+
 ## Development
 
 ### Prerequisites
