@@ -195,7 +195,7 @@ class Tool:
         self._name = name
         self._description = description
         self._input_schema = input_schema or {"type": "object", "properties": {}, "required": []}
-        self._output_schema = output_schema or {"type": "string"}
+        self._output_schema = output_schema
         self._tags = tags
         self._extra_metadata = metadata
 
@@ -208,8 +208,9 @@ class Tool:
         result: dict[str, Any] = {
             "description": self._description,
             "inputSchema": self._input_schema,
-            "outputSchema": self._output_schema,
         }
+        if self._output_schema is not None:
+            result["outputSchema"] = self._output_schema
         if self._tags:
             result["tags"] = self._tags
         if self._extra_metadata:
@@ -232,7 +233,7 @@ class _FunctionTool(Tool):
         name: str,
         description: str,
         input_schema: dict[str, Any],
-        output_schema: dict[str, Any],
+        output_schema: dict[str, Any] | None,
         tags: list[str] | None,
         metadata: dict[str, Any] | None,
         call_fn: Callable[[ToolRequest], Any],
@@ -309,7 +310,7 @@ def tool(
             name=tool_name,
             description=tool_description,
             input_schema=input_schema,
-            output_schema=output_schema or {"type": "string"},
+            output_schema=output_schema,
             tags=tags,
             metadata=metadata,
             call_fn=call_fn,

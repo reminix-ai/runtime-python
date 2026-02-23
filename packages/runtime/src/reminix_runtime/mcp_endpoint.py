@@ -20,6 +20,11 @@ from .tool import Tool
 from .types import ToolRequest
 
 
+def _is_object_schema(schema: dict[str, Any] | None) -> bool:
+    """MCP spec requires outputSchema to be type: "object"."""
+    return isinstance(schema, dict) and schema.get("type") == "object"
+
+
 def setup_mcp(tools: list[Tool]) -> StreamableHTTPSessionManager:
     """Create an MCP server and session manager for the given tools.
 
@@ -35,17 +40,24 @@ def setup_mcp(tools: list[Tool]) -> StreamableHTTPSessionManager:
 
     @server.list_tools()
     async def handle_list_tools() -> list[McpTool]:
-        return [
-            McpTool(
-                name=t.name,
-                description=t.metadata.get("description", f"Tool: {t.name}"),
-                inputSchema=t.metadata.get("inputSchema", {"type": "object", "properties": {}}),
-            )
-            for t in tools
-        ]
+        result = []
+        for t in tools:
+            meta = t.metadata
+            output_schema = meta.get("outputSchema")
+            kwargs: dict[str, Any] = {
+                "name": t.name,
+                "description": meta.get("description", f"Tool: {t.name}"),
+                "inputSchema": meta.get("inputSchema", {"type": "object", "properties": {}}),
+            }
+            if _is_object_schema(output_schema):
+                kwargs["outputSchema"] = output_schema
+            result.append(McpTool(**kwargs))
+        return result
 
     @server.call_tool()
-    async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextContent]:
+    async def handle_call_tool(
+        name: str, arguments: dict[str, Any] | None
+    ) -> list[TextContent] | tuple[list[TextContent], dict[str, Any]]:
         tool = tool_map.get(name)
         if tool is None:
             raise ValueError(f"Tool '{name}' not found")
@@ -54,7 +66,14 @@ def setup_mcp(tools: list[Tool]) -> StreamableHTTPSessionManager:
         result = await tool.call(request)
         output = result.get("output", result)
 
-        return [TextContent(type="text", text=json.dumps(output))]
+        text_content = [TextContent(type="text", text=json.dumps(output))]
+
+        # Return structured content alongside text when outputSchema is object type
+        output_schema = tool.metadata.get("outputSchema")
+        if _is_object_schema(output_schema) and isinstance(output, dict):
+            return text_content, output
+
+        return text_content
 
     return StreamableHTTPSessionManager(
         app=server,

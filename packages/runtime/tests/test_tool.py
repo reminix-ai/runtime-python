@@ -242,14 +242,14 @@ class TestToolMetadata:
         assert list_tool.metadata["outputSchema"]["type"] == "array"
 
     def test_metadata_default_output(self):
-        """Metadata has default output schema."""
+        """Metadata omits outputSchema when no return type is declared."""
 
         @tool
         async def my_tool(param: str):
             """Test tool without return type."""
             return {"result": param}
 
-        assert my_tool.metadata["outputSchema"] == {"type": "string"}
+        assert "outputSchema" not in my_tool.metadata
 
 
 class TestPydanticOutputSchema:
