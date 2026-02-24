@@ -1,5 +1,5 @@
 from .chat_agent import OpenAIChatAgent
+from .message_utils import to_openai_message
 from .task_agent import OpenAITaskAgent
-from .thread_agent import OpenAIThreadAgent
 
-__all__ = ["OpenAIChatAgent", "OpenAITaskAgent", "OpenAIThreadAgent"]
+__all__ = ["OpenAIChatAgent", "OpenAITaskAgent", "to_openai_message"]

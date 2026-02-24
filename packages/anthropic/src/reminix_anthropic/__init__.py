@@ -1,5 +1,5 @@
 from .chat_agent import AnthropicChatAgent
+from .message_utils import to_anthropic_messages
 from .task_agent import AnthropicTaskAgent
-from .thread_agent import AnthropicThreadAgent
 
-__all__ = ["AnthropicChatAgent", "AnthropicTaskAgent", "AnthropicThreadAgent"]
+__all__ = ["AnthropicChatAgent", "AnthropicTaskAgent", "to_anthropic_messages"]

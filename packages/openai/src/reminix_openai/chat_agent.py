@@ -9,10 +9,10 @@ from reminix_runtime import (
     AGENT_TYPES,
     Agent,
     AgentRequest,
-    Message,
     build_messages_from_input,
-    message_content_to_text,
 )
+
+from .message_utils import to_openai_message
 
 
 class OpenAIChatAgent(Agent):
@@ -48,26 +48,9 @@ class OpenAIChatAgent(Agent):
     def model(self) -> str:
         return self._model
 
-    def _to_openai_message(self, message: Message) -> dict[str, Any]:
-        """Convert a Reminix message to OpenAI format."""
-        role = message.role
-        if role not in ("user", "assistant", "system"):
-            role = "user"
-        result: dict[str, Any] = {
-            "role": role,
-            "content": message_content_to_text(message.content) or "",
-        }
-        if message.tool_calls:
-            result["tool_calls"] = message.tool_calls
-        if message.tool_call_id:
-            result["tool_call_id"] = message.tool_call_id
-        if message.name:
-            result["name"] = message.name
-        return result
-
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
-        openai_messages = [self._to_openai_message(m) for m in messages]
+        openai_messages = [to_openai_message(m) for m in messages]
         if self.instructions:
             openai_messages.insert(0, {"role": "system", "content": self.instructions})
 
@@ -81,7 +64,7 @@ class OpenAIChatAgent(Agent):
 
     async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
         messages = build_messages_from_input(request)
-        openai_messages = [self._to_openai_message(m) for m in messages]
+        openai_messages = [to_openai_message(m) for m in messages]
         if self.instructions:
             openai_messages.insert(0, {"role": "system", "content": self.instructions})
 

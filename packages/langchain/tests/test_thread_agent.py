@@ -20,7 +20,7 @@ class TestLangChainThreadAgent:
 
     def test_instantiation_with_graph(self):
         mock_graph = MagicMock(spec=Runnable)
-        mock_graph.get_graph = MagicMock()
+        mock_graph.nodes = {}
         agent = LangChainThreadAgent(mock_graph)
         assert isinstance(agent, LangChainThreadAgent)
 
@@ -48,7 +48,7 @@ class TestLangChainThreadAgentGraph:
     @pytest.mark.asyncio
     async def test_invoke_graph_returns_messages(self):
         mock_graph = MagicMock(spec=Runnable)
-        mock_graph.get_graph = MagicMock()
+        mock_graph.nodes = {}
         mock_graph.ainvoke = AsyncMock(
             return_value={
                 "messages": [
@@ -73,7 +73,7 @@ class TestLangChainThreadAgentGraph:
     @pytest.mark.asyncio
     async def test_invoke_graph_includes_tool_calls(self):
         mock_graph = MagicMock(spec=Runnable)
-        mock_graph.get_graph = MagicMock()
+        mock_graph.nodes = {}
         mock_graph.ainvoke = AsyncMock(
             return_value={
                 "messages": [

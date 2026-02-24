@@ -9,10 +9,10 @@ from reminix_runtime import (
     AGENT_TYPES,
     Agent,
     AgentRequest,
-    Message,
     build_messages_from_input,
-    message_content_to_text,
 )
+
+from .message_utils import to_anthropic_messages
 
 
 class AnthropicChatAgent(Agent):
@@ -50,35 +50,6 @@ class AnthropicChatAgent(Agent):
     def model(self) -> str:
         return self._model
 
-    def _extract_system_and_messages(
-        self, messages: list[Message]
-    ) -> tuple[str | None, list[dict[str, Any]]]:
-        """Extract system message and convert remaining messages to Anthropic format."""
-        system_message: str | None = None
-        anthropic_messages: list[dict[str, Any]] = []
-
-        for message in messages:
-            text = message_content_to_text(message.content)
-            if message.role == "system":
-                system_message = text
-            elif message.role in ("user", "assistant"):
-                anthropic_messages.append({"role": message.role, "content": text})
-            elif message.role == "tool":
-                anthropic_messages.append(
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "tool_result",
-                                "tool_use_id": message.tool_call_id or "",
-                                "content": text,
-                            }
-                        ],
-                    }
-                )
-
-        return system_message, anthropic_messages
-
     def _extract_content(self, response: Any) -> str:
         """Extract text content from Anthropic response."""
         for block in response.content:
@@ -88,7 +59,7 @@ class AnthropicChatAgent(Agent):
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
-        system_message, anthropic_messages = self._extract_system_and_messages(messages)
+        system_message, anthropic_messages = to_anthropic_messages(messages)
         if self.instructions:
             system_message = self.instructions + ("\n\n" + system_message if system_message else "")
 
@@ -106,7 +77,7 @@ class AnthropicChatAgent(Agent):
 
     async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
         messages = build_messages_from_input(request)
-        system_message, anthropic_messages = self._extract_system_and_messages(messages)
+        system_message, anthropic_messages = to_anthropic_messages(messages)
         if self.instructions:
             system_message = self.instructions + ("\n\n" + system_message if system_message else "")
 

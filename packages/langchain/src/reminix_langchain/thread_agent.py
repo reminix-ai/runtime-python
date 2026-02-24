@@ -20,8 +20,12 @@ from .message_utils import from_langchain_message, to_langchain_message
 
 
 def _is_compiled_state_graph(agent: Runnable) -> bool:
-    """Detect if a runnable is a CompiledStateGraph (from langgraph create_agent)."""
-    return hasattr(agent, "get_graph") and callable(agent.get_graph)
+    """Detect if a runnable is a CompiledStateGraph (from langgraph create_agent).
+
+    Checks for the ``nodes`` attribute which is defined on Pregel (the base class of
+    CompiledGraph/CompiledStateGraph) but not on plain Runnable.
+    """
+    return hasattr(agent, "nodes")
 
 
 class LangChainThreadAgent(Agent):

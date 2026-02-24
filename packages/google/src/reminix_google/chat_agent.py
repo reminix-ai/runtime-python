@@ -10,10 +10,10 @@ from reminix_runtime import (
     AGENT_TYPES,
     Agent,
     AgentRequest,
-    Message,
     build_messages_from_input,
-    message_content_to_text,
 )
+
+from .message_utils import to_gemini_contents
 
 
 class GoogleChatAgent(Agent):
@@ -51,33 +51,13 @@ class GoogleChatAgent(Agent):
     def model(self) -> str:
         return self._model
 
-    def _extract_system_and_contents(
-        self, messages: list[Message]
-    ) -> tuple[str | None, list[types.Content]]:
-        """Extract system message and convert remaining messages to Gemini format."""
-        system_message: str | None = None
-        contents: list[types.Content] = []
-
-        for message in messages:
-            text = message_content_to_text(message.content)
-            if message.role == "system":
-                system_message = text
-            elif message.role == "user":
-                contents.append(types.Content(role="user", parts=[types.Part.from_text(text=text)]))
-            elif message.role == "assistant":
-                contents.append(
-                    types.Content(role="model", parts=[types.Part.from_text(text=text)])
-                )
-
-        return system_message, contents
-
     def _extract_text(self, response: types.GenerateContentResponse) -> str:
         """Extract text content from Gemini response."""
         return response.text or ""
 
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         messages = build_messages_from_input(request)
-        system_message, contents = self._extract_system_and_contents(messages)
+        system_message, contents = to_gemini_contents(messages)
         if self.instructions:
             system_message = self.instructions + ("\n\n" + system_message if system_message else "")
 
@@ -96,7 +76,7 @@ class GoogleChatAgent(Agent):
 
     async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
         messages = build_messages_from_input(request)
-        system_message, contents = self._extract_system_and_contents(messages)
+        system_message, contents = to_gemini_contents(messages)
         if self.instructions:
             system_message = self.instructions + ("\n\n" + system_message if system_message else "")
 
