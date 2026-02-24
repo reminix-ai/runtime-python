@@ -60,7 +60,7 @@ class GoogleChatAgent(Agent):
 
         for message in messages:
             text = message_content_to_text(message.content)
-            if message.role == "system" or message.role == "developer":
+            if message.role == "system":
                 system_message = text
             elif message.role == "user":
                 contents.append(types.Content(role="user", parts=[types.Part.from_text(text=text)]))

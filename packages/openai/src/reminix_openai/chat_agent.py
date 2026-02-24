@@ -50,7 +50,7 @@ class OpenAIChatAgent(Agent):
 
     def _to_openai_message(self, message: Message) -> dict[str, Any]:
         """Convert a Reminix message to OpenAI format."""
-        role = "system" if message.role == "developer" else message.role
+        role = message.role
         if role not in ("user", "assistant", "system"):
             role = "user"
         result: dict[str, Any] = {

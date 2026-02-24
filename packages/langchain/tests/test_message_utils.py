@@ -29,11 +29,6 @@ class TestToLangChainMessage:
         assert isinstance(result, SystemMessage)
         assert result.content == "You are helpful"
 
-    def test_developer_to_system(self):
-        msg = Message(role="developer", content="Instructions")
-        result = to_langchain_message(msg)
-        assert isinstance(result, SystemMessage)
-
     def test_tool_to_tool(self):
         msg = Message(role="tool", content="Tool output", tool_call_id="call_1")
         result = to_langchain_message(msg)

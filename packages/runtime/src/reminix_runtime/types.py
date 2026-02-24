@@ -4,8 +4,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
-# Valid message roles (OpenAI current; no legacy function role)
-Role = Literal["developer", "system", "user", "assistant", "tool"]
+# Valid message roles
+Role = Literal["system", "user", "assistant", "tool"]
 
 
 class ToolCall(BaseModel):

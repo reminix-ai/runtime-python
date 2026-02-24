@@ -76,7 +76,7 @@ class GoogleThreadAgent(Agent):
         contents: list[Any] = []
 
         for message in messages:
-            if message.role == "system" or message.role == "developer":
+            if message.role == "system":
                 system_message = message_content_to_text(message.content)
             elif message.role == "user":
                 text = message_content_to_text(message.content)

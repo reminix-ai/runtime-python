@@ -37,7 +37,7 @@ def to_langchain_message(message: Message) -> BaseMessage:
             content=content,
             **({"tool_calls": tool_calls} if tool_calls else {}),
         )
-    elif role in ("system", "developer"):
+    elif role == "system":
         return SystemMessage(content=content)
     elif role == "tool":
         tool_call_id = getattr(message, "tool_call_id", None) or "unknown"

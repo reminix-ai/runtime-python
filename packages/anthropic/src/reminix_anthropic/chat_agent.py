@@ -59,7 +59,7 @@ class AnthropicChatAgent(Agent):
 
         for message in messages:
             text = message_content_to_text(message.content)
-            if message.role == "system" or message.role == "developer":
+            if message.role == "system":
                 system_message = text
             elif message.role in ("user", "assistant"):
                 anthropic_messages.append({"role": message.role, "content": text})
