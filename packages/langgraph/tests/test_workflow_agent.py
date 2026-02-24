@@ -43,6 +43,7 @@ class TestLangGraphWorkflowAgent:
         assert agent.metadata["inputSchema"] == AGENT_TYPES["workflow"]["inputSchema"]
         assert agent.metadata["outputSchema"] == AGENT_TYPES["workflow"]["outputSchema"]
         assert agent.metadata["framework"] == "langgraph"
+        assert agent.metadata["capabilities"]["streaming"] is True
 
 
 async def _async_iter(items):
@@ -255,3 +256,81 @@ class TestLangGraphWorkflowAgentInvoke:
 
         assert len(captured_configs) == 1
         assert captured_configs[0] == {}
+
+
+class TestLangGraphWorkflowAgentStream:
+    """Tests for the invoke_stream() method."""
+
+    @pytest.mark.asyncio
+    async def test_stream_yields_step_events(self):
+        """invoke_stream should yield StepEvent per completed node."""
+        mock_graph = MagicMock()
+        mock_graph.astream = lambda *_args, **_kwargs: _async_iter(
+            [
+                {"fetch_data": {"records": 10}},
+                {"process": {"summary": "done"}},
+            ]
+        )
+
+        agent = LangGraphWorkflowAgent(mock_graph)
+        request = AgentRequest(input={"task": "process data"})
+
+        events = []
+        async for event in agent.invoke_stream(request):
+            events.append(event)
+
+        assert len(events) == 2
+        assert events[0].type == "step"
+        assert events[0].name == "fetch_data"
+        assert events[0].status == "completed"
+        assert events[0].output == {"records": 10}
+        assert events[1].type == "step"
+        assert events[1].name == "process"
+        assert events[1].status == "completed"
+
+    @pytest.mark.asyncio
+    async def test_stream_interrupt_yields_paused_step(self):
+        """invoke_stream should yield paused StepEvent on GraphInterrupt."""
+
+        async def _interrupt_stream(*args, **kwargs):
+            yield {"step1": {"data": "partial"}}
+            exc = GraphInterrupt(interrupts=[Interrupt(value="Please approve", resumable=True)])
+            raise exc
+
+        mock_graph = MagicMock()
+        mock_graph.astream = _interrupt_stream
+
+        agent = LangGraphWorkflowAgent(mock_graph)
+        request = AgentRequest(input={"task": "approval"})
+
+        events = []
+        async for event in agent.invoke_stream(request):
+            events.append(event)
+
+        assert len(events) == 2
+        assert events[0].type == "step"
+        assert events[0].status == "completed"
+        assert events[1].type == "step"
+        assert events[1].status == "paused"
+        assert events[1].pendingAction is not None
+
+    @pytest.mark.asyncio
+    async def test_stream_raises_on_non_interrupt_error(self):
+        """invoke_stream should raise on non-interrupt errors."""
+
+        async def _error_stream(*args, **kwargs):
+            yield {"step1": {"partial": True}}
+            raise RuntimeError("Graph failed")
+
+        mock_graph = MagicMock()
+        mock_graph.astream = _error_stream
+
+        agent = LangGraphWorkflowAgent(mock_graph)
+        request = AgentRequest(input={"task": "failing"})
+
+        events = []
+        with pytest.raises(RuntimeError, match="Graph failed"):
+            async for event in agent.invoke_stream(request):
+                events.append(event)
+        # First step should have been yielded before the error
+        assert len(events) == 1

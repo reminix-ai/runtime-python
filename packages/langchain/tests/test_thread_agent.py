@@ -40,6 +40,7 @@ class TestLangChainThreadAgent:
         assert agent.metadata["type"] == "thread"
         assert agent.metadata["inputSchema"] == AGENT_TYPES["thread"]["inputSchema"]
         assert agent.metadata["outputSchema"] == AGENT_TYPES["thread"]["outputSchema"]
+        assert agent.metadata["capabilities"]["streaming"] is True
 
 
 class TestLangChainThreadAgentGraph:
@@ -123,3 +124,33 @@ class TestLangChainThreadAgentRunnable:
         assert len(messages) >= 2
         assert messages[-1]["role"] == "assistant"
         assert messages[-1]["content"] == "Response"
+
+
+class TestLangChainThreadAgentStream:
+    """Tests for invoke_stream()."""
+
+    @pytest.mark.asyncio
+    async def test_invoke_stream_yields_message_events(self):
+        mock_graph = MagicMock(spec=Runnable)
+        mock_graph.nodes = {}
+        mock_graph.ainvoke = AsyncMock(
+            return_value={
+                "messages": [
+                    HumanMessage(content="Hello"),
+                    AIMessage(content="Hi there!"),
+                ]
+            }
+        )
+
+        agent = LangChainThreadAgent(mock_graph)
+        request = AgentRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
+
+        events = []
+        async for event in agent.invoke_stream(request):
+            events.append(event)
+
+        assert len(events) == 2
+        assert events[0].type == "message"
+        assert events[0].message.role == "user"
+        assert events[1].type == "message"
+        assert events[1].message.role == "assistant"

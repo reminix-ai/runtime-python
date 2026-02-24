@@ -4,6 +4,7 @@ Accepts a CompiledStateGraph (from create_agent, with tools) or a plain Runnable
 Returns the full message thread including tool calls and results.
 """
 
+from collections.abc import AsyncIterator
 from typing import Any
 
 from langchain_core.messages import BaseMessage, SystemMessage
@@ -13,8 +14,11 @@ from reminix_runtime import (
     AGENT_TYPES,
     Agent,
     AgentRequest,
+    MessageEvent,
+    StreamEvent,
     build_messages_from_input,
 )
+from reminix_runtime.types import Message
 
 from .message_utils import from_langchain_message, to_langchain_message
 
@@ -44,7 +48,7 @@ class LangChainThreadAgent(Agent):
         super().__init__(
             name,
             description=description or "langchain thread agent",
-            streaming=False,
+            streaming=True,
             input_schema=AGENT_TYPES["thread"]["inputSchema"],
             output_schema=AGENT_TYPES["thread"]["outputSchema"],
             type="thread",
@@ -90,3 +94,9 @@ class LangChainThreadAgent(Agent):
             output.append(clean)
 
         return {"output": output}
+
+    async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str | StreamEvent]:
+        result = await self.invoke(request)
+        messages = result["output"]
+        for msg in messages:
+            yield MessageEvent(message=Message(**msg))

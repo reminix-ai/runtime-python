@@ -1,11 +1,13 @@
 """LangGraph workflow agent for Reminix Runtime."""
 
+from collections.abc import AsyncIterator
 from typing import Any
 
 from langgraph.errors import GraphInterrupt
 from langgraph.types import Command
 
-from reminix_runtime import AGENT_TYPES, Agent, AgentRequest
+from reminix_runtime import AGENT_TYPES, Agent, AgentRequest, StepEvent, StreamEvent
+from reminix_runtime.stream_events import PendingAction
 
 
 class LangGraphWorkflowAgent(Agent):
@@ -28,7 +30,7 @@ class LangGraphWorkflowAgent(Agent):
         super().__init__(
             name,
             description=description or "langgraph workflow agent",
-            streaming=False,
+            streaming=True,
             input_schema=AGENT_TYPES["workflow"]["inputSchema"],
             output_schema=AGENT_TYPES["workflow"]["outputSchema"],
             type="workflow",
@@ -138,3 +140,67 @@ class LangGraphWorkflowAgent(Agent):
             output["result"] = result
 
         return {"output": output}
+
+    async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str | StreamEvent]:
+        config: dict[str, Any] = {}
+        if request.context and "thread_id" in request.context:
+            config = {"configurable": {"thread_id": request.context["thread_id"]}}
+
+        if "resume" in request.input and request.input["resume"] is not None:
+            resume_data = request.input["resume"]
+            graph_input = Command(resume=resume_data.get("input"))
+        else:
+            graph_input = request.input
+
+        last_node: str | None = None
+
+        try:
+            async for chunk in self._graph.astream(graph_input, config):
+                if isinstance(chunk, dict):
+                    for node_name, node_output in chunk.items():
+                        last_node = node_name
+                        yield StepEvent(
+                            name=node_name,
+                            status="completed",
+                            output=node_output,
+                        )
+
+        except GraphInterrupt as exc:
+            interrupts = exc.args[0] if exc.args else []
+            interrupt = interrupts[0] if interrupts else None
+            interrupt_value = interrupt.value if interrupt else None
+
+            pending_action: PendingAction
+            if (
+                isinstance(interrupt_value, dict)
+                and "type" in interrupt_value
+                and "message" in interrupt_value
+            ):
+                pending_action = PendingAction(
+                    step=interrupt_value.get("step", last_node or "unknown"),
+                    type=interrupt_value["type"],
+                    message=interrupt_value["message"],
+                    options=interrupt_value.get("options"),
+                )
+            elif isinstance(interrupt_value, str):
+                pending_action = PendingAction(
+                    step=last_node or "unknown",
+                    type="input",
+                    message=interrupt_value,
+                )
+            else:
+                pending_action = PendingAction(
+                    step=last_node or "unknown",
+                    type="input",
+                    message=str(interrupt_value),
+                )
+
+            yield StepEvent(
+                name=last_node or "unknown",
+                status="paused",
+                pendingAction=pending_action,
+            )
+            return
+
+        except Exception:
+            raise

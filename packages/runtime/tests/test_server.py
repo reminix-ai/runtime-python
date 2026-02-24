@@ -184,3 +184,94 @@ class TestInvokeEndpoint:
         data = response.json()
         assert data["output"]["messages"][0]["role"] == "assistant"
         assert data["output"]["messages"][0]["content"] == "Chat response to: hi there"
+
+
+class TestStreamingEndpoint:
+    """Tests for the streaming SSE endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_stream_typed_events_and_done(self):
+        """Streaming should return typed text_delta events and [DONE]."""
+
+        class StreamAgent(Agent):
+            def __init__(self):
+                super().__init__("stream-agent", streaming=True)
+
+            async def invoke(self, request):
+                return {"output": "ok"}
+
+            async def invoke_stream(self, request):
+                yield "Hello "
+                yield "world"
+
+        app = create_app(agents=[StreamAgent()])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/agents/stream-agent/invoke",
+                json={"input": {"task": "test"}, "stream": True},
+            )
+
+        assert response.status_code == 200
+        text = response.text
+
+        # Should contain typed text_delta events
+        assert '"type": "text_delta"' in text or '"type":"text_delta"' in text
+        assert "Hello " in text
+        assert "world" in text
+        # Should end with [DONE]
+        assert "[DONE]" in text
+
+    @pytest.mark.asyncio
+    async def test_stream_event_objects(self):
+        """Streaming should handle StreamEvent objects directly."""
+        from reminix_runtime.stream_events import MessageEvent
+        from reminix_runtime.types import Message
+
+        class EventAgent(Agent):
+            def __init__(self):
+                super().__init__("event-agent", streaming=True)
+
+            async def invoke(self, request):
+                return {"output": "ok"}
+
+            async def invoke_stream(self, request):
+                yield MessageEvent(message=Message(role="assistant", content="Hi"))
+
+        app = create_app(agents=[EventAgent()])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/agents/event-agent/invoke",
+                json={"input": {}, "stream": True},
+            )
+
+        assert response.status_code == 200
+        text = response.text
+        assert "message" in text
+        assert "assistant" in text
+
+    @pytest.mark.asyncio
+    async def test_stream_errors_as_event_error(self):
+        """Streaming errors should be sent as event: error."""
+
+        class ErrorAgent(Agent):
+            def __init__(self):
+                super().__init__("error-agent", streaming=True)
+
+            async def invoke(self, request):
+                return {"output": "ok"}
+
+            async def invoke_stream(self, request):
+                yield "partial"
+                raise RuntimeError("Stream failed")
+
+        app = create_app(agents=[ErrorAgent()])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/agents/error-agent/invoke",
+                json={"input": {}, "stream": True},
+            )
+
+        assert response.status_code == 200
+        text = response.text
+        assert "event: error" in text
+        assert "Stream failed" in text

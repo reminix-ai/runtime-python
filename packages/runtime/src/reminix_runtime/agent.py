@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 
 from .schemas import AGENT_TYPES, DEFAULT_AGENT_INPUT, DEFAULT_AGENT_OUTPUT, AgentType
+from .stream_events import StreamEvent
 from .tool import _extract_schema_from_function
 from .types import AgentRequest
 
@@ -68,7 +69,10 @@ class Agent:
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         raise NotImplementedError
 
-    async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:  # noqa: ARG002
+    async def invoke_stream(
+        self,
+        request: AgentRequest,  # noqa: ARG002
+    ) -> AsyncIterator[str | StreamEvent]:
         raise NotImplementedError
         yield  # unreachable; makes this an async generator
 
@@ -91,7 +95,7 @@ class _FunctionAgent(Agent):
         tags: list[str] | None,
         metadata: dict[str, Any] | None,
         invoke_fn: Callable[[AgentRequest], Awaitable[dict[str, Any]]],
-        invoke_stream_fn: Callable[[AgentRequest], AsyncIterator[str]] | None = None,
+        invoke_stream_fn: Callable[[AgentRequest], AsyncIterator[str | StreamEvent]] | None = None,
     ):
         super().__init__(
             name=name,
@@ -109,7 +113,7 @@ class _FunctionAgent(Agent):
     async def invoke(self, request: AgentRequest) -> dict[str, Any]:
         return await self._invoke_fn(request)
 
-    async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str]:
+    async def invoke_stream(self, request: AgentRequest) -> AsyncIterator[str | StreamEvent]:
         if self._invoke_stream_fn is None:
             raise NotImplementedError(f"Streaming not supported for agent '{self._name}'")
         async for chunk in self._invoke_stream_fn(request):
@@ -201,11 +205,13 @@ def agent(
 
         # Build handler functions
         invoke_fn: Callable[[AgentRequest], Awaitable[dict[str, Any]]]
-        invoke_stream_fn: Callable[[AgentRequest], AsyncIterator[str]] | None = None
+        invoke_stream_fn: Callable[[AgentRequest], AsyncIterator[str | StreamEvent]] | None = None
 
         if is_streaming:
 
-            async def _invoke_stream(request: AgentRequest) -> AsyncIterator[str]:
+            async def _invoke_stream(
+                request: AgentRequest,
+            ) -> AsyncIterator[str | StreamEvent]:
                 kwargs = _call_with_request(f, request)
                 async for chunk in f(**kwargs):
                     yield str(chunk) if not isinstance(chunk, str) else chunk
@@ -216,7 +222,11 @@ def agent(
                 kwargs = _call_with_request(f, request)
                 chunks: list[str] = []
                 async for chunk in f(**kwargs):
-                    chunks.append(str(chunk) if not isinstance(chunk, str) else chunk)
+                    if isinstance(chunk, str):
+                        chunks.append(chunk)
+                    elif hasattr(chunk, "type") and chunk.type == "text_delta":
+                        chunks.append(chunk.delta)
+                    # Skip non-text events when collecting for non-streaming requests
                 return {"output": "".join(chunks)}
 
             invoke_fn = _invoke_collecting

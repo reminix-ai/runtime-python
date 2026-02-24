@@ -6,7 +6,15 @@ from .schemas import (
     AGENT_TYPES,
     AgentType,
 )
-from .server import create_app, serve
+from .server import create_app, normalize_stream_chunk, serve
+from .stream_events import (
+    MessageEvent,
+    StepEvent,
+    StreamEvent,
+    TextDeltaEvent,
+    ToolCallEvent,
+    ToolResultEvent,
+)
 from .tool import Tool, tool
 from .types import (
     AgentRequest,
@@ -25,6 +33,7 @@ __all__ = [
     "__version__",
     "serve",
     "create_app",
+    "normalize_stream_chunk",
     "message_content_to_text",
     "build_messages_from_input",
     # Schemas
@@ -47,4 +56,11 @@ __all__ = [
     "ToolResponse",
     "Tool",
     "tool",
+    # Stream events
+    "StreamEvent",
+    "TextDeltaEvent",
+    "ToolCallEvent",
+    "ToolResultEvent",
+    "MessageEvent",
+    "StepEvent",
 ]

@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from . import __version__
 from .agent import Agent
 from .mcp_endpoint import setup_mcp
+from .stream_events import StreamEvent
 from .tool import Tool
 from .types import AgentRequest
 
@@ -47,19 +48,29 @@ def _create_error_response(
     return response
 
 
-async def _sse_generator(stream: AsyncIterator[str]) -> AsyncIterator[bytes]:
-    """Convert an async string iterator to SSE format."""
+def normalize_stream_chunk(chunk: str | StreamEvent) -> dict[str, Any]:
+    """Normalize a stream chunk to a StreamEvent dict.
+
+    Raw strings are wrapped as text_delta events; StreamEvent objects are serialized.
+    """
+    if isinstance(chunk, str):
+        return {"type": "text_delta", "delta": chunk}
+    return chunk.model_dump(exclude_none=True)
+
+
+async def _sse_generator(stream: AsyncIterator[str | StreamEvent]) -> AsyncIterator[bytes]:
+    """Convert an async stream of strings/StreamEvents to typed SSE format."""
     try:
         async for chunk in stream:
-            data = json.dumps({"delta": chunk})
-            yield f"data: {data}\n\n".encode()
-        yield f"data: {json.dumps({'done': True})}\n\n".encode()
+            event = normalize_stream_chunk(chunk)
+            yield f"data: {json.dumps(event)}\n\n".encode()
+        yield b"data: [DONE]\n\n"
     except NotImplementedError as e:
         error_data = _create_error_response(e, "NotImplementedError")
-        yield f"data: {json.dumps(error_data)}\n\n".encode()
+        yield f"event: error\ndata: {json.dumps(error_data['error'])}\n\n".encode()
     except Exception as e:
         error_data = _create_error_response(e, type(e).__name__)
-        yield f"data: {json.dumps(error_data)}\n\n".encode()
+        yield f"event: error\ndata: {json.dumps(error_data['error'])}\n\n".encode()
 
 
 def create_app(
