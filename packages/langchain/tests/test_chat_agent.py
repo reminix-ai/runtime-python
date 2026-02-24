@@ -44,7 +44,7 @@ class TestLangChainChatAgent:
 
 
 class TestLangChainChatAgentInvoke:
-    """Tests for the invoke() method."""
+    """Tests for the invoke() method with plain Runnable."""
 
     @pytest.mark.asyncio
     async def test_invoke_calls_runnable(self):
@@ -124,6 +124,37 @@ class TestLangChainChatAgentInvoke:
         assert isinstance(call_args[1], HumanMessage)
         assert isinstance(call_args[2], AIMessage)
         assert isinstance(call_args[3], HumanMessage)
+
+
+class TestLangChainChatAgentGraph:
+    """Tests for invoke() with CompiledStateGraph."""
+
+    @pytest.mark.asyncio
+    async def test_invoke_with_graph(self):
+        """invoke() should detect CompiledStateGraph and wrap input as { messages }."""
+        mock_graph = MagicMock(spec=Runnable)
+        mock_graph.get_graph = MagicMock()  # Mark as graph
+        mock_graph.ainvoke = AsyncMock(
+            return_value={
+                "messages": [
+                    HumanMessage(content="Hello"),
+                    AIMessage(content="Hi from graph!"),
+                ]
+            }
+        )
+
+        agent = LangChainChatAgent(mock_graph)
+        request = AgentRequest(input={"messages": [{"role": "user", "content": "Hello"}]})
+
+        response = await agent.invoke(request)
+
+        # Should wrap as { messages: [...] } for graph
+        call_args = mock_graph.ainvoke.call_args[0][0]
+        assert "messages" in call_args
+        assert isinstance(call_args["messages"], list)
+
+        # Should extract text from last AI message
+        assert response["output"] == "Hi from graph!"
 
 
 class TestMessageConversion:
