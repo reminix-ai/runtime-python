@@ -5,7 +5,7 @@ This example shows how to create a LangGraph ReAct agent with tool calling
 and serve it via Reminix Runtime.
 
 Requirements:
-    pip install reminix-langgraph langchain-openai langgraph python-dotenv
+    pip install reminix-langchain langchain-openai langgraph python-dotenv
 
 Environment:
     Create a .env file in the repository root with:
@@ -38,7 +38,7 @@ from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from reminix_langgraph import LangGraphThreadAgent
+from reminix_langchain import LangChainThreadAgent
 from reminix_runtime import serve
 
 # Load environment variables from root .env file
@@ -63,7 +63,7 @@ llm = ChatOpenAI(model="gpt-4o-mini")
 graph = create_react_agent(llm, tools=[get_weather])
 
 # Create and serve the agent
-agent = LangGraphThreadAgent(graph, name="langgraph-tools")
+agent = LangChainThreadAgent(graph, name="langgraph-tools")
 
 if __name__ == "__main__":
     print("Server running on http://localhost:8080")

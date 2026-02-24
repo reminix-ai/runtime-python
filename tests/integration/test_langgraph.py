@@ -7,7 +7,7 @@ from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from reminix_langgraph import LangGraphThreadAgent
+from reminix_langchain import LangChainThreadAgent
 from reminix_runtime import create_app
 
 
@@ -31,7 +31,7 @@ class TestLangGraphAgents:
     def agent(self, openai_api_key):
         llm = ChatOpenAI(model="gpt-4.1-nano", api_key=openai_api_key)
         graph = create_react_agent(llm, tools=[get_weather])
-        return LangGraphThreadAgent(graph, name="test-langgraph")
+        return LangChainThreadAgent(graph, name="test-langgraph")
 
     @pytest.fixture
     def app(self, agent):
