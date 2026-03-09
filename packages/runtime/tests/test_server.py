@@ -277,3 +277,23 @@ class TestStreamingEndpoint:
         text = response.text
         assert "event: error" in text
         assert "Stream failed" in text
+
+    @pytest.mark.asyncio
+    async def test_stream_returns_501_for_non_streaming_agent(self):
+        """Streaming request to non-streaming agent should return 501."""
+
+        class NonStreamingAgent(Agent):
+            def __init__(self):
+                super().__init__("no-stream", streaming=False)
+
+            async def invoke(self, request):
+                return {"output": "ok"}
+
+        app = create_app(agents=[NonStreamingAgent()])
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/agents/no-stream/invoke",
+                json={"input": {}, "stream": True},
+            )
+
+        assert response.status_code == 501
