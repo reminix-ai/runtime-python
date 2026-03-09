@@ -3,6 +3,7 @@
 from reminix_runtime.server import normalize_stream_chunk
 from reminix_runtime.stream_events import (
     MessageEvent,
+    PendingAction,
     StepEvent,
     TextDeltaEvent,
     ToolCallEvent,
@@ -68,3 +69,22 @@ class TestNormalizeStreamChunk:
         result = normalize_stream_chunk(event)
         assert "output" not in result
         assert "pendingAction" not in result
+
+    def test_step_event_with_pending_action_includes_all_fields(self):
+        action = PendingAction(
+            step="review",
+            type="approval",
+            message="Approve deployment?",
+            options=["approve", "reject"],
+            inputSchema={"type": "object", "properties": {"reason": {"type": "string"}}},
+            assignee="admin@example.com",
+        )
+        event = StepEvent(name="deploy", status="paused", pendingAction=action)
+        result = normalize_stream_chunk(event)
+        pa = result["pendingAction"]
+        assert pa["step"] == "review"
+        assert pa["type"] == "approval"
+        assert pa["message"] == "Approve deployment?"
+        assert pa["options"] == ["approve", "reject"]
+        assert pa["inputSchema"]["type"] == "object"
+        assert pa["assignee"] == "admin@example.com"

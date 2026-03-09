@@ -194,7 +194,7 @@ class Tool:
     ) -> None:
         self._name = name
         self._description = description
-        self._input_schema = input_schema or {"type": "object", "properties": {}, "required": []}
+        self._input_schema = input_schema or {"type": "object", "properties": {}}
         self._output_schema = output_schema
         self._tags = tags
         self._extra_metadata = metadata

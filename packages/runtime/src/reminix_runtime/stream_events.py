@@ -47,6 +47,8 @@ class PendingAction(BaseModel):
     type: str
     message: str
     options: list[str] | None = None
+    inputSchema: dict[str, Any] | None = Field(default=None, alias="inputSchema")
+    assignee: str | None = None
 
 
 class StepEvent(BaseModel):

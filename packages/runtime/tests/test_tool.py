@@ -251,6 +251,14 @@ class TestToolMetadata:
 
         assert "outputSchema" not in my_tool.metadata
 
+    def test_base_tool_default_input_schema(self):
+        """Tool base class default input schema matches TypeScript (no required key)."""
+        from reminix_runtime.tool import Tool
+
+        t = Tool("test-tool")
+        assert t.metadata["inputSchema"] == {"type": "object", "properties": {}}
+        assert "required" not in t.metadata["inputSchema"]
+
 
 class TestPydanticOutputSchema:
     """Tests for Pydantic model output schema extraction."""
