@@ -104,7 +104,7 @@ class TestManifestEndpoint:
 
     @pytest.mark.asyncio
     async def test_manifest_endpoint(self):
-        """GET /manifest should return runtime info and agents."""
+        """GET /manifest should return runtime info and endpoints."""
         app = create_app(agents=[MockTaskAgent("agent-one"), MockTaskAgent("agent-two")])
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/manifest")
@@ -116,13 +116,15 @@ class TestManifestEndpoint:
         assert data["runtime"]["name"] == "reminix-runtime"
         assert data["runtime"]["version"] == __version__
         assert data["runtime"]["language"] == "python"
-        assert data["runtime"]["framework"] == "fastapi"
 
-        # Check agents
-        assert len(data["agents"]) == 2
-        assert data["agents"][0]["name"] == "agent-one"
-        assert data["agents"][0]["framework"] == "mock"
-        assert data["agents"][0]["capabilities"]["streaming"] is True
+        # Check endpoints
+        assert len(data["endpoints"]) == 2
+        assert data["endpoints"][0]["kind"] == "agent"
+        assert data["endpoints"][0]["name"] == "agent-one"
+        assert data["endpoints"][0]["path"] == "/agents/agent-one/invoke"
+        assert data["endpoints"][0]["framework"] == "mock"
+        assert data["endpoints"][0]["capabilities"]["streaming"] is True
+        assert data["endpoints"][1]["name"] == "agent-two"
 
 
 class TestInvokeEndpoint:

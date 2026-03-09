@@ -128,20 +128,27 @@ def create_app(
     @app.get("/manifest")
     async def manifest() -> dict[str, Any]:
         """Runtime discovery endpoint."""
+
+        endpoints: list[dict[str, Any]] = [
+            {
+                "kind": "agent",
+                "path": f"/agents/{a.name}/invoke",
+                "name": a.name,
+                **a.metadata,
+            }
+            for a in agents
+        ]
+
+        if tools:
+            endpoints.append({"kind": "mcp", "path": "/mcp"})
+
         return {
             "runtime": {
                 "name": "reminix-runtime",
                 "version": __version__,
                 "language": "python",
-                "framework": "fastapi",
             },
-            "agents": [
-                {
-                    "name": a.name,
-                    **a.metadata,
-                }
-                for a in agents
-            ],
+            "endpoints": endpoints,
         }
 
     @app.post("/agents/{agent_name}/invoke", response_model=None)
