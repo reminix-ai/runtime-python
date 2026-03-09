@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from .types import AgentRequest, ContentPartList, Message
 
 
@@ -43,4 +45,4 @@ def build_messages_from_input(request: AgentRequest) -> list[Message]:
     elif "prompt" in request.input:
         return [Message(role="user", content=str(request.input["prompt"]))]
     else:
-        return [Message(role="user", content=str(request.input))]
+        return [Message(role="user", content=json.dumps(request.input))]

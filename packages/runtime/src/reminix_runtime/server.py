@@ -172,6 +172,15 @@ def create_app(
         )
 
         if request.stream:
+            if not agent.metadata.get("capabilities", {}).get("streaming"):
+                return JSONResponse(
+                    status_code=501,
+                    content=_create_error_response(
+                        NotImplementedError(f"Streaming not supported for agent '{agent_name}'"),
+                        "NotImplementedError",
+                    ),
+                )
+
             return StreamingResponse(
                 _sse_generator(agent.invoke_stream(request)),
                 media_type="text/event-stream",
