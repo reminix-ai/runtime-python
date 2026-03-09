@@ -697,6 +697,7 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "langgraph" },
     { name = "python-dotenv" },
+    { name = "reminix-langchain" },
     { name = "reminix-langgraph" },
     { name = "reminix-runtime" },
 ]
@@ -706,6 +707,7 @@ requires-dist = [
     { name = "langchain-openai", specifier = ">=1.1.0" },
     { name = "langgraph", specifier = ">=1.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "reminix-langchain", editable = "packages/langchain" },
     { name = "reminix-langgraph", editable = "packages/langgraph" },
     { name = "reminix-runtime", editable = "packages/runtime" },
 ]

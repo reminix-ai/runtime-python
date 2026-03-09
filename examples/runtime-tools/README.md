@@ -25,10 +25,8 @@ Once running, the following endpoints are available:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/manifest` | GET | Tool discovery |
-| `/tools/get_weather/call` | POST | Get weather for a city |
-| `/tools/calculate/call` | POST | Basic math operations |
-| `/tools/string_utils/call` | POST | String manipulation |
+| `/manifest` | GET | Runtime discovery |
+| `/mcp` | POST | MCP Streamable HTTP (tool discovery and execution) |
 
 ## Available Tools
 
@@ -38,32 +36,39 @@ Once running, the following endpoints are available:
 
 ## Testing
 
+Tools are exposed via MCP at `POST /mcp`. Use JSON-RPC to discover and call tools:
+
 ```bash
 # Health check
 curl http://localhost:8080/health
 
-# Discovery (shows all tools with their schemas)
+# Discovery
 curl http://localhost:8080/manifest
 
-# Get weather
-curl -X POST http://localhost:8080/tools/get_weather/call \
+# List available tools via MCP
+curl -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
-  -d '{"input": {"location": "San Francisco"}}'
+  -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
+
+# Get weather
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "get_weather", "arguments": {"location": "San Francisco"}}, "id": 2}'
 
 # Get weather in Celsius
-curl -X POST http://localhost:8080/tools/get_weather/call \
+curl -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
-  -d '{"input": {"location": "New York", "units": "celsius"}}'
+  -d '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "get_weather", "arguments": {"location": "New York", "units": "celsius"}}, "id": 3}'
 
 # Calculate
-curl -X POST http://localhost:8080/tools/calculate/call \
+curl -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
-  -d '{"input": {"a": 10, "b": 5, "operation": "multiply"}}'
+  -d '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "calculate", "arguments": {"a": 10, "b": 5, "operation": "multiply"}}, "id": 4}'
 
 # String utils
-curl -X POST http://localhost:8080/tools/string_utils/call \
+curl -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
-  -d '{"input": {"text": "Hello World", "operation": "reverse"}}'
+  -d '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "string_utils", "arguments": {"text": "Hello World", "operation": "reverse"}}, "id": 5}'
 ```
 
 ## How it works

@@ -36,9 +36,9 @@ The runtime creates a REST server with the following endpoints:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/manifest` | GET | Runtime discovery (version, agents, tools) |
+| `/manifest` | GET | Runtime discovery (version, endpoints) |
 | `/agents/{name}/invoke` | POST | Invoke an agent |
-| `/tools/{name}/call` | POST | Call a tool |
+| `/mcp` | POST | MCP Streamable HTTP (tool discovery and execution) |
 
 ### Health Endpoint
 
@@ -54,35 +54,32 @@ Returns `{"status": "ok"}` if the server is running.
 curl http://localhost:8080/manifest
 ```
 
-Returns runtime information, available agents, and tools:
+Returns runtime information and available endpoints:
 
 ```json
 {
   "runtime": {
     "name": "reminix-runtime",
     "version": "0.0.19",
-    "language": "python",
-    "framework": "fastapi"
+    "language": "python"
   },
-  "agents": [
+  "endpoints": [
     {
+      "kind": "agent",
+      "path": "/agents/calculator/invoke",
       "name": "calculator",
       "description": "Add two numbers.",
       "capabilities": { "streaming": false },
-      "input": {
+      "inputSchema": {
         "type": "object",
         "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
         "required": ["a", "b"]
       },
-      "output": { "type": "number" }
-    }
-  ],
-  "tools": [
+      "outputSchema": { "type": "number" }
+    },
     {
-      "name": "get_weather",
-      "description": "Get current weather for a location",
-      "input": { "type": "object", "properties": { "location": { "type": "string" } }, "required": ["location"] },
-      "output": { "type": "object", "properties": { "temp": { "type": "integer" }, "condition": { "type": "string" } } }
+      "kind": "mcp",
+      "path": "/mcp"
     }
   ]
 }
@@ -131,21 +128,22 @@ curl -X POST http://localhost:8080/agents/assistant/invoke \
 }
 ```
 
-### Tool Call Endpoint
+### MCP Endpoint
 
-`POST /tools/{name}/call` - Call a standalone tool.
+`POST /mcp` - MCP Streamable HTTP endpoint for tool discovery and execution.
+
+Tools are exposed via [MCP (Model Context Protocol)](https://modelcontextprotocol.io) at `/mcp`. Use any MCP client, or call directly with JSON-RPC:
 
 ```bash
-curl -X POST http://localhost:8080/tools/get_weather/call \
+# Discover available tools
+curl -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
-  -d '{"input": {"location": "San Francisco"}}'
-```
+  -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 
-**Response:**
-```json
-{
-  "output": { "temp": 72, "condition": "sunny" }
-}
+# Call a tool
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "get_weather", "arguments": {"location": "San Francisco"}}, "id": 2}'
 ```
 
 ## Agents
@@ -230,7 +228,7 @@ For streaming agents:
 
 ## Tools
 
-Tools are standalone functions served via `/tools/{name}/call`. They're useful for exposing utility functions, external API integrations, or any reusable logic.
+Tools are standalone functions exposed via [MCP](https://modelcontextprotocol.io) at `/mcp`. They're useful for exposing utility functions, external API integrations, or any reusable logic. MCP clients (including LLMs and other agents) can discover and call tools using the standard MCP protocol.
 
 ### Creating Tools
 

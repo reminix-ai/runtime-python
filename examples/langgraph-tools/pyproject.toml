@@ -5,6 +5,7 @@ description = "LangGraph with tools example"
 requires-python = ">=3.10"
 dependencies = [
     "reminix-runtime",
+    "reminix-langchain",
     "reminix-langgraph",
     "langchain-openai>=1.1.0",
     "langgraph>=1.0.0",
@@ -13,4 +14,5 @@ dependencies = [
 
 [tool.uv.sources]
 reminix-runtime = { workspace = true }
+reminix-langchain = { workspace = true }
 reminix-langgraph = { workspace = true }

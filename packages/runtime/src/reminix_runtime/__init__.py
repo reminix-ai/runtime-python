@@ -9,6 +9,7 @@ from .schemas import (
 from .server import create_app, normalize_stream_chunk, serve
 from .stream_events import (
     MessageEvent,
+    PendingAction,
     StepEvent,
     StreamEvent,
     TextDeltaEvent,
@@ -20,6 +21,7 @@ from .types import (
     AgentRequest,
     AgentResponse,
     Capabilities,
+    ContentPartList,
     Message,
     Role,
     RuntimeErrorInfo,
@@ -56,6 +58,8 @@ __all__ = [
     "ToolResponse",
     "Tool",
     "tool",
+    # Content types
+    "ContentPartList",
     # Stream events
     "StreamEvent",
     "TextDeltaEvent",
@@ -63,4 +67,5 @@ __all__ = [
     "ToolResultEvent",
     "MessageEvent",
     "StepEvent",
+    "PendingAction",
 ]

@@ -12,18 +12,18 @@ Then test the endpoints:
     # Health check
     curl http://localhost:8080/health
 
-    # Discovery (shows available tools)
+    # Discovery
     curl http://localhost:8080/manifest
 
-    # Execute the weather tool
-    curl -X POST http://localhost:8080/tools/get_weather/call \
+    # List tools via MCP
+    curl -X POST http://localhost:8080/mcp \
       -H "Content-Type: application/json" \
-      -d '{"input": {"location": "San Francisco"}}'
+      -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 
-    # Execute the calculator tool
-    curl -X POST http://localhost:8080/tools/calculate/call \
+    # Call a tool via MCP
+    curl -X POST http://localhost:8080/mcp \
       -H "Content-Type: application/json" \
-      -d '{"input": {"a": 10, "b": 5, "operation": "add"}}'
+      -d '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "get_weather", "arguments": {"location": "San Francisco"}}, "id": 2}'
 """
 
 from reminix_runtime import serve, tool
@@ -125,9 +125,7 @@ if __name__ == "__main__":
     print("Endpoints:")
     print("  GET  /health")
     print("  GET  /manifest")
-    print("  POST /tools/get_weather/call")
-    print("  POST /tools/calculate/call")
-    print("  POST /tools/string_utils/call")
+    print("  POST /mcp (MCP Streamable HTTP - tool discovery and execution)")
     print()
 
     serve(tools=[get_weather, calculate, string_utils])

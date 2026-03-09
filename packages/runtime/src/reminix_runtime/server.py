@@ -153,7 +153,7 @@ def create_app(
 
     @app.post("/agents/{agent_name}/invoke", response_model=None)
     async def invoke(
-        agent_name: str, body: dict[str, Any]
+        agent_name: str, request: AgentRequest
     ) -> dict[str, Any] | StreamingResponse | JSONResponse:
         """Invoke an agent."""
         agent = agent_map.get(agent_name)
@@ -164,12 +164,6 @@ def create_app(
                     "error": {"type": "NotFoundError", "message": f"Agent '{agent_name}' not found"}
                 },
             )
-
-        request = AgentRequest(
-            input=body.get("input", {}),
-            context=body.get("context"),
-            stream=body.get("stream", False),
-        )
 
         if request.stream:
             if not agent.metadata.get("capabilities", {}).get("streaming"):

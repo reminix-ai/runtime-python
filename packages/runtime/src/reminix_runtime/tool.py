@@ -1,9 +1,11 @@
 """Reminix Runtime Tool definitions."""
 
 import inspect
+import types
 from collections.abc import Callable
 from typing import (
     Any,
+    Union,
     get_args,
     get_origin,
     get_type_hints,
@@ -78,8 +80,8 @@ def _python_type_to_json_schema(python_type: type) -> dict[str, Any]:
     if origin is not None:
         args = get_args(python_type)
 
-        # Handle Union types (including Optional)
-        if origin is type(None) or str(origin) == "typing.Union":
+        # Handle Union types (including Optional[T] and X | Y)
+        if origin is Union or origin is types.UnionType:
             non_none_args = [a for a in args if a is not type(None)]
             if len(non_none_args) == 1:
                 return _python_type_to_json_schema(non_none_args[0])
