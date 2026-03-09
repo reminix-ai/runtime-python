@@ -16,6 +16,7 @@ from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from mcp.types import TextContent
 from mcp.types import Tool as McpTool
 
+from . import __version__
 from .tool import Tool
 from .types import ToolRequest
 
@@ -36,7 +37,7 @@ def setup_mcp(tools: list[Tool]) -> StreamableHTTPSessionManager:
     """
     tool_map = {t.name: t for t in tools}
 
-    server = Server("reminix-runtime")
+    server = Server("reminix-runtime", version=__version__)
 
     @server.list_tools()
     async def handle_list_tools() -> list[McpTool]:

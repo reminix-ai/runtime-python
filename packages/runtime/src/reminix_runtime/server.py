@@ -244,4 +244,6 @@ def serve(
         port = int(os.getenv("PORT", "8080"))
 
     app = create_app(agents=agents, tools=tools)
+
+    print(f"Reminix Runtime listening on http://{host}:{port}")
     uvicorn.run(app, host=host, port=port)

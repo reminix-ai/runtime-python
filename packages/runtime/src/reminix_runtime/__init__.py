@@ -22,7 +22,7 @@ from .types import (
     Capabilities,
     Message,
     Role,
-    RuntimeError,
+    RuntimeErrorInfo,
     RuntimeErrorResponse,
     ToolCall,
     ToolRequest,
@@ -44,7 +44,7 @@ __all__ = [
     "Message",
     "ToolCall",
     "Capabilities",
-    "RuntimeError",
+    "RuntimeErrorInfo",
     "RuntimeErrorResponse",
     # Agent
     "AgentRequest",

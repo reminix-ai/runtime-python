@@ -151,7 +151,7 @@ class Capabilities(BaseModel):
 # === Error Types ===
 
 
-class RuntimeError(BaseModel):
+class RuntimeErrorInfo(BaseModel):
     """Structured runtime error information."""
 
     type: str
@@ -167,4 +167,4 @@ class RuntimeError(BaseModel):
 class RuntimeErrorResponse(BaseModel):
     """Error response from runtime endpoints."""
 
-    error: RuntimeError
+    error: RuntimeErrorInfo
