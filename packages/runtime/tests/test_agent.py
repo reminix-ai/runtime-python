@@ -359,30 +359,6 @@ class TestAgentTypes:
         assert "b" in add.metadata["inputSchema"]["properties"]
         assert add.metadata["inputSchema"]["required"] == ["a", "b"]
 
-    def test_type_rag_metadata(self):
-        """type=rag sets query input and string output in metadata."""
-
-        @agent(type="rag")
-        async def rag_handler(query: str):
-            return f"Answer for: {query}"
-
-        assert rag_handler.metadata["type"] == "rag"
-        assert rag_handler.metadata["inputSchema"]["required"] == ["query"]
-        assert "query" in rag_handler.metadata["inputSchema"]["properties"]
-        assert rag_handler.metadata["outputSchema"]["type"] == "string"
-
-    @pytest.mark.asyncio
-    async def test_type_rag_invoke(self):
-        """type=rag agent handles invoke with query input."""
-
-        @agent(type="rag")
-        async def rag_handler(query: str):
-            return f"Answer for: {query}"
-
-        request = AgentRequest(input={"query": "What is X?"})
-        response = await rag_handler.invoke(request)
-        assert response["output"] == "Answer for: What is X?"
-
     def test_type_thread_metadata(self):
         """type=thread sets messages input and messages output (array) in metadata."""
 

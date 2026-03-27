@@ -49,7 +49,6 @@ reminix-langchain = { workspace = true }
 reminix-langgraph = { workspace = true }
 reminix-openai = { workspace = true }
 reminix-anthropic = { workspace = true }
-reminix-llamaindex = { workspace = true }
 reminix-google = { workspace = true }
 
 [tool.ruff]
@@ -77,7 +76,7 @@ ignore = [
 "examples/**" = ["ARG001"]  # allow unused args in examples
 
 [tool.ruff.lint.isort]
-known-first-party = ["reminix_runtime", "reminix_openai", "reminix_anthropic", "reminix_langchain", "reminix_langgraph", "reminix_llamaindex", "reminix_google"]
+known-first-party = ["reminix_runtime", "reminix_openai", "reminix_anthropic", "reminix_langchain", "reminix_langgraph", "reminix_google"]
 
 [tool.pyright]
 typeCheckingMode = "standard"
@@ -94,6 +93,5 @@ extraPaths = [
     "packages/anthropic/src",
     "packages/langchain/src",
     "packages/langgraph/src",
-    "packages/llamaindex/src",
     "packages/google/src",
 ]

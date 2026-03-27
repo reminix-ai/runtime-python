@@ -11,7 +11,6 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "anthropic: tests requiring ANTHROPIC_API_KEY")
     config.addinivalue_line("markers", "langchain: tests for LangChain agents")
     config.addinivalue_line("markers", "langgraph: tests for LangGraph agents")
-    config.addinivalue_line("markers", "llamaindex: tests for LlamaIndex agents")
 
 
 @pytest.fixture

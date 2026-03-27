@@ -44,9 +44,3 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: uv run --extra dev pytest tests/integration/test_langgraph.py -v
-
-      - name: Run LlamaIndex integration tests
-        if: env.OPENAI_API_KEY != ''
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: uv run --extra dev pytest tests/integration/test_llamaindex.py -v

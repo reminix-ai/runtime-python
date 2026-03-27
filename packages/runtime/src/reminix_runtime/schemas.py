@@ -7,7 +7,7 @@ so that clients and tooling can interoperate without inspecting individual schem
 
 from typing import Any, Literal
 
-AgentType = Literal["prompt", "chat", "task", "rag", "thread", "workflow"]
+AgentType = Literal["prompt", "chat", "task", "thread", "workflow"]
 
 DEFAULT_AGENT_TYPE: AgentType = "prompt"
 
@@ -162,26 +162,6 @@ AGENT_TYPES: dict[AgentType, dict[str, Any]] = {
             "type": "object",
             "additionalProperties": True,
         },
-    },
-    "rag": {
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "query": {"type": "string", "description": "The question to answer from documents"},
-                "messages": {
-                    "type": "array",
-                    "description": "Optional prior conversation (chat-style RAG)",
-                    "items": MESSAGE_SCHEMA,
-                },
-                "collectionIds": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Optional knowledge collection IDs to scope the search",
-                },
-            },
-            "required": ["query"],
-        },
-        "outputSchema": {"type": "string"},
     },
     "thread": {
         "inputSchema": {

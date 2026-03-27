@@ -2,7 +2,7 @@
 
 The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `@agent` and `@tool` decorators, agent types (prompt, chat, task, rag, thread, workflow), and types `Message` and `ToolCall` for OpenAI-style conversations.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `@agent` and `@tool` decorators, agent types (prompt, chat, task, thread, workflow), and types `Message` and `ToolCall` for OpenAI-style conversations.
 
 Built on [FastAPI](https://fastapi.tiangolo.com) with full async support.
 
@@ -159,7 +159,6 @@ You can use a **type** to get standard input/output schemas without defining the
 | `prompt` (default) | `{ prompt: str }` | `str` | Single prompt in, text out |
 | `chat` | `{ messages: list[Message] }` | `str` | Multi-turn chat, final reply as string |
 | `task` | `{ task: str, ... }` | JSON | Stateless, single-shot execution with structured result |
-| `rag` | `{ query: str, messages?: list[Message], collectionIds?: list[str] }` | `str` | RAG query, optional history and collections |
 | `thread` | `{ messages: list[Message] }` | `list[Message]` | Multi-turn with tool calls; returns updated thread |
 | `workflow` | `{ task: str, steps?: list, resume?: object, ... }` | `{ status, steps, result?, pendingAction? }` | Multi-step orchestration with branching, approvals, and parallel execution |
 
@@ -339,7 +338,6 @@ Already using a framework? Use our pre-built agents:
 | [`reminix-langgraph`](https://pypi.org/project/reminix-langgraph/) | LangGraph |
 | [`reminix-openai`](https://pypi.org/project/reminix-openai/) | OpenAI |
 | [`reminix-anthropic`](https://pypi.org/project/reminix-anthropic/) | Anthropic |
-| [`reminix-llamaindex`](https://pypi.org/project/reminix-llamaindex/) | LlamaIndex |
 
 ## API Reference
 
@@ -373,7 +371,7 @@ Decorator to create an agent from a function. Use `type` for standard I/O shapes
 
 | Parameter | Description |
 |-----------|-------------|
-| `type` | `"prompt"` \| `"chat"` \| `"task"` \| `"rag"` \| `"thread"` \| `"workflow"`. Standard input/output schema (default: `"prompt"` when no custom input/output). |
+| `type` | `"prompt"` \| `"chat"` \| `"task"` \| `"thread"` \| `"workflow"`. Standard input/output schema (default: `"prompt"` when no custom input/output). |
 | `name` | Agent name (default: function name) |
 | `description` | Human-readable description (default: from docstring) |
 

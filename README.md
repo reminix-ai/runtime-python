@@ -11,8 +11,8 @@ A lightweight runtime for serving AI agents via REST APIs. Turn any LLM framewor
 **Features:**
 - **REST API Server**: Execute endpoint powered by [FastAPI](https://fastapi.tiangolo.com)
 - **Streaming Support**: Server-Sent Events (SSE) out of the box
-- **Agent Types**: Standard patterns (prompt, chat, task, rag, thread, workflow) for common agent I/O
-- **Framework Integrations**: Pre-built agents for LangChain, LangGraph, OpenAI, Anthropic, LlamaIndex
+- **Agent Types**: Standard patterns (prompt, chat, task, thread, workflow) for common agent I/O
+- **Framework Integrations**: Pre-built agents for LangChain, LangGraph, OpenAI, Anthropic
 
 ## Packages
 
@@ -23,7 +23,6 @@ A lightweight runtime for serving AI agents via REST APIs. Turn any LLM framewor
 | [`reminix-langgraph`](./packages/langgraph) | LangGraph thread and workflow agents |
 | [`reminix-openai`](./packages/openai) | OpenAI chat, task, and thread agents |
 | [`reminix-anthropic`](./packages/anthropic) | Anthropic chat, task, and thread agents |
-| [`reminix-llamaindex`](./packages/llamaindex) | LlamaIndex RAG agent |
 
 ## Installation
 
@@ -64,9 +63,9 @@ Your agent is now available at:
 
 See the [runtime package docs](./packages/runtime) for agent types, tools, streaming, and advanced usage.
 
-## Using Platform Tools via MCP
+## Using Project Tools via MCP
 
-When deployed to Reminix Cloud, your agents can access platform tools (memory, knowledge search) and your project tools via the MCP server. The environment variables `REMINIX_MCP_URL` and `REMINIX_API_KEY` are injected automatically.
+When deployed to Reminix Cloud, your agents can discover and call your project's tools via the MCP server. The environment variables `REMINIX_MCP_URL` and `REMINIX_API_KEY` are injected automatically.
 
 Any framework with MCP client support works — no Reminix-specific SDK needed.
 
@@ -74,45 +73,35 @@ Any framework with MCP client support works — no Reminix-specific SDK needed.
 
 ```python
 import os
-import json
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
 
-headers = {
-    "Authorization": f"Bearer {os.environ['REMINIX_API_KEY']}",
-}
-# Optional: scope memory to a specific user
-headers["X-Reminix-Identity"] = json.dumps({"user_id": "u_123"})
-
 async with MultiServerMCPClient({
     "reminix": {
         "url": os.environ["REMINIX_MCP_URL"],
-        "headers": headers,
+        "headers": {
+            "Authorization": f"Bearer {os.environ['REMINIX_API_KEY']}",
+        },
     }
 }) as client:
     tools = client.get_tools()
     agent = create_react_agent(ChatOpenAI(model="gpt-4o"), tools)
-    result = await agent.ainvoke({"messages": [{"role": "user", "content": "What do you know about me?"}]})
+    result = await agent.ainvoke({"messages": [{"role": "user", "content": "Use the search tool to find relevant docs"}]})
 ```
 
 ### OpenAI Agents SDK
 
 ```python
 import os
-import json
 from agents import Agent
 from agents.mcp import MCPServerStreamableHttp
 
-headers = {
-    "Authorization": f"Bearer {os.environ['REMINIX_API_KEY']}",
-}
-# Optional: scope memory to a specific user
-headers["X-Reminix-Identity"] = json.dumps({"user_id": "u_123"})
-
 mcp_server = MCPServerStreamableHttp(
     url=os.environ["REMINIX_MCP_URL"],
-    headers=headers,
+    headers={
+        "Authorization": f"Bearer {os.environ['REMINIX_API_KEY']}",
+    },
 )
 
 agent = Agent(

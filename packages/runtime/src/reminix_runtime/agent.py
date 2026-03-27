@@ -167,7 +167,7 @@ def agent(
         func: The function to wrap (when used without parentheses).
         name: Optional name override. Defaults to function name.
         description: Optional description override. Defaults to docstring.
-        type: Optional agent type (prompt, chat, task, rag, thread, workflow).
+        type: Optional agent type (prompt, chat, task, thread, workflow).
             When set, uses that type's input/output schema instead of
             deriving from the function signature.
         tags: Optional list of tags for categorization.
