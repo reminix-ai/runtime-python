@@ -86,5 +86,10 @@ class TestLangGraphAgents:
         data = response.json()
         assert "output" in data
         # The agent should have called the tool and returned weather info
-        output = data["output"].lower()
-        assert "sunny" in output or "22" in output or "paris" in output
+        # LangChainThreadAgent returns a list of message dicts
+        output = data["output"]
+        assert isinstance(output, list)
+        output_text = " ".join(
+            str(m.get("content", "")) for m in output if isinstance(m, dict)
+        ).lower()
+        assert "sunny" in output_text or "22" in output_text or "paris" in output_text

@@ -26,7 +26,8 @@ from .message_utils import to_langchain_message
 
 def _is_compiled_state_graph(agent: Runnable) -> bool:
     """Detect if a runnable is a CompiledStateGraph (from langgraph create_agent)."""
-    return hasattr(agent, "get_graph") and callable(agent.get_graph)
+    type_name = type(agent).__name__
+    return type_name in ("CompiledStateGraph", "Pregel")
 
 
 class LangChainChatAgent(Agent):
