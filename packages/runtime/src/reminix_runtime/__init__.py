@@ -1,4 +1,4 @@
-__version__ = "0.0.21"
+__version__ = "0.0.22"
 
 from .agent import Agent, agent
 from .content import build_messages_from_input, message_content_to_text

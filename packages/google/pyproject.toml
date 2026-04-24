@@ -1,12 +1,12 @@
 [project]
 name = "reminix-google"
-version = "0.0.21"
+version = "0.0.22"
 description = "Reminix agents for Google Gemini - serve AI agents as REST APIs"
 requires-python = ">=3.10"
 authors = [{ name = "Reminix Team", email = "team@reminix.com" }]
 keywords = ["ai", "agents", "google", "gemini", "llm", "reminix"]
 dependencies = [
-    "reminix-runtime~=0.0.21",
+    "reminix-runtime~=0.0.22",
     "google-genai>=0.6.0",
 ]
 
