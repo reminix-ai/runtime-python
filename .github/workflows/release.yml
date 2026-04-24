@@ -110,6 +110,12 @@ jobs:
           fi
           echo "✓ Version verified: $ACTUAL_VERSION"
 
+      - name: Regenerate uv.lock with new versions
+        # bump-version rewrites pyproject.toml specs; the lockfile must be
+        # refreshed in the same commit or publish.yml's uv sync will reject
+        # the mismatch in --locked mode.
+        run: uv lock
+
       - name: Commit version changes
         run: |
           git add -A
