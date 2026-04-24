@@ -221,13 +221,17 @@ def main() -> int:
 
     updated_count = 0
 
-    # Update Python packages (only in packages/, not root or examples/)
+    # Update all pyproject.toml files in the workspace.
+    # - packages/*: bumps both the package's own version and its reminix-* deps.
+    # - examples/*: bumps only the reminix-* deps so example templates point at
+    #   the new publish target. Example own `version` stays at 0.0.0 because
+    #   `update_pyproject_toml` gates the version write behind `is_managed_package`.
+    # - Root pyproject.toml is skipped (it has no reminix-* deps to update).
     for pyproject in python_root.rglob("pyproject.toml"):
         if any(part.startswith(".") for part in pyproject.parts):
             continue
-        # Skip root and examples
         rel_path = pyproject.relative_to(python_root)
-        if len(rel_path.parts) == 1 or "examples" in rel_path.parts:
+        if len(rel_path.parts) == 1:
             continue
 
         if update_pyproject_toml(
