@@ -1,6 +1,6 @@
 [project]
 name = "reminix-langchain"
-version = "0.0.19"
+version = "0.0.20"
 description = "Reminix agents for LangChain - serve AI agents as REST APIs"
 readme = "README.md"
 license = "Apache-2.0"
@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-    "reminix-runtime~=0.0.19",
+    "reminix-runtime~=0.0.20",
     "langchain>=1.0.0",
 ]
 

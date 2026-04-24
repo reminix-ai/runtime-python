@@ -4,5 +4,5 @@ version = "0.0.0"
 description = "Minimal starter agent — the fastest way to get started with Reminix"
 requires-python = ">=3.10"
 dependencies = [
-    "reminix-runtime>=0.0.19",
+    "reminix-runtime>=0.0.20",
 ]
