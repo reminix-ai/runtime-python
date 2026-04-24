@@ -1,0 +1,9 @@
+[project]
+name = "starter-tool"
+version = "0.0.0"
+description = "Minimal starter tool — the fastest way to build a tool on Reminix"
+requires-python = ">=3.10"
+dependencies = [
+    "reminix-runtime>=0.0.19",
+    "pydantic>=2.0.0",
+]

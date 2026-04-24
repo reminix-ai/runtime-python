@@ -9,13 +9,13 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "example-anthropic-basic",
+    "anthropic-agent",
     "example-custom-agent",
     "example-google-basic",
-    "example-langchain-basic",
     "example-langgraph-tools",
-    "example-openai-basic",
     "example-runtime-tools",
+    "langchain-agent",
+    "openai-agent",
     "reminix-anthropic",
     "reminix-google",
     "reminix-langchain",
@@ -23,6 +23,8 @@ members = [
     "reminix-openai",
     "reminix-runtime",
     "reminix-runtime-monorepo",
+    "starter-agent",
+    "starter-tool",
 ]
 
 [[package]]
@@ -60,6 +62,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/04/1f/08e95f4b7e2d35205ae5dcbb4ae97e7d477fc521c275c02609e2931ece2d/anthropic-0.75.0.tar.gz", hash = "sha256:e8607422f4ab616db2ea5baacc215dd5f028da99ce2f022e33c7c535b29f3dfb", size = 439565, upload-time = "2025-11-24T20:41:45.28Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/60/1c/1cd02b7ae64302a6e06724bf80a96401d5313708651d277b1458504a1730/anthropic-0.75.0-py3-none-any.whl", hash = "sha256:ea8317271b6c15d80225a9f3c670152746e88805a7a61e14d4a374577164965b", size = 388164, upload-time = "2025-11-24T20:41:43.587Z" },
+]
+
+[[package]]
+name = "anthropic-agent"
+version = "0.0.0"
+source = { virtual = "examples/anthropic-agent" }
+dependencies = [
+    { name = "anthropic" },
+    { name = "reminix-anthropic" },
+    { name = "reminix-runtime" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anthropic", specifier = ">=0.75.0" },
+    { name = "reminix-anthropic", editable = "packages/anthropic" },
+    { name = "reminix-runtime", editable = "packages/runtime" },
 ]
 
 [[package]]
@@ -386,25 +405,6 @@ wheels = [
 ]
 
 [[package]]
-name = "example-anthropic-basic"
-version = "0.0.0"
-source = { virtual = "examples/anthropic-basic" }
-dependencies = [
-    { name = "anthropic" },
-    { name = "python-dotenv" },
-    { name = "reminix-anthropic" },
-    { name = "reminix-runtime" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "anthropic", specifier = ">=0.75.0" },
-    { name = "python-dotenv", specifier = ">=1.0.0" },
-    { name = "reminix-anthropic", editable = "packages/anthropic" },
-    { name = "reminix-runtime", editable = "packages/runtime" },
-]
-
-[[package]]
 name = "example-custom-agent"
 version = "0.0.0"
 source = { virtual = "examples/custom-agent" }
@@ -435,27 +435,6 @@ requires-dist = [
 ]
 
 [[package]]
-name = "example-langchain-basic"
-version = "0.0.0"
-source = { virtual = "examples/langchain-basic" }
-dependencies = [
-    { name = "langchain-core" },
-    { name = "langchain-openai" },
-    { name = "python-dotenv" },
-    { name = "reminix-langchain" },
-    { name = "reminix-runtime" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "langchain-core", specifier = ">=1.2.0" },
-    { name = "langchain-openai", specifier = ">=1.1.0" },
-    { name = "python-dotenv", specifier = ">=1.0.0" },
-    { name = "reminix-langchain", editable = "packages/langchain" },
-    { name = "reminix-runtime", editable = "packages/runtime" },
-]
-
-[[package]]
 name = "example-langgraph-tools"
 version = "0.0.0"
 source = { virtual = "examples/langgraph-tools" }
@@ -475,25 +454,6 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "reminix-langchain", editable = "packages/langchain" },
     { name = "reminix-langgraph", editable = "packages/langgraph" },
-    { name = "reminix-runtime", editable = "packages/runtime" },
-]
-
-[[package]]
-name = "example-openai-basic"
-version = "0.0.0"
-source = { virtual = "examples/openai-basic" }
-dependencies = [
-    { name = "openai" },
-    { name = "python-dotenv" },
-    { name = "reminix-openai" },
-    { name = "reminix-runtime" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "openai", specifier = ">=2.15.0" },
-    { name = "python-dotenv", specifier = ">=1.0.0" },
-    { name = "reminix-openai", editable = "packages/openai" },
     { name = "reminix-runtime", editable = "packages/runtime" },
 ]
 
@@ -799,6 +759,25 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-agent"
+version = "0.0.0"
+source = { virtual = "examples/langchain-agent" }
+dependencies = [
+    { name = "langchain-core" },
+    { name = "langchain-openai" },
+    { name = "reminix-langchain" },
+    { name = "reminix-runtime" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "langchain-core", specifier = ">=1.2.0" },
+    { name = "langchain-openai", specifier = ">=1.1.0" },
+    { name = "reminix-langchain", editable = "packages/langchain" },
+    { name = "reminix-runtime", editable = "packages/runtime" },
+]
+
+[[package]]
 name = "langchain-core"
 version = "1.2.7"
 source = { registry = "https://pypi.org/simple" }
@@ -957,6 +936,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/94/f4/4690ecb5d70023ce6bfcfeabfe717020f654bde59a775058ec6ac4692463/openai-2.15.0.tar.gz", hash = "sha256:42eb8cbb407d84770633f31bf727d4ffb4138711c670565a41663d9439174fba", size = 627383, upload-time = "2026-01-09T22:10:08.603Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b5/df/c306f7375d42bafb379934c2df4c2fa3964656c8c782bac75ee10c102818/openai-2.15.0-py3-none-any.whl", hash = "sha256:6ae23b932cd7230f7244e52954daa6602716d6b9bf235401a107af731baea6c3", size = 1067879, upload-time = "2026-01-09T22:10:06.446Z" },
+]
+
+[[package]]
+name = "openai-agent"
+version = "0.0.0"
+source = { virtual = "examples/openai-agent" }
+dependencies = [
+    { name = "openai" },
+    { name = "reminix-openai" },
+    { name = "reminix-runtime" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "openai", specifier = ">=2.15.0" },
+    { name = "reminix-openai", editable = "packages/openai" },
+    { name = "reminix-runtime", editable = "packages/runtime" },
 ]
 
 [[package]]
@@ -1985,6 +1981,32 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ba/b8/73a0e6a6e079a9d9cfa64113d771e421640b6f679a52eeb9b32f72d871a1/starlette-0.50.0.tar.gz", hash = "sha256:a2a17b22203254bcbc2e1f926d2d55f3f9497f769416b3190768befe598fa3ca", size = 2646985, upload-time = "2025-11-01T15:25:27.516Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d9/52/1064f510b141bd54025f9b55105e26d1fa970b9be67ad766380a3c9b74b0/starlette-0.50.0-py3-none-any.whl", hash = "sha256:9e5391843ec9b6e472eed1365a78c8098cfceb7a74bfd4d6b1c0c0095efb3bca", size = 74033, upload-time = "2025-11-01T15:25:25.461Z" },
+]
+
+[[package]]
+name = "starter-agent"
+version = "0.0.0"
+source = { virtual = "examples/starter-agent" }
+dependencies = [
+    { name = "reminix-runtime" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "reminix-runtime", editable = "packages/runtime" }]
+
+[[package]]
+name = "starter-tool"
+version = "0.0.0"
+source = { virtual = "examples/starter-tool" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "reminix-runtime" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "reminix-runtime", editable = "packages/runtime" },
 ]
 
 [[package]]

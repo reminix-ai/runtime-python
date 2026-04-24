@@ -1,13 +1,11 @@
 [project]
-name = "example-langgraph-tools"
+name = "langchain-agent"
 version = "0.0.0"
-description = "LangGraph with tools example"
+description = "Reminix agent built with LangChain"
 requires-python = ">=3.10"
 dependencies = [
     "reminix-runtime>=0.0.19",
     "reminix-langchain>=0.0.19",
-    "reminix-langgraph>=0.0.19",
     "langchain-openai>=1.1.0",
-    "langgraph>=1.0.0",
-    "python-dotenv>=1.0.0",
+    "langchain-core>=1.2.0",
 ]

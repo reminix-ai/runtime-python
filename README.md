@@ -138,7 +138,7 @@ pip install -e packages/langchain
 
 ```bash
 # Run the LangChain example
-cd examples/langchain-basic
+cd examples/langchain-agent
 uv run python main.py
 ```
 
