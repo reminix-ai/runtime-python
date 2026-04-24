@@ -59,7 +59,7 @@ def bump_version(version: str, bump_type: Literal["major", "minor", "patch"]) ->
 
 
 def update_pyproject_toml(
-    file_path: Path, old_version: str, new_version: str, root: Path, dry_run: bool = False
+    file_path: Path, _old_version: str, new_version: str, root: Path, dry_run: bool = False
 ) -> bool:
     """Update version in pyproject.toml file."""
     content = file_path.read_text()
@@ -75,10 +75,11 @@ def update_pyproject_toml(
 
         content = re.sub(pattern, replace_version, content, flags=re.MULTILINE)
 
-    # Update dependencies that reference packages in packages/ directory
-    # Match any package name that looks like it's from our monorepo (reminix-*)
-    # Pattern: "package-name==0.0.0", "package-name>=0.0.0", or "package-name~=0.0.0"
-    pattern = rf'("(reminix-[a-z-]+))(==|>=|~=)({re.escape(old_version)})"'
+    # Update any reminix-* dep spec to the new version, regardless of what it
+    # currently points at. This keeps examples/packages in sync even if a
+    # prior bump skipped them (e.g. because they drifted to an older version).
+    # Matches "package==X", "package>=X", "package~=X".
+    pattern = r'("(reminix-[a-z-]+))(==|>=|~=)(\d+\.\d+\.\d+)"'
 
     def replace_dep(match):
         pkg_name = match.group(2)
