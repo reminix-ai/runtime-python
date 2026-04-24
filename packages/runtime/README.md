@@ -60,7 +60,7 @@ Returns runtime information and available endpoints:
 {
   "runtime": {
     "name": "reminix-runtime",
-    "version": "0.0.20",
+    "version": "0.0.21",
     "language": "python"
   },
   "endpoints": [

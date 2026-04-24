@@ -4,8 +4,8 @@ version = "0.0.0"
 description = "Reminix agent built with LangChain"
 requires-python = ">=3.10"
 dependencies = [
-    "reminix-runtime>=0.0.20",
-    "reminix-langchain>=0.0.20",
+    "reminix-runtime>=0.0.21",
+    "reminix-langchain>=0.0.21",
     "langchain-openai>=1.1.0",
     "langchain-core>=1.2.0",
 ]
