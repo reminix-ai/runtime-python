@@ -1,8 +1,0 @@
-[project]
-name = "example-runtime-tools"
-version = "0.0.0"
-description = "Example showing how to serve standalone tools via Reminix Runtime"
-requires-python = ">=3.10"
-dependencies = [
-    "reminix-runtime>=0.0.19",
-]

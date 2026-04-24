@@ -1,8 +1,0 @@
-[project]
-name = "example-custom-agent"
-version = "0.0.0"
-description = "Custom agent example using the decorator-based Agent class"
-requires-python = ">=3.10"
-dependencies = [
-    "reminix-runtime>=0.0.19",
-]
