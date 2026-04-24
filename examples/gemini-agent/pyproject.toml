@@ -1,0 +1,10 @@
+[project]
+name = "gemini-agent"
+version = "0.0.0"
+description = "Reminix agent using Google Gemini via the google-genai SDK"
+requires-python = ">=3.10"
+dependencies = [
+    "reminix-runtime>=0.0.21",
+    "reminix-google>=0.0.21",
+    "google-genai>=0.6.0",
+]
